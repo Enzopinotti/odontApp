@@ -1,0 +1,5 @@
+/backend/node_modules
+/frontned/node_modules
+backend/.env
+frontend/.env
+frontend/build
