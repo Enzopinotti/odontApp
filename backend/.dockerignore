@@ -1,0 +1,23 @@
+# Ignorar node_modules ya que se instala en la imagen
+node_modules
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Git y entorno local
+.git
+.gitignore
+.env
+
+# Archivos no necesarios en la imagen
+README.md
+Dockerfile
+.dockerignore
+
+# IDEs y OS
+.vscode
+*.swp
+.DS_Store
+Thumbs.db
