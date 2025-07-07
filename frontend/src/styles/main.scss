@@ -1,0 +1,12 @@
+@use 'variables';
+@use 'header';
+@use 'sidebar';
+@use 'appLayout';
+@use 'publicLayout';
+@use 'login';
+
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}

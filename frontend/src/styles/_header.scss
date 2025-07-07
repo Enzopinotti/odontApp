@@ -1,0 +1,30 @@
+@use 'variables';
+
+.header {
+  background: variables.$color-primario;
+  color: variables.$color-blanco;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .8rem 1.2rem;
+
+  .user-info {
+    display: flex;
+    align-items: center;
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin-right: .6rem;
+    }
+  }
+
+  .dots {
+    background: transparent;
+    border: none;
+    color: variables.$color-blanco;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+}

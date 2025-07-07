@@ -1,0 +1,11 @@
+FROM node:20-alpine
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm ci --omit=dev     # dependencias de prod
+
+COPY . .
+RUN npm run build
+
+EXPOSE 80
+CMD ["npx", "serve", "-s", "build", "-l", "80"]
