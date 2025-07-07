@@ -1,0 +1,5 @@
+{
+  "watch": ["*.js", "src", "routes", "models"],
+  "ext": "js,json",
+  "legacyWatch": true
+}

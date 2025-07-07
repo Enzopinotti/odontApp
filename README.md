@@ -6,11 +6,11 @@ Sistema de gestión para una clínica odontológica. Permite la administración 
 
 ## 👥 Integrantes
 
-- Enzo Pinotti
-- Patricio Borda
-- Lucio Borda
-- Matias Rau Bekerman
-- Natasha Cadabon
+- Enzo Pinotti  
+- Patricio Borda  
+- Lucio Borda  
+- Matías Rau Bekerman  
+- Natasha Cadabon  
 
 ---
 
@@ -20,6 +20,7 @@ Sistema de gestión para una clínica odontológica. Permite la administración 
 
 - React
 - SCSS
+- Create React App (CRA)
 
 ### Backend
 
@@ -41,30 +42,39 @@ Sistema de gestión para una clínica odontológica. Permite la administración 
 odontApp/
 ├── backend/
 │   ├── src/
-│   │   ├── config/            # Configuración (db.js, dotenv)
-│   │   ├── controllers/       # Lógica de negocio
-│   │   ├── models/            # Modelos Sequelize
-│   │   ├── routes/            # Rutas Express
-│   │   ├── migrations/        # Migraciones Sequelize
-│   │   ├── seeders/           # Datos iniciales (opcional)
-│   │   └── index.js           # Punto de entrada del servidor Express
-│   ├── Dockerfile             # Imagen Docker para backend
-│   ├── .env                   # Variables de entorno
-│   └── package.json           # Configuración de dependencias
+│   │   ├── config/         # Configuración general (db.js, dotenv)
+│   │   ├── controllers/    # Lógica de negocio
+│   │   ├── middlewares/    # Middlewares personalizados (auth, errores, etc.)
+│   │   ├── migrations/     # Migraciones Sequelize
+│   │   ├── models/         # Modelos Sequelize
+│   │   ├── routes/         # Rutas Express
+│   │   ├── seeders/        # Datos iniciales (opcional)
+│   │   ├── services/       # Funciones del dominio reutilizables
+│   │   └── utils/          # Utilidades generales
+│   ├── .env                # Variables de entorno
+│   ├── .dockerignore       # Archivos ignorados en la imagen
+│   ├── .sequelizerc        # Configuración de Sequelize CLI
+│   ├── Dockerfile.prod     # Dockerfile para entorno de producción
+│   ├── index.js            # Punto de entrada del servidor Express
+│   ├── nodemon.json        # Configuración de reinicio automático en desarrollo
+│   ├── package.json        # Configuración y dependencias
+│   └── package-lock.json   # Lockfile de dependencias
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/        # Componentes reutilizables
-│   │   ├── pages/             # Páginas principales
-│   │   └── App.jsx            # Root de la app React
-│   ├── public/                # Archivos públicos
-│   ├── Dockerfile             # Imagen Docker para frontend
-│   ├── index.html             # HTML base
-│   └── vite.config.js         # Configuración de Vite
+│   │   ├── components/     # Componentes reutilizables
+│   │   ├── pages/          # Vistas principales
+│   │   ├── routes/         # Ruteo de la aplicación
+│   │   ├── styles/         # Estilos globales en SCSS
+│   │   ├── App.js          # Componente raíz de la app
+│   │   └── index.js        # Punto de entrada de ReactDOM
+│   ├── public/             # Archivos públicos
+│   ├── Dockerfile.prod     # Dockerfile para producción
+│   └── package.json        # Configuración del frontend (CRA)
 │
-├── docker-compose.yml         # Orquestación de servicios (MySQL + frontend + backend)
-├── README.md                  # Documentación del proyecto
-└── .gitignore                 # Ignorados por Git
+├── docker-compose.yml      # Orquestación de servicios (MySQL + frontend + backend)
+├── README.md               # Documentación del proyecto
+└── .gitignore              # Archivos ignorados por Git
 ``
 
 ---
@@ -93,6 +103,8 @@ DB_HOST=mysql
 ```bash
 docker-compose up --build
 ```
+
+El flag --build es necesario solo la primera vez o si cambias dependencias.
 
 4.Acceder al sistema:
 

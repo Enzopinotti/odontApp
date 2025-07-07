@@ -4,14 +4,11 @@ services:
   mysql:
     image: mysql:8.3
     container_name: mysql
-    restart: always
     environment:
       MYSQL_DATABASE: odontapp_db
       MYSQL_ROOT_PASSWORD: odont123
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+    ports: ["3307:3306"]
+    volumes: [mysql_data:/var/lib/mysql]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -19,27 +16,44 @@ services:
       retries: 10
 
   backend:
-    build:
-      context: ./backend
-    container_name: backend
-    restart: always
-    env_file: ./backend/.env
-    ports:
-      - "4000:4000"
+    image: node:20-alpine
+    working_dir: /usr/src/app
+    volumes:
+      - ./backend:/usr/src/app        # ← código
+      # quitamos el volumen anónimo de node_modules
+    command: |
+      sh -c "
+        npm install &&
+        until nc -z mysql 3306; do echo '⏳  Esperando MySQL...'; sleep 2; done &&
+        npx nodemon --legacy-watch index.js
+      "
+    environment:
+      NODE_ENV: development
     depends_on:
       mysql:
         condition: service_healthy
 
   frontend:
-    build:
-      context: ./frontend
-    container_name: frontend
-    restart: always
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_started
+    image: node:20-alpine
+    working_dir: /usr/src/app
+    volumes:
+      - ./frontend:/usr/src/app
+      # tampoco montamos node_modules aquí
+    command: sh -c "npm install && npm run start:poll"
+    ports: ["3000:3000"]
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+      WATCHPACK_POLLING: "true"          # 👈 necesario desde CRA 5 en adelante
+      WATCHPACK_POLLING_INTERVAL: "300"
+      WDS_SOCKET_PORT: "0"
+    tty: true
+    stdin_open: true
+    depends_on: [backend]
+
+  adminer:
+    image: adminer
+    ports: ["8080:8080"]
 
 volumes:
   mysql_data:

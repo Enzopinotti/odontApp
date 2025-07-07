@@ -1,0 +1,34 @@
+@use 'variables';
+
+.sidebar {
+  width: 230px;
+  background: #f7f9fc;
+  padding: 1rem;
+  transition: transform .25s ease;
+}
+
+.burger {   // botón para móvil
+  display: none;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: variables.$color-blanco;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 56px;            // altura del header
+    left: 0;
+    height: calc(100% - 56px);
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .burger { display: block; }
+}
