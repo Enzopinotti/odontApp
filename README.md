@@ -7,13 +7,13 @@ Frontend en **React 19 + SCSS** · Backend en **Node 20 + Express 5 + Sequelize 
 
 ## 👥 Equipo
 
-| Integrante | Rol |
-|------------|-----|
-| **Enzo Pinotti** | Full-stack |
-| **Patricio Borda** | Backend |
-| **Lucio Borda** | Frontend |
-| **Matías Rau Bekerman** | DevOps |
-| **Natasha Cadabon** | QA / Docs |
+| Integrante |
+|------------|
+| **Enzo Pinotti** |
+| **Patricio Borda** |
+| **Lucio Borda** |
+| **Matías Rau Bekerman** |
+| **Natasha Cadabon** |
 
 ---
 
@@ -38,10 +38,11 @@ odontApp/
 │   │   │   └── Usuarios/
 │   │   │       ├── controllers/
 │   │   │       ├── models/
-│   │   │       ├── migrations/
 │   │   │       ├── repositories/
 │   │   │       ├── services/
 │   │   │       └── validators/
+│   │   ├── migrations/
+│   │   ├── seeders/
 │   │   ├── middlewares/
 │   │   ├── routes/             # index.js concatena rutas de todos los módulos
 │   │   └── utils/
@@ -100,6 +101,7 @@ El flag --build es necesario solo la primera vez o si cambias dependencias.
 
 - Frontend: <http://localhost:3000>
 - Backend (API): <http://localhost:4000>
+- Adminer: <http://localhost:8080>
 
 ---
 
