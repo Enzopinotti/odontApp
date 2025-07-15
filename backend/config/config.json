@@ -1,0 +1,10 @@
+{
+  "development": {
+    "username": "root",
+    "password": "odont123",
+    "database": "odontapp_db",
+    "host": "mysql",
+    "dialect": "mysql",
+    "port": 3306
+  }
+}

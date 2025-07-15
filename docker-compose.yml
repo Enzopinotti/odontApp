@@ -19,8 +19,7 @@ services:
     image: node:20-alpine
     working_dir: /usr/src/app
     volumes:
-      - ./backend:/usr/src/app        # ← código
-      # quitamos el volumen anónimo de node_modules
+      - ./backend:/usr/src/app       
     command: |
       sh -c "
         npm install &&
@@ -38,7 +37,6 @@ services:
     working_dir: /usr/src/app
     volumes:
       - ./frontend:/usr/src/app
-      # tampoco montamos node_modules aquí
     command: sh -c "npm install && npm run start:poll"
     ports: ["3000:3000"]
     environment:
