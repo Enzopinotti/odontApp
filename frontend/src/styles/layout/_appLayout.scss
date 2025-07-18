@@ -1,9 +1,10 @@
-
+@use '../variables';
 
 .app-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
+   background-color: variables.$color-background;
 }
 
 .app-body {

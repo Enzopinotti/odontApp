@@ -1,11 +1,37 @@
-@use 'variables';
-
+@use '../variables';
+$color-hover-claro: #d0eef2;
 .sidebar {
   width: 230px;
   background: #f7f9fc;
-  padding: 1rem;
   transition: transform .25s ease;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+ 
 }
+
+nav{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;  
+  .navItem{
+    text-decoration: none;
+    color: variables.$color-negro;
+    font-size: 1.25rem;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    width: 100%;   
+    border-bottom: 1px solid #c1c1c1;
+    .icon{
+      margin-right:10px;
+    }
+    &:hover{
+      background-color: $color-hover-claro;
+    }
+    &.active{
+      color:variables.$color-primario;
+    }
+  }
+}
+
 
 .burger {   // botón para móvil
   display: none;

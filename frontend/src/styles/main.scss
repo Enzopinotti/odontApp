@@ -1,12 +1,14 @@
 @use 'variables';
-@use 'header';
-@use 'sidebar';
-@use 'appLayout';
-@use 'publicLayout';
+@use './layout/header';
+@use './layout/sidebar';
+@use './layout/appLayout';
+@use './layout/publicLayout';
 @use 'login';
 
 *{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    font-family: variables.$fuente-base;
+   
 }

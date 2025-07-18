@@ -16,9 +16,9 @@ function AppRouter() {
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+        <ProtectedRoute>
             <AppLayout />
-          </ProtectedRoute>
+        </ProtectedRoute>
         }
       >
         {/* Rutas privadas aquí */}
