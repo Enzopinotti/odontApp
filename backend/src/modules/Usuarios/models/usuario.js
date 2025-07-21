@@ -11,11 +11,14 @@ export default (sequelize, DataTypes) => {
     telefono: DataTypes.STRING,
     activo:   { type: DataTypes.BOOLEAN, defaultValue: true },
     fechaAlta:{ type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    intentosFallidos : { type: DataTypes.INTEGER, defaultValue: 0 },
+    bloqueadoHasta   : DataTypes.DATE,
     ultimoLogin: DataTypes.DATE,
     passwordChangedAt: DataTypes.DATE,
   }, {
     tableName: 'usuarios',
     defaultScope: { attributes: { exclude: ['password'] } },
+    paranoid: true,
     hooks: {
       beforeCreate: async u => { u.password = await bcrypt.hash(u.password, 10); },
       beforeUpdate: async u => {
