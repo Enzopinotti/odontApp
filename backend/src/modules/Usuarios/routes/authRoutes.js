@@ -7,6 +7,7 @@ import {
   vReset as validarResetPassword,
 } from '../validators/authValidator.js';
 import { vUpdateMe, vChangePassword } from '../validators/meValidator.js';
+import { requireAuth } from '../../../middlewares/authMiddleware.js';
 
 const router = Router();
 
