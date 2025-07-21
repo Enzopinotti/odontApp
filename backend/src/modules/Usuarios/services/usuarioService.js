@@ -28,10 +28,4 @@ export const remove = async (id) => {
   await repo.remove(usuario);
 };
 
-export const login = async ({ email, password }) => {
-  const usuario = await repo.findByEmail(email);
-  if (!usuario || !(await usuario.validarPassword(password))) {
-    throw new ApiError('Credenciales inválidas', 401);
-  }
-  return usuario.generarToken();
-};
+

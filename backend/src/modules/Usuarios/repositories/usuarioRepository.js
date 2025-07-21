@@ -18,6 +18,7 @@ export const create = (data) => Usuario.create(data);
 
 export const update = (instancia, data) => instancia.update(data);
 
+
 export const remove = (instancia) => instancia.destroy();
 export default {
   findPaginated,
