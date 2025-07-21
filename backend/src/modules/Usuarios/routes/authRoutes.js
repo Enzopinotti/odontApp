@@ -6,6 +6,7 @@ import {
   vForgot as validarForgotPassword,
   vReset as validarResetPassword,
 } from '../validators/authValidator.js';
+import { vUpdateMe, vChangePassword } from '../validators/meValidator.js';
 
 const router = Router();
 
@@ -19,5 +20,11 @@ router.post('/forgot-password', validarForgotPassword, c.forgotPassword);
 router.post('/reset-password/:token', validarResetPassword, c.resetPassword);
 router.get('/verify-email/:token', c.verifyEmail);
 router.post('/resend-confirmation', validarForgotPassword, c.resendConfirmation);
+
+/* --------- Perfil --------- */
+router.use(requireAuth);                 //  rutas privadas a partir de aquí
+router.get('/me',            c.getMe);
+router.put('/me',  vUpdateMe, c.updateMe);
+router.put('/me/password', vChangePassword, c.changeMyPassword);
 
 export default router;

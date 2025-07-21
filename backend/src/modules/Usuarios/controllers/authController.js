@@ -1,6 +1,8 @@
 import * as authSvc from '../services/authService.js';
 import ApiError from '../../../utils/ApiError.js';
 
+import { sanitizeUser } from '../../../utils/sanitizeUser.js';
+
 const cookieOpts = {
   httpOnly : true,
   secure   : process.env.NODE_ENV === 'production',
@@ -69,4 +71,25 @@ export const verifyEmail = async (req, res) => {
 export const resendConfirmation = async (req, res) => {
   await authSvc.resendConfirmation(req.body.email);
   res.ok(null, 'Correo reenviado');
+};
+
+
+/* ---------- ME ---------- */
+export const getMe = async (req, res) => {
+  const me = await authSvc.getMe(req.user.id);
+  res.ok(sanitizeUser(me));
+};
+
+export const updateMe = async (req, res) => {
+  const me = await authSvc.updateMe(req.user.id, req.body);
+  res.ok(sanitizeUser(me), 'Perfil actualizado');
+};
+
+export const changeMyPassword = async (req, res) => {
+  await authSvc.changePassword(
+    req.user.id,
+    req.body.actual,
+    req.body.nueva
+  );
+  res.ok(null, 'Contraseña cambiada');
 };
