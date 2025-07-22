@@ -5,6 +5,7 @@ import * as authRepo from '../repositories/authRepository.js';
 import { enviarCorreo } from '../../../services/emailService.js';
 import ApiError from '../../../utils/ApiError.js';
 import { registrarLog } from '../services/auditService.js';
+import { Rol, Usuario } from '../models/index.js';
 
 const {
   JWT_SECRET,
@@ -151,4 +152,11 @@ export const resendConfirmation = async (email) => {
 
   await sendConfirmation(user);
   await registrarLog(user.id, 'auth', 'resend_email_confirmation');
+};
+
+/* ----------- GET ME ----------- */
+export const getMe = async (id) => {
+  return Usuario.findByPk(id, {
+    include: [{ model: Rol, as: 'Rol' }],
+  });
 };

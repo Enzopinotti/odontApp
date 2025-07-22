@@ -39,3 +39,10 @@ export const obtenerEmailTokenValido = (token) =>
   });
 
 export const marcarEmailTokenUsado = (tokenRow) => tokenRow.update({ usado: true });
+
+
+export const getMe = async (id) => {
+  return Usuario.findByPk(id, {
+    include: [{ model: Rol, as: 'Rol' }],
+  });
+};

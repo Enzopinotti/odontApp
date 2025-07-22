@@ -26,6 +26,8 @@ services:
         until nc -z mysql 3306; do echo '⏳  Esperando MySQL...'; sleep 2; done &&
         npx nodemon --legacy-watch index.js
       "
+    ports:
+      - "4000:4000"
     environment:
       NODE_ENV: development
     depends_on:

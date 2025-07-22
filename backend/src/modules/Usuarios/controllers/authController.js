@@ -31,9 +31,8 @@ export const login = async (req, res) => {
   res
     .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
     .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
-    .ok({ user }, 'Login exitoso');
+    .ok({ user, accessToken, refreshToken }, 'Login exitoso'); 
 };
-
 /* ---------- REFRESH ---------- */
 export const refreshToken = async (req, res) => {
   const { refreshToken } = req.cookies;

@@ -6,6 +6,9 @@ import cookieParser from 'cookie-parser';
 import router from './src/routes/index.js';
 import { connectDB } from './config/db.js';
 import responseHandler from './src/middlewares/responseHandler.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './src/docs/swaggerConfig.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +32,15 @@ app.use(cookieParser());
 app.use(responseHandler);
 
 /* 📦 Rutas */
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      withCredentials: true, // ✅ habilita cookies en Swagger UI
+    },
+  })
+);
 app.use('/api', router);
 
 /* 🚀 Inicio */
