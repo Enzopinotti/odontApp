@@ -3,6 +3,7 @@
 @use 'sidebar';
 @use 'appLayout';
 @use 'publicLayout';
+@use 'authForm';
 @use 'login';
 
 *{
@@ -10,3 +11,16 @@
     margin: 0;
     padding: 0;
 }
+
+body {
+  margin: 0;
+  font-family: variables.$fuente-base;
+  color: variables.$color-text;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a { color: variables.$color-primary; }

@@ -1,8 +1,8 @@
 @use 'variables';
 
 .header {
-  background: variables.$color-primario;
-  color: variables.$color-blanco;
+  background: variables.$color-primary;
+  color: variables.$color-white;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -23,7 +23,7 @@
   .dots {
     background: transparent;
     border: none;
-    color: variables.$color-blanco;
+    color: variables.$color-white;
     font-size: 1.4rem;
     cursor: pointer;
   }

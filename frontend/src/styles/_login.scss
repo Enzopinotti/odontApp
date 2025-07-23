@@ -16,7 +16,7 @@
   font-family: variables.$fuente-base;
   font-weight: 600;
   font-size: 1.25rem;
-  color: variables.$color-negro;
+  color: variables.$color-text;
   margin-bottom: 1.5rem;
 }
 
@@ -25,7 +25,7 @@
 
   label {
     font-size: 0.8rem;
-    color: variables.$color-negro;
+    color: variables.$color-text;
     margin-bottom: 0.25rem;
     display: block;
   }
@@ -40,14 +40,14 @@
 
     &:focus {
       outline: none;
-      border-color: variables.$color-primario;
-      box-shadow: 0 0 0 2px rgba(variables.$color-primario, 0.25);
+      border-color: variables.$color-primary;
+      box-shadow: 0 0 0 2px rgba(variables.$color-primary, 0.25);
     }
   }
 
   button {
     width: 100%;
-    background: variables.$color-primario;
+    background: variables.$color-primary;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -57,7 +57,7 @@
     transition: background 0.2s ease;
 
     &:hover {
-      background: darken(variables.$color-primario, 8%);
+      background: darken(variables.$color-primary, 8%);
     }
   }
 
@@ -66,12 +66,10 @@
     margin-top: 0.75rem;
     font-size: 0.8rem;
     text-align: center;
-    color: variables.$color-primario;
+    color: variables.$color-primary;
     text-decoration: underline;
 
-    &:hover {
-      color: darken(variables.$color-primario, 8%);
-    }
+  
   }
 }
 
