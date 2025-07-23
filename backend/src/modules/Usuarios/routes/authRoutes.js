@@ -8,9 +8,10 @@ import {
 } from '../validators/authValidator.js';
 import { vUpdateMe, vChangePassword } from '../validators/meValidator.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
-import uploadAvatar from '../../../utils/upload/multerCloudinary.js';
+import { uploadAvatar } from '../../../utils/upload/multerCloudinary.js';
 import * as authSvc from '../services/authService.js';
 import * as twoFA from '../controllers/2faController.js';
+
 
 const router = Router();
 
@@ -340,3 +341,20 @@ router.post('/2fa/verify', twoFA.verify2FA);
  *         description: Login exitoso con JWT
  */
 router.post('/2fa/login', twoFA.login2FA);
+
+
+/**
+ * @swagger
+ * /auth/2fa:
+ *   delete:
+ *     summary: Desactivar 2FA para el usuario autenticado
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA desactivado correctamente
+ */
+router.delete('/2fa', twoFA.disable2FA);
+
+export default router;

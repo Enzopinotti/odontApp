@@ -65,3 +65,13 @@ export const login2FA = async (req, res) => {
     .cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', domain: process.env.COOKIE_DOMAIN, path: '/' })
     .ok({ accessToken, refreshToken }, 'Login con 2FA exitoso');
 };
+
+export const disable2FA = async (req, res) => {
+  const user = await Usuario.findByPk(req.user.id);
+
+  user.twoFactorEnabled = false;
+  user.twoFactorSecret = null;
+
+  await user.save();
+  res.ok(null, '2FA desactivado');
+};
