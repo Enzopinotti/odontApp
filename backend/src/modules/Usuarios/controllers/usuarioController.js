@@ -64,6 +64,7 @@ export const login = async (req, res) => {
   }
 };
 
+
 /* POST /api/usuarios/forgot-password */
 export const forgotPassword = (req, res) => res.ok(null, 'Endpoint pendiente');
 
