@@ -23,15 +23,18 @@ export const register = async (req, res) => {
 
 /* ---------- LOGIN ---------- */
 export const login = async (req, res) => {
-  const { user, accessToken, refreshToken } = await authSvc.login(
-    req.body.email,
-    req.body.password
-  );
+  const result = await authSvc.login(req.body.email, req.body.password);
+
+  if (result.require2FA) {
+    return res.ok({ require2FA: true }, '2FA requerido');
+  }
+
+  const { user, accessToken, refreshToken } = result;
 
   res
     .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
     .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
-    .ok({ user, accessToken, refreshToken }, 'Login exitoso'); 
+    .ok({ user, accessToken, refreshToken }, 'Login exitoso');
 };
 /* ---------- REFRESH ---------- */
 export const refreshToken = async (req, res) => {

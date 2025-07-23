@@ -10,6 +10,7 @@ import { vUpdateMe, vChangePassword } from '../validators/meValidator.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import uploadAvatar from '../../../utils/upload/multerCloudinary.js';
 import * as authSvc from '../services/authService.js';
+import * as twoFA from '../controllers/2faController.js';
 
 const router = Router();
 
@@ -274,3 +275,68 @@ router.post('/avatar', uploadAvatar.single('avatar'), async (req, res) => {
   });
   res.ok(user, 'Avatar actualizado');
 });
+
+
+/**
+ * @swagger
+ * /auth/2fa/setup:
+ *   post:
+ *     summary: Generar secreto y QR para configurar 2FA
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: QR y secreto base32
+ */
+router.post('/2fa/setup', twoFA.setup2FA);
+
+/**
+ * @swagger
+ * /auth/2fa/verify:
+ *   post:
+ *     summary: Confirmar código TOTP y activar 2FA
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, secret]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               secret:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 2FA activado
+ */
+router.post('/2fa/verify', twoFA.verify2FA);
+
+/**
+ * @swagger
+ * /auth/2fa/login:
+ *   post:
+ *     summary: Login con 2FA usando email y código TOTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, token]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso con JWT
+ */
+router.post('/2fa/login', twoFA.login2FA);

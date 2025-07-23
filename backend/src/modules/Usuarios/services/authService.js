@@ -75,11 +75,19 @@ export const login = async (email, password) => {
   });
   await registrarLog(user.id, 'auth', 'login_success');
 
+  if (user.twoFactorEnabled) {
+    return {
+      user,
+      require2FA: true,
+    };
+  }
+
   return {
     user,
     accessToken: signAccess(user),
     refreshToken: signRefresh(user),
   };
+
 };
 
 /* ----------- REFRESH ----------- */
