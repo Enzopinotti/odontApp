@@ -37,9 +37,3 @@ export const validarEditarUsuario = [
   validar,
 ];
 
-/* 🔑 Login */
-export const validarLogin = [
-  body('email').isEmail().withMessage('Email inválido'),
-  body('password').notEmpty().withMessage('La contraseña es obligatoria'),
-  validar,
-];

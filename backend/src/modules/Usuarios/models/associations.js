@@ -21,7 +21,7 @@ export default (models) => {
 
   /* --- Usuario y rol --- */
   Rol.hasMany(Usuario, { onDelete: 'SET NULL' });
-  Usuario.belongsTo(Rol);
+  Usuario.belongsTo(Rol, { as: 'Rol' });
 
   /* --- Tokens y logs --- */
   Usuario.hasMany(EmailVerificationToken, { onDelete: 'CASCADE' });
