@@ -176,6 +176,38 @@ router.get('/verify-email/:token', c.verifyEmail);
  */
 router.post('/resend-confirmation', validarForgotPassword, c.resendConfirmation);
 
+
+
+// Redirección a Google
+router.get('/google', passport.authenticate('google', { session: false, scope: ['profile', 'email'] }));
+
+// Callback de Google
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.APP_URL}/login?error=google` }),
+  async (req, res) => {
+    const user = req.user;
+
+    const accessToken = jwt.sign(
+      { id: user.id, email: user.email, roleId: user.RolId },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXP }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id, tokenType: 'refresh' },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXP }
+    );
+
+    res
+      .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
+      .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
+      .redirect(`${process.env.APP_URL}/dashboard`); // o devuelve JSON si tu front es SPA
+  }
+);
+
+
 /* --------- Endpoints de perfil --------- */
 
 router.use(requireAuth);
@@ -356,5 +388,7 @@ router.post('/2fa/login', twoFA.login2FA);
  *         description: 2FA desactivado correctamente
  */
 router.delete('/2fa', twoFA.disable2FA);
+
+
 
 export default router;

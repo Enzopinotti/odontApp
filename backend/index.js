@@ -8,11 +8,14 @@ import { connectDB } from './config/db.js';
 import responseHandler from './src/middlewares/responseHandler.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/docs/swaggerConfig.js';
-
+import passport from './config/passport.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+
+app.use(passport.initialize());
 
 /* 🛡️ Seguridad */
 app.use(helmet());
