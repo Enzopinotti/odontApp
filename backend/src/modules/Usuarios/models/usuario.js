@@ -4,17 +4,43 @@ import jwt from 'jsonwebtoken';
 
 export default (sequelize, DataTypes) => {
   const Usuario = sequelize.define('Usuario', {
-    nombre:   { type: DataTypes.STRING, allowNull: false },
-    apellido: { type: DataTypes.STRING, allowNull: false },
-    email:    { type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } },
-    password: { type: DataTypes.STRING, allowNull: false },
+    nombre:   { 
+      type: DataTypes.STRING, allowNull: false 
+    },
+    apellido: { 
+      type: DataTypes.STRING, allowNull: false 
+    },
+    email:    { 
+      type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } 
+    },
+    password: { 
+      type: DataTypes.STRING, allowNull: false 
+    },
     telefono: DataTypes.STRING,
-    activo:   { type: DataTypes.BOOLEAN, defaultValue: true },
-    fechaAlta:{ type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-    intentosFallidos : { type: DataTypes.INTEGER, defaultValue: 0 },
-    bloqueadoHasta   : DataTypes.DATE,
+    activo:   { 
+      type: DataTypes.BOOLEAN, defaultValue: true 
+    },
+    fechaAlta:{ 
+      type: DataTypes.DATE, defaultValue: DataTypes.NOW 
+    },
+    intentosFallidos : { 
+      type: DataTypes.INTEGER, defaultValue: 0 
+    },
+    bloqueadoHasta: DataTypes.DATE,
     ultimoLogin: DataTypes.DATE,
     passwordChangedAt: DataTypes.DATE,
+    twoFactorEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    avatarUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   }, {
     tableName: 'usuarios',
     defaultScope: { attributes: { exclude: ['password'] } },
@@ -37,6 +63,6 @@ export default (sequelize, DataTypes) => {
   Usuario.associate = (models) => {
     Usuario.belongsTo(models.Rol, { as: 'Rol' }); 
   };
-  
+
   return Usuario;
 };

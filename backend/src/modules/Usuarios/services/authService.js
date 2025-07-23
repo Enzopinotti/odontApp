@@ -6,6 +6,8 @@ import { enviarCorreo } from '../../../services/emailService.js';
 import ApiError from '../../../utils/ApiError.js';
 import { registrarLog } from '../services/auditService.js';
 import { Rol, Usuario } from '../models/index.js';
+import cloudinary from '../../../utils/upload/cloudinary.js';
+
 
 const {
   JWT_SECRET,
@@ -159,4 +161,23 @@ export const getMe = async (id) => {
   return Usuario.findByPk(id, {
     include: [{ model: Rol, as: 'Rol' }],
   });
+};
+
+export const updateMe = async (userId, data) => {
+  const usuario = await Usuario.findByPk(userId);
+  if (!usuario) throw new ApiError('Usuario no encontrado', 404);
+
+  // 🔁 Si viene avatar nuevo y ya hay uno viejo, lo eliminamos de Cloudinary
+  if (data.avatarUrl && usuario.avatarUrl) {
+    try {
+      const parts = usuario.avatarUrl.split('/');
+      const publicId = parts.slice(-2).join('/').split('.')[0]; // odontapp/avatars/xxxxx
+      await cloudinary.uploader.destroy(publicId);
+    } catch (e) {
+      console.warn('⚠️ No se pudo eliminar el avatar anterior:', e.message);
+    }
+  }
+
+  await usuario.update(data);
+  return usuario;
 };

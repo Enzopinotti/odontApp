@@ -8,6 +8,8 @@ import {
 } from '../validators/authValidator.js';
 import { vUpdateMe, vChangePassword } from '../validators/meValidator.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import uploadAvatar from '../../../utils/upload/multerCloudinary.js';
+import * as authSvc from '../services/authService.js';
 
 const router = Router();
 
@@ -243,4 +245,32 @@ router.put('/me', vUpdateMe, c.updateMe);
  */
 router.put('/me/password', vChangePassword, c.changeMyPassword);
 
-export default router;
+
+/**
+ * @swagger
+ * /auth/avatar:
+ *   post:
+ *     summary: Subir avatar del usuario
+ *     tags: [Auth]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar actualizado
+ */
+router.post('/avatar', uploadAvatar.single('avatar'), async (req, res) => {
+  const user = await authSvc.updateMe(req.user.id, {
+    avatarUrl: req.file.path,
+  });
+  res.ok(user, 'Avatar actualizado');
+});
