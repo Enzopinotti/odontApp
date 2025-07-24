@@ -13,6 +13,9 @@ export default (models) => {
     EmailVerificationToken,
     PasswordResetToken,
     AuditLog,
+    Paciente,
+    Receta,
+    MedicamentoRecetado
   } = models;
 
   /* --- Relaciones de roles y permisos --- */
@@ -48,5 +51,25 @@ export default (models) => {
   Especialidad.belongsToMany(Odontologo, {
     through: OdontologoEspecialidad,
     uniqueKey: 'odontologo_especialidad_unique',
+  });
+
+  //Receta
+  Receta.belongsTo(Paciente,{
+    foreignKey: 'pacienteId',
+    as: 'paciente'
+  });
+  Receta.belongsTo(Odontologo,{
+    foreignKey:'userId',
+    as: 'odontologo'
+  });
+  Receta.hasMany(MedicamentoRecetado, {
+    foreignKey: 'recetaId',
+    as: 'medicamentosRecetados'
+  });
+
+  //MedicamentoRecetado
+  MedicamentoRecetado.belongsTo(Receta, {
+    foreignKey: 'recetaId',
+    as: 'receta'
   });
 };

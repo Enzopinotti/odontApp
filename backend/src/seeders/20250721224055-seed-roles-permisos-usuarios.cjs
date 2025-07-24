@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
     /* 1️⃣  ROLES ------------------------------------------------ */
     await queryInterface.bulkInsert(
-      'roles',
+      "roles",
       [
-        { id: 1, nombre: 'Administrador' },
-        { id: 2, nombre: 'Odontólogo' },
-        { id: 3, nombre: 'Asistente' },
-        { id: 4, nombre: 'Recepcionista' },
+        { id: 1, nombre: "Administrador" },
+        { id: 2, nombre: "Odontólogo" },
+        { id: 3, nombre: "Asistente" },
+        { id: 4, nombre: "Recepcionista" },
       ],
       {}
     );
@@ -20,46 +20,50 @@ module.exports = {
     /* 2️⃣ PERMISOS --------------------------------------------- */
     const permisos = [
       // usuarios
-      { recurso: 'usuarios', accion: 'crear' },
-      { recurso: 'usuarios', accion: 'listar' },
-      { recurso: 'usuarios', accion: 'editar' },
-      { recurso: 'usuarios', accion: 'eliminar' },
+      { recurso: "usuarios", accion: "crear" },
+      { recurso: "usuarios", accion: "listar" },
+      { recurso: "usuarios", accion: "editar" },
+      { recurso: "usuarios", accion: "eliminar" },
       // roles / permisos
-      { recurso: 'roles', accion: 'listar' },
-      { recurso: 'roles', accion: 'editar' },
-      { recurso: 'permisos', accion: 'listar' },
+      { recurso: "roles", accion: "listar" },
+      { recurso: "roles", accion: "editar" },
+      { recurso: "permisos", accion: "listar" },
       // pacientes
-      { recurso: 'pacientes', accion: 'crear' },
-      { recurso: 'pacientes', accion: 'listar' },
-      { recurso: 'pacientes', accion: 'editar' },
-      { recurso: 'pacientes', accion: 'eliminar' },
+      { recurso: "pacientes", accion: "crear" },
+      { recurso: "pacientes", accion: "listar" },
+      { recurso: "pacientes", accion: "editar" },
+      { recurso: "pacientes", accion: "eliminar" },
       // odontograma
-      { recurso: 'odontograma', accion: 'ver' },
-      { recurso: 'odontograma', accion: 'editar' },
+      { recurso: "odontograma", accion: "ver" },
+      { recurso: "odontograma", accion: "editar" },
       // turnos
-      { recurso: 'turnos', accion: 'crear' },
-      { recurso: 'turnos', accion: 'ver' },
-      { recurso: 'turnos', accion: 'editar' },
-      { recurso: 'turnos', accion: 'cancelar' },
+      { recurso: "turnos", accion: "crear" },
+      { recurso: "turnos", accion: "ver" },
+      { recurso: "turnos", accion: "editar" },
+      { recurso: "turnos", accion: "cancelar" },
       // tratamientos
-      { recurso: 'tratamientos', accion: 'listar' },
-      { recurso: 'tratamientos', accion: 'crearPersonalizado' },
+      { recurso: "tratamientos", accion: "listar" },
+      { recurso: "tratamientos", accion: "crearPersonalizado" },
       // presupuestos
-      { recurso: 'presupuestos', accion: 'generar' },
-      { recurso: 'presupuestos', accion: 'ver' },
-      { recurso: 'presupuestos', accion: 'editar' },
+      { recurso: "presupuestos", accion: "generar" },
+      { recurso: "presupuestos", accion: "ver" },
+      { recurso: "presupuestos", accion: "editar" },
       // notificaciones
-      { recurso: 'notificaciones', accion: 'enviar' },
-      { recurso: 'notificaciones', accion: 'listar' },
+      { recurso: "notificaciones", accion: "enviar" },
+      { recurso: "notificaciones", accion: "listar" },
+      //receta
+      { recurso: "recetas", accion: "crear" },
+      { recurso: "recetas", accion: "ver" },
+      { recurso: "recetas", accion: "listar" },
       // reportes
-      { recurso: 'reportes', accion: 'ver' },
+      { recurso: "reportes", accion: "ver" },
     ];
 
-    await queryInterface.bulkInsert('permisos', permisos, {});
+    await queryInterface.bulkInsert("permisos", permisos, {});
 
     /* Helper: obtener id de permiso por (recurso, accion) */
     const [rows] = await queryInterface.sequelize.query(
-      'SELECT id, recurso, accion FROM permisos'
+      "SELECT id, recurso, accion FROM permisos"
     );
     const permId = (rec, acc) =>
       rows.find((p) => p.recurso === rec && p.accion === acc).id;
@@ -73,78 +77,90 @@ module.exports = {
     // --- ODONTÓLOGO ------------------------------------------
     [
       // pacientes
-      ['pacientes', 'crear'],
-      ['pacientes', 'listar'],
-      ['pacientes', 'editar'],
-      ['pacientes', 'eliminar'],
+      ["pacientes", "crear"],
+      ["pacientes", "listar"],
+      ["pacientes", "editar"],
+      ["pacientes", "eliminar"],
       // odontograma
-      ['odontograma', 'ver'],
-      ['odontograma', 'editar'],
+      ["odontograma", "ver"],
+      ["odontograma", "editar"],
       // turnos
-      ['turnos', 'crear'],
-      ['turnos', 'ver'],
-      ['turnos', 'editar'],
-      ['turnos', 'cancelar'],
+      ["turnos", "crear"],
+      ["turnos", "ver"],
+      ["turnos", "editar"],
+      ["turnos", "cancelar"],
       // tratamientos
-      ['tratamientos', 'listar'],
-      ['tratamientos', 'crearPersonalizado'],
+      ["tratamientos", "listar"],
+      ["tratamientos", "crearPersonalizado"],
       // presupuestos
-      ['presupuestos', 'generar'],
-      ['presupuestos', 'ver'],
-      ['presupuestos', 'editar'],
+      ["presupuestos", "generar"],
+      ["presupuestos", "ver"],
+      ["presupuestos", "editar"],
       // notificaciones
-      ['notificaciones', 'enviar'],
-      ['notificaciones', 'listar'],
+      ["notificaciones", "enviar"],
+      ["notificaciones", "listar"],
       // reportes
-      ['reportes', 'ver'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 2, PermisoId: permId(r, a) }));
+      ["reportes", "ver"],
+           //receta
+      { recurso: "recetas", accion: "crear" },
+      { recurso: "recetas", accion: "ver" },
+      { recurso: "recetas", accion: "listar" },
+    ].forEach(([r, a]) =>
+      rolPermisos.push({ RolId: 2, PermisoId: permId(r, a) })
+    );
 
     // --- ASISTENTE -------------------------------------------
     [
-      ['pacientes', 'crear'],
-      ['pacientes', 'listar'],
-      ['pacientes', 'editar'],
+      ["pacientes", "crear"],
+      ["pacientes", "listar"],
+      ["pacientes", "editar"],
       // turnos
-      ['turnos', 'crear'],
-      ['turnos', 'ver'],
-      ['turnos', 'editar'],
-      ['turnos', 'cancelar'],
+      ["turnos", "crear"],
+      ["turnos", "ver"],
+      ["turnos", "editar"],
+      ["turnos", "cancelar"],
       // odontograma
-      ['odontograma', 'ver'],
+      ["odontograma", "ver"],
       // tratamientos
-      ['tratamientos', 'listar'],
+      ["tratamientos", "listar"],
       // presupuestos
-      ['presupuestos', 'ver'],
+      ["presupuestos", "ver"],
       // notificaciones
-      ['notificaciones', 'listar'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 3, PermisoId: permId(r, a) }));
+      ["notificaciones", "listar"],
+    ].forEach(([r, a]) =>
+      rolPermisos.push({ RolId: 3, PermisoId: permId(r, a) })
+    );
 
     // --- RECEPCIONISTA ---------------------------------------
     [
-      ['pacientes', 'crear'],
-      ['pacientes', 'listar'],
+      ["pacientes", "crear"],
+      ["pacientes", "listar"],
       // turnos
-      ['turnos', 'crear'],
-      ['turnos', 'ver'],
-      ['turnos', 'cancelar'],
+      ["turnos", "crear"],
+      ["turnos", "ver"],
+      ["turnos", "cancelar"],
       // notificaciones
-      ['notificaciones', 'listar'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 4, PermisoId: permId(r, a) }));
+      ["notificaciones", "listar"],
+      //recetas
+      ['recetas', 'ver'],
+    ].forEach(([r, a]) =>
+      rolPermisos.push({ RolId: 4, PermisoId: permId(r, a) })
+    );
 
-    await queryInterface.bulkInsert('rol_permisos', rolPermisos, {});
+    await queryInterface.bulkInsert("rol_permisos", rolPermisos, {});
 
     /* 4️⃣  Usuario administrador ----------------------------- */
     await queryInterface.bulkInsert(
-      'usuarios',
+      "usuarios",
       [
         {
-          nombre: 'Admin',
-          apellido: 'Sistema',
-          email: 'admin@odontapp.com',
-          password: await bcrypt.hash('admin123', 10),
+          nombre: "Admin",
+          apellido: "Sistema",
+          email: "admin@odontapp.com",
+          password: await bcrypt.hash("admin123", 10),
           RolId: 1,
           activo: true,
-          telefono: '1123456789',
+          telefono: "1123456789",
           fechaAlta: new Date(),
         },
       ],
@@ -153,9 +169,11 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('usuarios', { email: 'admin@odontapp.com' });
-    await queryInterface.bulkDelete('rol_permisos', null);
-    await queryInterface.bulkDelete('permisos', null);
-    await queryInterface.bulkDelete('roles', null);
+    await queryInterface.bulkDelete("usuarios", {
+      email: "admin@odontapp.com",
+    });
+    await queryInterface.bulkDelete("rol_permisos", null);
+    await queryInterface.bulkDelete("permisos", null);
+    await queryInterface.bulkDelete("roles", null);
   },
 };

@@ -15,6 +15,9 @@ import auditLogModel from './auditLog.js';
 import rolPermisoModel from './RolPermiso.js';
 import odontologoEspecialidadModel from './OdontologoEspecialidad.js';
 import recepcionistaModel from './recepcionista.js';
+import pacienteModel from './Paciente.js';
+import recetaModel from './receta.js';
+import medicamentoRecetadoModel from './MedicamentoRecetado.js';
 
 // Inicializar modelos
 const Usuario = usuarioModel(sequelize, DataTypes);
@@ -28,8 +31,11 @@ const AuditLog = auditLogModel(sequelize, DataTypes);
 const RolPermiso = rolPermisoModel(sequelize, DataTypes);
 const OdontologoEspecialidad = odontologoEspecialidadModel(sequelize, DataTypes);
 const Recepcionista = recepcionistaModel(sequelize, DataTypes);
-applyAssociations(sequelize.models);
+const Paciente = pacienteModel(sequelize, DataTypes);
+const Receta = recetaModel(sequelize, DataTypes);     
+const MedicamentoRecetado = medicamentoRecetadoModel(sequelize, DataTypes);
 
+applyAssociations(sequelize.models);
 
 
 export {
@@ -45,4 +51,7 @@ export {
   RolPermiso,
   OdontologoEspecialidad,
   Recepcionista,
+  Paciente,
+  Receta,
+  MedicamentoRecetado
 };
