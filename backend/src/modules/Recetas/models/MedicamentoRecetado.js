@@ -7,40 +7,21 @@ export default (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      // Clave externa de la receta
+
       recetaId: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      // Datos del medicamento
-      nombreGenerico: {
-        type: DataTypes.STRING,
+
+      medicamentoId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
 
-      nombreComercial: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      presentacion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      cantidadUnidades: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-
-      dosis: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      frecuencia: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      duracionTratamiento: {
-        type: DataTypes.STRING,
+      // Datos dinámicos de la receta
+  
+      indicaciones: {
+        type: DataTypes.TEXT,
         allowNull: false,
       },
     },
@@ -49,7 +30,13 @@ export default (sequelize, DataTypes) => {
       timestamps: false,
     }
   );
+
   MedicamentoRecetado.associate = (models) => {
+    MedicamentoRecetado.belongsTo(models.Medicamento, {
+      foreignKey: "medicamentoId",
+      as: "medicamento",
+    });
+
     MedicamentoRecetado.belongsTo(models.Receta, {
       foreignKey: "recetaId",
       as: "receta",

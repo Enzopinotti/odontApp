@@ -46,9 +46,7 @@ export default (sequelize, DataTypes) => {
             allowNull: false
         },
         // Otros campos
-        observaciones: {
-            type: DataTypes.STRING, 
-            allowNull: true},
+       
         diagnostico: {
             type: DataTypes.STRING,
             allowNull: true

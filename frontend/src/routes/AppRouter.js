@@ -3,6 +3,7 @@ import PublicLayout from '../components/layout/PublicLayout';
 import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Login from '../pages/Login';
+import Receta from '../pages/Receta';
 
 function AppRouter() {
   return (
@@ -21,6 +22,8 @@ function AppRouter() {
         </ProtectedRoute>
         }
       >
+
+        <Route path='recetas' element={<Receta/>} />
         {/* Rutas privadas aquí */}
       </Route>
 

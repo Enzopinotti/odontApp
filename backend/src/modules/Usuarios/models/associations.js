@@ -13,63 +13,48 @@ export default (models) => {
     EmailVerificationToken,
     PasswordResetToken,
     AuditLog,
-    Paciente,
-    Receta,
-    MedicamentoRecetado
   } = models;
 
   /* --- Relaciones de roles y permisos --- */
-  Rol.belongsToMany(Permiso, { through: RolPermiso, uniqueKey: 'rol_permiso_unique' });
-  Permiso.belongsToMany(Rol, { through: RolPermiso, uniqueKey: 'rol_permiso_unique' });
+  Rol.belongsToMany(Permiso, {
+    through: RolPermiso,
+    uniqueKey: "rol_permiso_unique",
+  });
+  Permiso.belongsToMany(Rol, {
+    through: RolPermiso,
+    uniqueKey: "rol_permiso_unique",
+  });
 
   /* --- Usuario y rol --- */
-  Rol.hasMany(Usuario, { onDelete: 'SET NULL' });
-  Usuario.belongsTo(Rol, { as: 'Rol' });
+  Rol.hasMany(Usuario, { onDelete: "SET NULL" });
+  Usuario.belongsTo(Rol, { as: "Rol" });
 
   /* --- Tokens y logs --- */
-  Usuario.hasMany(EmailVerificationToken, { onDelete: 'CASCADE' });
+  Usuario.hasMany(EmailVerificationToken, { onDelete: "CASCADE" });
   EmailVerificationToken.belongsTo(Usuario);
 
-  Usuario.hasMany(PasswordResetToken, { onDelete: 'CASCADE' });
+  Usuario.hasMany(PasswordResetToken, { onDelete: "CASCADE" });
   PasswordResetToken.belongsTo(Usuario);
 
-  Usuario.hasMany(AuditLog, { onDelete: 'CASCADE' });
+  Usuario.hasMany(AuditLog, { onDelete: "CASCADE" });
   AuditLog.belongsTo(Usuario);
 
   /* --- Odontólogo / Recepcionista --- */
-  Usuario.hasOne(Odontologo, { foreignKey: 'userId', onDelete: 'CASCADE' });
-  Odontologo.belongsTo(Usuario, { foreignKey: 'userId' });
+  Usuario.hasOne(Odontologo, { foreignKey: "userId", onDelete: "CASCADE" });
+  Odontologo.belongsTo(Usuario, { foreignKey: "userId" });
 
-  Usuario.hasOne(Recepcionista, { foreignKey: 'userId', onDelete: 'CASCADE' });
-  Recepcionista.belongsTo(Usuario, { foreignKey: 'userId' });
+  Usuario.hasOne(Recepcionista, { foreignKey: "userId", onDelete: "CASCADE" });
+  Recepcionista.belongsTo(Usuario, { foreignKey: "userId" });
 
   /* --- Odontólogo y especialidad --- */
   Odontologo.belongsToMany(Especialidad, {
     through: OdontologoEspecialidad,
-    uniqueKey: 'odontologo_especialidad_unique',
+    uniqueKey: "odontologo_especialidad_unique",
   });
   Especialidad.belongsToMany(Odontologo, {
     through: OdontologoEspecialidad,
-    uniqueKey: 'odontologo_especialidad_unique',
+    uniqueKey: "odontologo_especialidad_unique",
   });
 
-  //Receta
-  Receta.belongsTo(Paciente,{
-    foreignKey: 'pacienteId',
-    as: 'paciente'
-  });
-  Receta.belongsTo(Odontologo,{
-    foreignKey:'userId',
-    as: 'odontologo'
-  });
-  Receta.hasMany(MedicamentoRecetado, {
-    foreignKey: 'recetaId',
-    as: 'medicamentosRecetados'
-  });
-
-  //MedicamentoRecetado
-  MedicamentoRecetado.belongsTo(Receta, {
-    foreignKey: 'recetaId',
-    as: 'receta'
-  });
+ 
 };

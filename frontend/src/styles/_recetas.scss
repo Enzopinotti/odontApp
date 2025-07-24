@@ -1,0 +1,90 @@
+@use "variables";
+
+.receta-page {
+  display: flex;
+}
+
+.receta-form {
+  width: 50%;
+  padding-right: 1rem;
+
+  .form-input {
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    label {
+      padding: 0.5re 0;
+    }
+    input,
+    select,
+    textarea {
+      background-color: #fff;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.95rem;
+      outline: none;
+      box-shadow: none;
+      width: 100%;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: #1976d2;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  }
+
+  .autocomplete-paciente {
+    width: 90%;
+    .MuiAutocomplete-root,
+    .MuiTextField-root {
+      width: 100%;
+      height: 38px;
+      .MuiOutlinedInput-root {
+        background-color: #fff;
+        border-radius: 6px;
+        min-height: 38px;
+
+        fieldset {
+          border-color: #d0d0d0;
+        }
+
+        &:hover fieldset {
+          border-color: #aaa;
+        }
+
+        &.Mui-focused fieldset {
+          border-color: #1976d2;
+        }
+      }
+
+      .MuiInputBase-input {
+        padding: 6px 10px !important;
+        font-size: 0.95rem;
+      }
+
+      .MuiAutocomplete-endAdornment {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 10px;
+        pointer-events: none;
+      }
+
+      .MuiSvgIcon-root {
+        font-size: 1.1rem;
+        color: #999;
+      }
+      .MuiSvgIcon-root {
+        font-size: 1rem;
+        color: #666;
+      }
+    }
+  }
+  
+}
