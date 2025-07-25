@@ -1,112 +1,180 @@
-import { or, where } from 'sequelize';
-import models from '../models/index.js';
-import {v4  as uuidv4} from 'uuid';
+const { Receta, MedicamentoRecetado, Medicamento } = require("../models");
+const { Paciente } = require("../../Clinica/models");
+const { Odontologo } = require("../../Usuarios/models");
+//const PDFDocument = require("pdfkit");
+//const nodemailer = require("nodemailer");
 
-const recetaController = {
-    //crear receta requiere rol odontologo y paciente valido
-    async crearReceta(req, res, next) {
-        try {
-            const{
-                pacienteId,
-                medicamentos,
-                diagnostico,
-                observaciones,      
-            }= req.body;
-            const paciente= await models.Paciente.findByPk(pacienteId);
-            if(!paciente) {
-                return res.fail(new Error('Paciente no encontrado'), 404);
-            }
-            const odontologo = await models.Odontologo.findOne({
-                where: { userId: req.user.id }});
-            if (!odontologo|| !odontologo.firmaDigital) {
-                return res.fail(new Error('Odontólogo no encontrado o sin firma digital'), 404);
-            }
-            const nombreProfesional = `${odontologo.nombre} ${odontologo.apellido}`;
-            const receta = await models.Receta.create({
-                nombreProfesional,
-                matricula: odontologo.matricula,
-                firmaDigital: odontologo.firmaDigital,
-                userId: req.user.id,
-                pacienteId:paciente.id,
-                nombrePaciente: paciente.nombre,
-                dniPaciente: paciente.dni,
-                fechaNacimientoPaciente: paciente.fechaNacimiento,
-                sexoPaciente: paciente.sexo,
-                diagnostico,
-                codigoBarra: uuidv4(), // Genera un código de barras único
-                medicamentos
-            },{include:['medicamentosRecetados']});
-            return res.created({recetaId: recetaId},'Receta creada correctamente');
-
-    } catch (error) {
-            console.error('Error al crear receta:', error);
-            return res.fail(error, 500);
-        }},
-    //obtener receta por id
-    async getRecetaById(req, res, next) {
-        try{
-            const receta= await modeld.Receta.findByPk(req.params.id, {
-                include: [
-                    {
-                        model: models.Paciente,
-                        as: 'paciente',
-                        attributes: ['pacienteId', 'nombre', 'apellido', 'dni', 'fechaNacimiento', 'sexo']
-                    },
-                    {
-                        model: models.Odontologo,
-                        as: 'odontologo',
-                        attributes: ['userId', 'nombre', 'apellido', 'matricula']
-                    },
-                    {
-                        model: models.MedicamentoRecetado,
-                        as: 'medicamentosRecetados',
-                        attributes: ['medicamentoId', 'nombre', 'presentacion', 'cantidadUnidades']
-                    }
-                ]
-            });
-            if (!receta){
-                return res.fail(new Error('Receta no encontrada'), 404);
-            }
-            return res.ok(receta, 'Receta obtenida correctamente');
-    
-        } catch (error) {
-            console.error('Error al obtener receta:', error);
-            return res.fail(error, 500);
-        }
-    },
-    
-    async listarRecetas(req,res,next){
-        try{
-            const recetas= await models.Receta.findAll({
-                where: {
-                    userId: req.user.id
-                },
-                include:['paciente'],
-                order: [['createdAt', 'DESC']]
-        });
-            return res.ok(recetas, 'Recetas obtenidas correctamente');
-        }catch (error) {
-            console.error('Error al listar recetas:', error);
-            return res.fail(error, 500);
-        }
-    },  
-
-    async decargarRecetaPDF(req, res, next) {
-        try{
-            const receta= await models.Receta.findByPk(req.params.id, {
-                include: ['medicamentosRecetados', 'paciente', 'odontologo']
-        });
-         if (!receta) {
-            return res.fail(new Error('Receta no encontrada'), 404);   }
-            const pdf = await models.Receta.generatePDF(receta);
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename=receta-${receta.id}.pdf`);
-            return res.send(pdf);
-        } catch (error) {
-            console.error('Error al descargar receta en PDF:', error);
-            return res.fail(error, 500);
-        }
-    } 
-
+// Listar todas las recetas
+exports.listarRecetas = async (req, res) => {
+  try {
+    const recetas = await Receta.findAll({
+      include: [
+        { model: Paciente, as: "paciente" },
+        { model: Odontologo, as: "odontologo" },
+        { model: MedicamentoRecetado, as: "medicamentos" },
+      ],
+    });
+    res.status(200).json(recetas);
+  } catch (error) {
+    console.error("Error al listar recetas:", error);
+    res.status(500).json({ error: "Error al listar recetas" });
+  }
 };
-export default recetaController;
+
+// Crear una nueva receta
+exports.crearReceta = async (req, res) => {
+  const { pacienteId, odontologoId, diagnostico, indicaciones, medicamentos } =
+    req.body;
+  try {
+    const paciente = await Paciente.findByPk(pacienteId);
+    if (!paciente)
+      return res.status(404).json({ error: "Paciente no encontrado" });
+    const odontologo = await Odontologo.findByPk(odontologoId);
+    if (!odontologo)
+      return res.status(404).json({ error: "Odontólogo no encontrado" });
+    const firmaOdontologo = odontologo.firma; 
+    
+    //crea receta vacia de medicamentos 
+    const receta = await Receta.create({ pacienteId, odontologoId, diagnostico, indicaciones, firmaOdontologo });
+    
+    // Guardar medicamentos recetados
+    if (Array.isArray(medicamentos) && medicamentos.length > 0) {
+      for (const med of medicamentos) {
+        const { id, dosis, presentacion, formaFarmaceutica } = med;
+        const medicamento = await Medicamento.findByPk(id);
+        if (!medicamento) {
+          return res
+            .status(404)
+            .json({ error: `Medicamento con ID ${id} no encontrado` });
+        }
+        await MedicamentoRecetado.create({
+          recetaId: receta.id,
+          medicamentoId: id,
+          dosis,
+          presentacion,
+          formaFarmaceutica,
+        });
+      }
+    }
+    const recetaCompleta = await Receta.findByPk(receta.id, {
+      include: [
+        { model: Paciente, as: "paciente" },
+        { model: Odontologo, as: "odontologo" },
+        {
+          model: MedicamentoRecetado,
+          as: "medicamentos",
+          include: [{ model: Medicamento, as: "medicamento" }],
+        },
+      ],
+    });
+    res.status(201).json(recetaCompleta);
+  } catch (error) {
+    console.error("Error al crear receta:", error);
+    res.status(500).json({ error: "Error al crear receta" });
+  }
+};
+
+exports.getReceta= async (req, res) => {
+    const {id}=req.params;
+    try {
+        const receta = await Receta.findByPk(id, {
+            include: [
+                { model: Paciente, as: "paciente" },
+                { model: Odontologo, as: "odontologo" },
+                { model: MedicamentoRecetado, as: "medicamentos",
+                    include: [{ model: Medicamento, as: "medicamento" }],
+                 },
+            ],
+        });
+        if (!receta) {
+            return res.status(404).json({ error: "Receta no encontrada" });
+        }
+        res.status(200).json(receta);
+    }catch (error) {
+        console.error("Error al obtener receta:", error);
+        res.status(500).json({ error: "Error al obtener receta" });
+    }
+}
+
+exports.eliminarReceta = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const receta = await Receta.findByPk(id);
+    if (!receta) {
+      return res.status(404).json({ error: "Receta no encontrada" });
+    }
+    await receta.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error al eliminar receta:", error);
+    res.status(500).json({ error: "Error al eliminar receta" });
+  }
+}
+
+exports.actualizarReceta = async (req, res) => {
+    const { id } = req.params;
+    const { pacienteId, odontologoId, diagnostico, indicaciones, medicamentos } =
+        req.body;
+    try {
+        const receta = await Receta.findByPk(id);
+        if (!receta) {
+        return res.status(404).json({ error: "Receta no encontrada" });
+        }
+        const odontologo = await Odontologo.findByPk(odontologoId);
+        if (!odontologo) {
+            return res.status(404).json({ error: "Odontólogo no encontrado" });
+        }
+        const paciente = await Paciente.findByPk(pacienteId);
+        if (!paciente) {
+            return res.status(404).json({ error: "Paciente no encontrado" });
+        }
+        receta.pacienteId = pacienteId;
+        receta.odontologoId = odontologoId;
+        receta.diagnostico = diagnostico;
+        receta.indicaciones = indicaciones;  
+        receta.firmaOdontologo =odontologo.firma; // Asignar firma del odontólogo
+        await receta.save();
+    
+        // Actualizar medicamentos recetados
+        if (Array.isArray(medicamentos) && medicamentos.length > 0) {
+        await MedicamentoRecetado.destroy({ where: { recetaId: id } });
+        for (const med of medicamentos) {
+            const { id, dosis, presentacion, formaFarmaceutica } = med;
+            const medicamento = await Medicamento.findByPk(id);
+            if (!medicamento) {
+            return res
+                .status(404)
+                .json({ error: `Medicamento con ID ${id} no encontrado` });
+            }
+            await MedicamentoRecetado.create({
+            recetaId: id,
+            medicamentoId: id,
+            dosis,
+            presentacion,
+            formaFarmaceutica,
+            });
+        }
+        }
+    
+        const recetaActualizada = await Receta.findByPk(id, {
+        include: [
+            { model: Paciente, as: "paciente" },
+            { model: Odontologo, as: "odontologo" },
+            {
+            model: MedicamentoRecetado,
+            as: "medicamentos",
+            include: [{ model: Medicamento, as: "medicamento" }],
+            },
+        ],
+        });
+        res.status(200).json(recetaActualizada);
+    } catch (error) {
+        console.error("Error al actualizar receta:", error);
+        res.status(500).json({ error: "Error al actualizar receta" });
+    }
+}
+
+//exports.generarPDF = async (req, res) => {}
+
+//exports.enviarRecetaPorEmail = async (req, res) => {}
+

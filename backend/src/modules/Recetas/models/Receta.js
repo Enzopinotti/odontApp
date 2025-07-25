@@ -1,87 +1,61 @@
 export default (sequelize, DataTypes) => {
-    const Receta = sequelize.define('Receta', {
-        recetaId: { 
-            type: DataTypes.INTEGER,
-            primaryKey: true,
-            autoIncrement: true
+  const Receta = sequelize.define(
+    "Receta",
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      fecha: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      indicaciones: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      diagnostico: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      pacienteId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Pacientes",
+          key: "id",
         },
-        // Datos del profesional (se duplican por posibles cambios futuros)
-        nombreProfesional: {
+      },
+      odontologoId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Odontologos",
+          key: "userId",
+        },
+      },
+        firmaOdontologo: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true,
         },
-        matricula: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        firmaDigital: {
-            type: DataTypes.STRING,
-            allowNull: false    
-        },
-        // Clave externa odontólogo
-        userId: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-        // Datos del paciente
-        nombrePaciente: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        dniPaciente: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        fechaNacimientoPaciente: {
-            type: DataTypes.DATEONLY,
-            allowNull: false
-        },
-        sexoPaciente: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        // Clave externa paciente
-        pacienteId: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-        // Otros campos
-        observaciones: {
-            type: DataTypes.STRING, 
-            allowNull: true},
-        diagnostico: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        fechaEmision: {
-            type: DataTypes.DATEONLY,
-            allowNull: false,
-            defaultValue: sequelize.literal('CURRENT_DATE') // Mejor para DATEONLY
-        },
-        codigoBarra: {
-            type: DataTypes.STRING,
-            allowNull: false
-        }
-    }, {
-        tableName: 'recetas',
-        paranoid: true,
-        timestamps: true
-    });
-
-    Receta.associate = (models) => {
-        Receta.belongsTo(models.Paciente, {
-            foreignKey: 'pacienteId',
-            as: 'paciente'
-        });
-        Receta.belongsTo(models.Odontologo, {
-            foreignKey: 'userId',
-            as: 'odontologo'
-        });
-        Receta.hasMany(models.MedicamentoRecetado, {
-            foreignKey: 'recetaId',
-            as: 'medicamentos'
-        });
-    };
-
-    return Receta;
+    },
+    { tableName: "recetas", timestamps: true }
+  );
+//asociaciones
+Receta.associate = (models) => {
+  Receta.belongsTo(models.Paciente, {
+    foreignKey: "pacienteId",
+    as: "paciente",
+  });
+  Receta.belongsTo(models.Odontologo, {
+    foreignKey: "odontologoId",
+    as: "odontologo",
+  });
+  Receta.hasMany(models.MedicamentoRecetado, {
+    foreignKey: "recetaId",
+    as: "medicamentos",
+  });}
+ return Receta;
 };
