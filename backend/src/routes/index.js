@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import usuarioRoutes from '../modules/Usuarios/routes/usuarioRoutes.js';
 import authRoutes from '../modules/Usuarios/routes/authRoutes.js';
-import recetaRoutes from '../modules/Recetas/routes/RecetaRoutes.js';
-
+import recetaRoutes, { route } from '../modules/Recetas/routes/RecetaRoutes.js';
+import MedicamentoRoutes from '../modules/Recetas/routes/MedicamentoRoutes.js';
+import MedicamentoRecetadoRoutes from '../modules/Recetas/routes/MedicamentoRecetadoRoutes.js';
+import PacienteRoutes from '../modules/Clinica/routes/PacienteRoutes.js';
 
 const router = Router();
 
 router.use('/usuarios', usuarioRoutes);
 router.use('/auth', authRoutes);
 router.use('/recetas', recetaRoutes);
+router.use('/medicamentos', MedicamentoRoutes);
+router.use('/medicamentoRecetados',MedicamentoRecetadoRoutes)
+router.use('/pacientes', PacienteRoutes)
+
 export default router;

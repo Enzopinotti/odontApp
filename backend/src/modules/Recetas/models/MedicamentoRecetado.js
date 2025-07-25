@@ -2,59 +2,36 @@ export default (sequelize, DataTypes) => {
   const MedicamentoRecetado = sequelize.define(
     "MedicamentoRecetado",
     {
-      medicamentoRecetadoId: {
-        type: DataTypes.INTEGER,
+      medicamentoId: {
+        type: DataTypes.UUID,
         primaryKey: true,
-        autoIncrement: true,
+        allowNull: false,
+        references: { 
+          model: "Medicamentos",
+          key: "id",
+        }
       },
-      // Clave externa de la receta
       recetaId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
+        primaryKey: true,
+        references:{
+          model: "Recetas",
+          key: "id",
+        },
         allowNull: false,
-      },
-      // Datos del medicamento
-      nombreGenerico: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-
-      nombreComercial: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      presentacion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      cantidadUnidades: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-
-      dosis: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      frecuencia: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      duracionTratamiento: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-    },
-    {
-      tableName: "medicamentos_recetados",
-      timestamps: false,
-    }
+      }
+    
+    },{tableName: "medicamentos_recetados", timestamps: true, freezeTableName: true}
   );
+  //asociaciones
   MedicamentoRecetado.associate = (models) => {
+    MedicamentoRecetado.belongsTo(models.Medicamento, {
+      foreignKey: "medicamentoId",
+      as: "medicamento",
+    });
     MedicamentoRecetado.belongsTo(models.Receta, {
       foreignKey: "recetaId",
       as: "receta",
     });
   };
-
-  return MedicamentoRecetado;
-};
+}
