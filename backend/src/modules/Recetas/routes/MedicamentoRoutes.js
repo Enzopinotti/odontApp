@@ -13,6 +13,7 @@ import handleValidationErrors from '../validators/handleValidationErrors.js';
  *   description: Gestión y búsqueda jerárquica de medicamentos
  */
 
+router.get('/', MedicamentoController.getMedicamentos)
 /**
  * @swagger
  * /api/medicamentos/nombres-genericos:
@@ -66,7 +67,7 @@ router.get('/:nombreGenerico/formas-farmaceuticas', MedicamentoController.getFor
  *         description: Lista de concentraciones
  */
 
-router.get('/:nombreGenerico/:formaFarmaceutica/concentraciones', MedicamentoController.getConcentraciones);
+router.get('/:nombreGenerico/:formaFarmaceutica/dosis', MedicamentoController.getDosis);
 /**
  * @swagger
  * /api/medicamentos/{nombreGenerico}/{formaFarmaceutica}/{concentracion}/presentaciones:
@@ -93,14 +94,14 @@ router.get('/:nombreGenerico/:formaFarmaceutica/concentraciones', MedicamentoCon
  *       200:
  *         description: Lista de presentaciones
  */
-router.get('/:nombreGenerico/:formaFarmaceutica/:concentracion/presentaciones', MedicamentoController.getPresentaciones);
+router.get('/:nombreGenerico/:formaFarmaceutica/:dosis/presentaciones', MedicamentoController.getPresentaciones);
 
 // 🔎 Búsqueda final por combinación completa
 /**
  * @swagger
  * /api/medicamentos/buscar:
  *   post:
- *     summary: Buscar un medicamento por los 4 campos (nombre, forma, concentración, presentación)
+ *     summary: Buscar un medicamento por los 4 campos (nombre, forma, dosis, presentación)
  *     tags: [Medicamentos]
  *     requestBody:
  *       required: true

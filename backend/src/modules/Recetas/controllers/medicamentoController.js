@@ -1,5 +1,25 @@
 import MedicamentoService from '../services/MedicamentoService.js';
 
+export const getMedicamentos = async(req,res) => {
+  try{
+    const data = await MedicamentoService.listarMedicamentos();
+    res.json(data);
+  }
+  catch(error){
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export const getMedicamentoById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await MedicamentoService.buscarPorId(id); // <- este método debe existir
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getNombresGenericos = async (req, res) => {
   try {
     const data = await MedicamentoService.listarNombresGenericos();
@@ -19,7 +39,7 @@ export const getFormasFarmaceuticas = async (req, res) => {
   }
 };
 
-export const getConcentraciones = async (req, res) => {
+export const getDosis = async (req, res) => {
   try {
     const { nombreGenerico, formaFarmaceutica } = req.params;
     const data = await MedicamentoService.listarConcentraciones(nombreGenerico, formaFarmaceutica);
@@ -31,8 +51,8 @@ export const getConcentraciones = async (req, res) => {
 
 export const getPresentaciones = async (req, res) => {
   try {
-    const { nombreGenerico, formaFarmaceutica, concentracion } = req.params;
-    const data = await MedicamentoService.listarPresentaciones(nombreGenerico, formaFarmaceutica, concentracion);
+    const { nombreGenerico, formaFarmaceutica, dosis } = req.params;
+    const data = await MedicamentoService.listarPresentaciones(nombreGenerico, formaFarmaceutica, dosis);
     res.json(data);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -41,8 +61,8 @@ export const getPresentaciones = async (req, res) => {
 
 export const getMedicamentoCompleto = async (req, res) => {
   try {
-    const { nombreGenerico, formaFarmaceutica, concentracion, presentacion } = req.body;
-    const data = await MedicamentoService.obtenerMedicamento(nombreGenerico, formaFarmaceutica, concentracion, presentacion);
+    const { nombreGenerico, formaFarmaceutica, dosis, presentacion } = req.body;
+    const data = await MedicamentoService.obtenerMedicamento(nombreGenerico, formaFarmaceutica, dosis, presentacion);
     if (!data) {
       return res.status(404).json({ error: 'No se encontró el medicamento.' });
     }
