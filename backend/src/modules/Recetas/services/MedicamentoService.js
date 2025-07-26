@@ -1,4 +1,4 @@
-import MedicamentoRepository from "../repositories/MedicamentoRepository";
+import MedicamentoRepository from '../repositories/MedicamentoRepository.js';
 class MedicamentoService{
     async listarMedicamentos(){
         return await MedicamentoRepository.findAll()

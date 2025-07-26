@@ -1,12 +1,12 @@
-const { Receta, MedicamentoRecetado, Medicamento } = require("../models");
-const { Paciente } = require("../../Clinica/models");
-const { Odontologo } = require("../../Usuarios/models");
+import { Receta, MedicamentoRecetado, Medicamento } from "../models/index.js"; // ✅
+import { Paciente } from "../../Clinica/models/index.js";
+import { Odontologo } from "../../Usuarios/models/index.js";
 
 //const PDFDocument = require("pdfkit");
 //const nodemailer = require("nodemailer");
 
 // Listar todas las recetas
-exports.listarRecetas = async (req, res) => {
+export const listarRecetas = async (req, res) => {
   try {
     const recetas = await Receta.findAll({
       include: [
@@ -23,7 +23,7 @@ exports.listarRecetas = async (req, res) => {
 };
 
 // Crear una nueva receta
-exports.crearReceta = async (req, res) => {
+export const crearReceta = async (req, res) => {
   const { pacienteId, odontologoId, diagnostico, indicaciones, medicamentos } =
     req.body;
   try {
@@ -81,7 +81,7 @@ exports.crearReceta = async (req, res) => {
   }
 };
 
-exports.getReceta = async (req, res) => {
+export const getReceta = async (req, res) => {
   const { id } = req.params;
   try {
     const receta = await Receta.findByPk(id, {
@@ -105,7 +105,7 @@ exports.getReceta = async (req, res) => {
   }
 };
 
-exports.eliminarReceta = async (req, res) => {
+export const eliminarReceta = async (req, res) => {
   const { id } = req.params;
   try {
     const receta = await Receta.findByPk(id);
@@ -120,7 +120,7 @@ exports.eliminarReceta = async (req, res) => {
   }
 };
 
-exports.actualizarReceta = async (req, res) => {
+export const actualizarReceta = async (req, res) => {
   const { id } = req.params;
   const { pacienteId, odontologoId, diagnostico, indicaciones, medicamentos } =
     req.body;

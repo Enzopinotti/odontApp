@@ -1,4 +1,4 @@
-import { MedicamentoRecetado, Medicamento } from "../models";
+import { MedicamentoRecetado, Medicamento } from "../models/index.js";
 
 class MedicamentoRecetadoRepository {
   async findByRecetaId(recetaId) {

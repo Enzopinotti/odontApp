@@ -1,6 +1,7 @@
-const { body } = require('express-validator');
+import { body } from 'express-validator';
 
-exports.validarCreacion = [
+
+export const validarCreacion = [
   body('nombreGenerico')
     .notEmpty().withMessage('El nombre genérico es obligatorio.')
     .isString().withMessage('El nombre debe ser texto.'),
@@ -8,16 +9,17 @@ exports.validarCreacion = [
   body('formaFarmaceutica')
     .notEmpty().withMessage('La forma farmacéutica es obligatoria.'),
 
-  body('concentracion')
+  body('dosis')
     .notEmpty().withMessage('La concentración es obligatoria.'),
 
   body('presentacion')
     .notEmpty().withMessage('La presentación es obligatoria.'),
 ];
 
-exports.validarBusquedaCompleta = [
+
+export const validarBusquedaCompleta = [
   body('nombreGenerico').notEmpty().withMessage('Debe indicar el nombre genérico.'),
   body('formaFarmaceutica').notEmpty().withMessage('Debe indicar la forma farmacéutica.'),
-  body('concentracion').notEmpty().withMessage('Debe indicar la concentración.'),
+  body('dosis').notEmpty().withMessage('Debe indicar la concentración.'),
   body('presentacion').notEmpty().withMessage('Debe indicar la presentación.'),
 ];

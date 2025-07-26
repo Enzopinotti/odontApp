@@ -1,4 +1,4 @@
-import PacienteService from "../services/PacienteService";
+import PacienteService from "../services/PacienteService.js";
 
 export const listarPacientes = async (req, res, next) => {
     try{

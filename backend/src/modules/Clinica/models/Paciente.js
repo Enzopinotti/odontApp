@@ -1,5 +1,5 @@
 export default(sequelize, DataTypes) => {
-    const Paciente = sequelize.define(
+    return sequelize.define(
         "Paciente",
         {
             id:{

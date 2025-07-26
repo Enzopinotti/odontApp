@@ -1,6 +1,6 @@
-const MedicamentoService = require('../services/MedicamentoService');
+import MedicamentoService from '../services/MedicamentoService.js';
 
-exports.getNombresGenericos = async (req, res) => {
+export const getNombresGenericos = async (req, res) => {
   try {
     const data = await MedicamentoService.listarNombresGenericos();
     res.json(data);
@@ -9,7 +9,7 @@ exports.getNombresGenericos = async (req, res) => {
   }
 };
 
-exports.getFormasFarmaceuticas = async (req, res) => {
+export const getFormasFarmaceuticas = async (req, res) => {
   try {
     const { nombreGenerico } = req.params;
     const data = await MedicamentoService.listarFormasFarmaceuticas(nombreGenerico);
@@ -19,7 +19,7 @@ exports.getFormasFarmaceuticas = async (req, res) => {
   }
 };
 
-exports.getConcentraciones = async (req, res) => {
+export const getConcentraciones = async (req, res) => {
   try {
     const { nombreGenerico, formaFarmaceutica } = req.params;
     const data = await MedicamentoService.listarConcentraciones(nombreGenerico, formaFarmaceutica);
@@ -29,7 +29,7 @@ exports.getConcentraciones = async (req, res) => {
   }
 };
 
-exports.getPresentaciones = async (req, res) => {
+export const getPresentaciones = async (req, res) => {
   try {
     const { nombreGenerico, formaFarmaceutica, concentracion } = req.params;
     const data = await MedicamentoService.listarPresentaciones(nombreGenerico, formaFarmaceutica, concentracion);
@@ -39,7 +39,7 @@ exports.getPresentaciones = async (req, res) => {
   }
 };
 
-exports.getMedicamentoCompleto = async (req, res) => {
+export const getMedicamentoCompleto = async (req, res) => {
   try {
     const { nombreGenerico, formaFarmaceutica, concentracion, presentacion } = req.body;
     const data = await MedicamentoService.obtenerMedicamento(nombreGenerico, formaFarmaceutica, concentracion, presentacion);
@@ -52,7 +52,7 @@ exports.getMedicamentoCompleto = async (req, res) => {
   }
 };
 
-exports.crearMedicamento = async (req, res) => {
+export const crearMedicamento = async (req, res) => {
   try {
     const data = await MedicamentoService.crearMedicamento(req.body);
     res.status(201).json({ message: 'Medicamento creado con éxito.', data });
@@ -61,8 +61,7 @@ exports.crearMedicamento = async (req, res) => {
   }
 };
 
-
-exports.actualizarMedicamento = async (req, res) => {
+export const actualizarMedicamento = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await MedicamentoService.actualizarMedicamento(id, req.body);
@@ -72,7 +71,7 @@ exports.actualizarMedicamento = async (req, res) => {
   }
 };
 
-exports.eliminarMedicamento = async (req, res) => {
+export const eliminarMedicamento = async (req, res) => {
   try {
     const { id } = req.params;
     await MedicamentoService.eliminarMedicamento(id);

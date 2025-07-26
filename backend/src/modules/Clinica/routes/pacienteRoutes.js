@@ -3,7 +3,7 @@ import {
   vCrearPaciente,
   vActualizarPaciente,
 } from "../validators/PacienteValidator.js";
-import PacienteController from "../controllers/PacienteController.js";
+import * as PacienteController from "../controllers/PacienteController.js";
 
 const router = Router();
 /**

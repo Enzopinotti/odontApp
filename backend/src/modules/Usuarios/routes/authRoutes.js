@@ -11,7 +11,7 @@ import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../../../utils/upload/multerCloudinary.js';
 import * as authSvc from '../services/authService.js';
 import * as twoFA from '../controllers/2faController.js';
-
+import passport from '../../../../config/passport.js';
 
 const router = Router();
 

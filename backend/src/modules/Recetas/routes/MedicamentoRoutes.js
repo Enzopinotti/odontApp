@@ -1,10 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const MedicamentoController = require('../controllers/medicamentoController');
-const MedicamentoValidator = require('../validators/MedicamentoValidator');
-const handleValidationErrors = require('../validators/handleValidationErrors');
-
+import * as MedicamentoController from '../controllers/medicamentoController.js';
+import * as MedicamentoValidator from '../validators/MedicamentoValidator.js';
+import handleValidationErrors from '../validators/handleValidationErrors.js';
 // ───────────────────────────────
 // 🔍 Búsqueda jerárquica
 /**
@@ -238,4 +237,4 @@ router.put(
 // 🗑️ Eliminar un medicamento por ID
 router.delete('/:id', MedicamentoController.eliminarMedicamento);
 
-module.exports = router;
+export default router;

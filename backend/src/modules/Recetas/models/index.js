@@ -1,26 +1,24 @@
-import { Sequelize, DataTypes } from 'sequelize';
+import { DataTypes } from 'sequelize';
 import { sequelize } from '../../../../config/db.js';
-import applyAssociations from './associations.js';
+import { applyAssociations } from './associations.js';
 
 import recetaModel from './Receta.js';
 import medicamentoModel from './Medicamento.js';
 import medicamentoRecetadoModel from './MedicamentoRecetado.js';
-import pacienteModel from '../../Clinica/models/Paciente.js';
-import odontologoModel from '../../Usuarios/models/odontologo.js'; 
 
-// Inicializar modelos
+import { Paciente } from '../../Clinica/models/index.js';
+import { Odontologo } from '../../Usuarios/models/index.js';
+
+// Inicializar modelos propios del módulo Recetas
 const Receta = recetaModel(sequelize, DataTypes);
 const Medicamento = medicamentoModel(sequelize, DataTypes);
 const MedicamentoRecetado = medicamentoRecetadoModel(sequelize, DataTypes);
-const Paciente = pacienteModel(sequelize, DataTypes);
-const Odontologo = odontologoModel(sequelize, DataTypes);
 
-// Asociaciones
-applyAssociations(sequelize.models);
+// Aplicar asociaciones
+applyAssociations({ Receta, Medicamento, MedicamentoRecetado, Paciente, Odontologo });
 
-// Exportación individual y agrupada
+// Exportar
 export {
-  sequelize,
   Receta,
   Medicamento,
   MedicamentoRecetado,

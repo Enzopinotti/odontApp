@@ -1,6 +1,3 @@
-import { format } from "sequelize/lib/utils"
-import { all } from "../routes/RecetaRoutes"
-
 export default (sequelize, DataTypes) => {
   const Medicamento= sequelize.define(
     "Medicamento",

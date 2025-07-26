@@ -1,4 +1,4 @@
-import { Medicamento } from "../models/Medicamento.js";
+import  Medicamento  from "../models/Medicamento.js";
 import { sequelize } from "../../../../config/db.js";
 import { where } from "sequelize";
 

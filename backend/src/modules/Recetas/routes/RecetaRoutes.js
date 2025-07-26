@@ -1,15 +1,15 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express'; // ✅
+import medicamentoRecetadosRoutes from './MedicamentoRecetadoRoutes.js';
+const router = Router(); // ✅
 
 //controladores 
-const{
+import {
     listarRecetas,
     crearReceta,
     getReceta,
     eliminarReceta,
     actualizarReceta
-}= require('../controllers/recetaController');
-
+}from '../controllers/recetaController.js'
 /**
  * @swagger
  * tags:
@@ -163,11 +163,10 @@ router.put('/:id', actualizarReceta);
 
 
 //GET /recetas/:id/pdf para generar receta en PDF
-router.get('/:id/pdf', generarRecetaPDF);
+//router.get('/:id/pdf', generarRecetaPDF);
 //POST /recetas/:id/enviar para enviar receta mail o whatsapp
-router.post('/:id/enviar', enviarReceta);
+//router.post('/:id/enviar', enviarReceta);
 
 
-router.use('/:id/medicamentoRecetados', require('./medicamentoRecetadosRoutes'));
-
-module.exports = router;
+router.use('/:id/medicamentoRecetados', medicamentoRecetadosRoutes);
+export default router;

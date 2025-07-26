@@ -1,5 +1,5 @@
-import PacienteRepository from "../repositories/PacienteRepository";
-import ApiError from "../../../utils/ApiError";
+import PacienteRepository from "../repositories/PacienteRepository.js";
+import ApiError from "../../../utils/ApiError.js";
 
 class PacienteService {
   async listarPacientes() {

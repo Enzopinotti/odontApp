@@ -3,7 +3,7 @@ import { body, param, validationResult } from 'express-validator';
 import ApiError from '../../../utils/ApiError.js';
 
 // Middleware para manejar errores de validación
-defaultValidateOptions = { abortEarly: false };
+let defaultValidateOptions = { abortEarly: false };
 const validate = (req, _res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

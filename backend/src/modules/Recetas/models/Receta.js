@@ -36,26 +36,27 @@ export default (sequelize, DataTypes) => {
           key: "userId",
         },
       },
-        firmaOdontologo: {
-            type: DataTypes.STRING,
-            allowNull: true,
-        },
+      firmaOdontologo: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     { tableName: "recetas", timestamps: true }
   );
-//asociaciones
-Receta.associate = (models) => {
-  Receta.belongsTo(models.Paciente, {
-    foreignKey: "pacienteId",
-    as: "paciente",
-  });
-  Receta.belongsTo(models.Odontologo, {
-    foreignKey: "odontologoId",
-    as: "odontologo",
-  });
-  Receta.hasMany(models.MedicamentoRecetado, {
-    foreignKey: "recetaId",
-    as: "medicamentos",
-  });}
- return Receta;
+  //asociaciones
+  Receta.associate = (models) => {
+    Receta.belongsTo(models.Paciente, {
+      foreignKey: "pacienteId",
+      as: "paciente",
+    });
+    Receta.belongsTo(models.Odontologo, {
+      foreignKey: "odontologoId",
+      as: "odontologo",
+    });
+    Receta.hasMany(models.MedicamentoRecetado, {
+      foreignKey: "recetaId",
+      as: "medicamentos",
+    });
+  };
+  return Receta;
 };

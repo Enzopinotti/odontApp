@@ -14,7 +14,7 @@ import odontologoModel from './odontologo.js';
 import auditLogModel from './auditLog.js';
 import rolPermisoModel from './RolPermiso.js';
 import odontologoEspecialidadModel from './OdontologoEspecialidad.js';
-
+import recepcionistaModel from './recepcionista.js';
 
 // Inicializar modelos
 const Usuario = usuarioModel(sequelize, DataTypes);
