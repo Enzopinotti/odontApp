@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { resendConfirmation } from '../api/auth';
-import showToast from '../hooks/useToast';
+import useToast from '../hooks/useToast';
 
-export default function ResendConfirmationModal({ onClose }) {
-  const [email, setEmail] = useState('');
+export default function ResendConfirmationModal({ onClose, emailProp = '' }) {
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
-  const handleResend = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return showToast('Ingresá tu correo', 'error');
+    if (!emailProp || !emailProp.match(/^\S+@\S+\.\S+$/)) {
+      return showToast('Correo no válido', 'error');
+    }
 
     try {
       setLoading(true);
-      await resendConfirmation(email);
+      await resendConfirmation(emailProp);
       showToast('Correo reenviado correctamente', 'success');
-      onClose(); // cerrar modal
+      onClose?.();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al reenviar el correo', 'error');
+      showToast(err.response?.data?.message || 'Error reenviando correo', 'error');
     } finally {
       setLoading(false);
     }
@@ -24,27 +26,23 @@ export default function ResendConfirmationModal({ onClose }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="auth-card modal-card">
-        <h2>Reenviar verificación</h2>
+      <form className="auth-card modal-card" onSubmit={handleSubmit}>
+        <h2 style={{ marginBottom: '1.2rem' }}>Reenviar verificación</h2>
 
-        <form onSubmit={handleResend}>
-          <input
-            type="email"
-            placeholder="Tu correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+        <p style={{ fontSize: '0.95rem', marginBottom: '1rem', textAlign: 'center' }}>
+          Se enviará un correo de verificación a:<br />
+          <strong>{emailProp}</strong>
+        </p>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Enviando...' : 'Reenviar'}
+        <div className="modal-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose} style={{ background: '#ccc' }}>
+            Cancelar
           </button>
-        </form>
-
-        <div className="actions">
-          <button className="link" onClick={onClose}>Cancelar</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Enviando…' : 'Enviar'}
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

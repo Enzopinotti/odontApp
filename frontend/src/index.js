@@ -1,14 +1,25 @@
+// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom'; 
 import App from './App';
-import AuthProvider from './context/AuthProvider'; 
 import './styles/main.scss';
+
+import AuthProvider from './context/AuthProvider'; 
+import ToastProvider from './context/ToastProvider';
+import ModalProvider from './context/ModalProvider';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <BrowserRouter> 
+      <AuthProvider>
+        <ToastProvider>
+          <ModalProvider>
+            <App />
+          </ModalProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

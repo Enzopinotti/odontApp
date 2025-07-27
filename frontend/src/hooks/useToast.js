@@ -1,12 +1,7 @@
-import { useState } from 'react';
+// src/hooks/useToast.js
+import { useContext } from 'react';
+import { ToastCtx } from '../context/ToastProvider';
 
 export default function useToast() {
-  const [toast, setToast] = useState(null);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  return { toast, showToast };
+  return useContext(ToastCtx); 
 }

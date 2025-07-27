@@ -1,10 +1,13 @@
 @use 'variables';
+@use 'modal';
 @use 'header';
 @use 'sidebar';
 @use 'appLayout';
 @use 'publicLayout';
 @use 'authForm';
 @use 'login';
+@use 'notFound';
+@use 'toast';
 
 *{
     box-sizing: border-box;
@@ -24,3 +27,15 @@ input {
 }
 
 a { color: variables.$color-primary; }
+
+
+/* botoncito link reutilizado */
+.link-btn { 
+  background:none;
+  border:none;
+  color: variables.$color-primary;
+  cursor:pointer;
+  padding:0;
+  font-weight:500;
+  &:hover{text-decoration:underline}
+}

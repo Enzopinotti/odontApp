@@ -4,7 +4,10 @@ export const login             = (data)        => api.post('/auth/login', data);
 export const login2FA          = (payload)     => api.post('/auth/2fa/login', payload);
 export const register          = (data)        => api.post('/auth/register', data);
 export const logout            = ()            => api.post('/auth/logout');
-export const me                = ()            => api.get('/auth/me');
+export const me = () =>
+  api.get('/auth/me', {
+    validateStatus: (status) => status < 500,
+  });
 export const updateMe          = (data)        => api.put('/auth/me', data);
 export const changePassword    = (data)        => api.put('/auth/me/password', data);
 

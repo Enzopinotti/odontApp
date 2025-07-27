@@ -1,30 +1,28 @@
-// validators/authValidator.js
-import { body, param, validationResult } from 'express-validator';
-import ApiError from '../../../utils/ApiError.js';
-
-const validate = (req,_res,next)=>{
-  const errs = validationResult(req);
-  if(!errs.isEmpty()) return next(new ApiError('Invalid data',422,errs.array()));
-  next();
-};
+// src/modules/Usuarios/validators/authValidator.js
+import { body, param } from 'express-validator';
+import validate from '../../../utils/validateRequest.js';
 
 export const vLogin = [
-  body('email').isEmail(),
-  body('password').notEmpty(),
+  body('email').isEmail().withMessage('Email inválido'),
+  body('password').notEmpty().withMessage('La contraseña es obligatoria'),
   validate,
 ];
 
 export const vRegister = [
-  body('nombre').notEmpty(),
-  body('apellido').notEmpty(),
-  body('email').isEmail(),
-  body('password').isLength({min:6}),
+  body('nombre').notEmpty().withMessage('El nombre es obligatorio'),
+  body('apellido').notEmpty().withMessage('El apellido es obligatorio'),
+  body('email').isEmail().withMessage('Email inválido'),
+  body('password').isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
   validate,
 ];
 
-export const vForgot = [ body('email').isEmail(), validate ];
-export const vReset  = [
-  param('token').notEmpty(),
-  body('password').isLength({min:6}),
+export const vForgot = [
+  body('email').isEmail().withMessage('Email inválido'),
+  validate,
+];
+
+export const vReset = [
+  param('token').notEmpty().withMessage('Token requerido'),
+  body('password').isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
   validate,
 ];

@@ -10,12 +10,14 @@ export const findPaginated = (page = 1, perPage = 20) => {
   });
 };
 
-export const findById = (id) => Usuario.findByPk(id);
+export const findById = (id, options = {}) =>
+  Usuario.findByPk(id, options);
 
 export const findByEmail = (email, { includeRole = false } = {}) => {
   const options = {
     where: { email },
     attributes: { include: ['password'] },
+    paranoid: false, // por si usás soft deletes
   };
 
   if (includeRole) {

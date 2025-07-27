@@ -1,14 +1,19 @@
-// src/pages/Profile.js
 import { useEffect, useState } from 'react';
 import { updateMe, uploadAvatar } from '../api/auth';
 import useAuth from '../hooks/useAuth';
-import showToast from '../hooks/useToast';
+import useToast from '../hooks/useToast';
+import { handleApiError } from '../utils/handleApiError';
+import { FaUser, FaLock } from 'react-icons/fa';
+import SecuritySettings from './SecuritySettings';
 
 export default function Profile() {
   const { user, setUser } = useAuth();
+  const { showToast } = useToast();
   const [form, setForm] = useState({ nombre: '', apellido: '', telefono: '' });
   const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [tab, setTab] = useState('perfil');
 
   useEffect(() => {
     if (user) {
@@ -22,6 +27,9 @@ export default function Profile() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
 
   const handleAvatarChange = (e) => {
@@ -34,7 +42,6 @@ export default function Profile() {
 
     try {
       const updates = { ...form };
-
       if (avatar) {
         const { data } = await uploadAvatar(avatar);
         updates.avatarUrl = data.data.avatarUrl;
@@ -44,7 +51,7 @@ export default function Profile() {
       setUser(data.data);
       showToast('Perfil actualizado con éxito', 'success');
     } catch (err) {
-      showToast(err.response?.data?.message || 'Error al actualizar el perfil', 'error');
+      handleApiError(err, showToast, setErrors);
     } finally {
       setLoading(false);
     }
@@ -53,45 +60,69 @@ export default function Profile() {
   if (!user) return <p className="loading-text">Cargando perfil...</p>;
 
   return (
-    <form onSubmit={handleSubmit} className="profile-form">
-      <h2>Mi Perfil</h2>
-
-      <div className="avatar-section">
-        <img
-          src={user.avatarUrl || '/assets/user.png'}
-          alt="avatar"
-          className="profile-avatar"
-        />
-        <label>
-          Cambiar foto:
-          <input type="file" accept="image/*" onChange={handleAvatarChange} />
-        </label>
+    <div className="auth-card">
+      <div className="tabs">
+        <button
+          className={tab === 'perfil' ? 'active' : ''}
+          onClick={() => setTab('perfil')}
+        >
+          <FaUser /> Perfil
+        </button>
+        <button
+          className={tab === 'seguridad' ? 'active' : ''}
+          onClick={() => setTab('seguridad')}
+        >
+          <FaLock /> Seguridad
+        </button>
       </div>
 
-      <input
-        name="nombre"
-        placeholder="Nombre"
-        value={form.nombre}
-        onChange={handleChange}
-      />
+      {tab === 'perfil' && (
+        <form onSubmit={handleSubmit} className="profile-form">
+          <h2>Mi Perfil</h2>
 
-      <input
-        name="apellido"
-        placeholder="Apellido"
-        value={form.apellido}
-        onChange={handleChange}
-      />
+          <div className="avatar-section">
+            <img
+              src={user.avatarUrl || '/assets/user.png'}
+              alt="avatar"
+              className="profile-avatar"
+            />
+            <label>
+              Cambiar foto:
+              <input type="file" accept="image/*" onChange={handleAvatarChange} />
+            </label>
+          </div>
 
-      <input
-        name="telefono"
-        placeholder="Teléfono"
-        value={form.telefono}
-        onChange={handleChange}
-      />
+          <input
+            name="nombre"
+            placeholder="Nombre"
+            value={form.nombre}
+            onChange={handleChange}
+          />
+          {errors.nombre && <span className="field-error">{errors.nombre}</span>}
 
-      <button type="submit" disabled={loading}>
-        {loading ? 'Actualizando...' : 'Guardar cambios'}
-      </button>
-    </form>
+          <input
+            name="apellido"
+            placeholder="Apellido"
+            value={form.apellido}
+            onChange={handleChange}
+          />
+          {errors.apellido && <span className="field-error">{errors.apellido}</span>}
+
+          <input
+            name="telefono"
+            placeholder="Teléfono"
+            value={form.telefono}
+            onChange={handleChange}
+          />
+          {errors.telefono && <span className="field-error">{errors.telefono}</span>}
+
+          <button type="submit" disabled={loading}>
+            {loading ? 'Actualizando...' : 'Guardar cambios'}
+          </button>
+        </form>
+      )}
+
+      {tab === 'seguridad' && <SecuritySettings />}
+    </div>
   );
 }

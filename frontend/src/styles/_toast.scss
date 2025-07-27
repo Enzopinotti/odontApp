@@ -1,14 +1,23 @@
-// styles/modules/toast.scss
+/* src/styles/_toast.scss  (importalo en tu main.scss) */
 .toast {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  color: white;
-  font-weight: bold;
-  z-index: 9999;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1c1c1e;
+  color: #fff;
+  padding: .75rem 1.25rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  animation: fade-in-out 3.5s forwards;
+  &--error   { background:#dc3545; }
+  &--success { background:#198754; }
+  &--info    { background:#0d6efd; }
+}
 
-  &.success { background-color: #4caf50; }
-  &.error   { background-color: #f44336; }
+@keyframes fade-in-out {
+  0%   { opacity:0; transform:translate(-50%,20px); }
+  10%  { opacity:1; transform:translate(-50%,0); }
+  90%  { opacity:1; }
+  100% { opacity:0; transform:translate(-50%,20px); }
 }
