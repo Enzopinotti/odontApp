@@ -6,6 +6,7 @@ import {
   vRegistrarEntrada,
   vSubirImagen,
 } from '../validators/historiaClinicaValidator.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
 const router = Router();
 
@@ -36,7 +37,11 @@ router.use(requireAuth);
  *       200:
  *         description: Entradas clínicas del paciente
  */
-router.get('/:pacienteId', hcCtrl.obtenerHistoriaClinica);
+router.get(
+  '/:pacienteId',
+  requirePermiso('historia_clinica', 'ver'),
+  hcCtrl.obtenerHistoriaClinica
+);
 
 /**
  * @swagger
@@ -73,7 +78,13 @@ router.get('/:pacienteId', hcCtrl.obtenerHistoriaClinica);
  *       201:
  *         description: Consulta registrada
  */
-router.post('/:pacienteId', vRegistrarEntrada, hcCtrl.registrarEntradaClinica);
+router.post(
+  '/:pacienteId',
+  requirePermiso('historia_clinica', 'crear'),
+  vRegistrarEntrada,
+  hcCtrl.registrarEntradaClinica
+);
+
 
 /**
  * @swagger
@@ -110,7 +121,13 @@ router.post('/:pacienteId', vRegistrarEntrada, hcCtrl.registrarEntradaClinica);
  *       201:
  *         description: Imagen subida
  */
-router.post('/:historiaClinicaId/imagenes', uploadImagenesClinicas.single('imagen'), vSubirImagen, hcCtrl.subirImagenClinica);
+router.post(
+  '/:historiaClinicaId/imagenes',
+  requirePermiso('historia_clinica', 'crear'),
+  uploadImagenesClinicas.single('imagen'),
+  vSubirImagen,
+  hcCtrl.subirImagenClinica
+);
 
 /**
  * @swagger
@@ -130,7 +147,11 @@ router.post('/:historiaClinicaId/imagenes', uploadImagenesClinicas.single('image
  *       200:
  *         description: Lista de imágenes clínicas
  */
-router.get('/paciente/:pacienteId/imagenes', hcCtrl.obtenerImagenesPorPaciente);
+router.get(
+  '/paciente/:pacienteId/imagenes',
+  requirePermiso('historia_clinica', 'ver'),
+  hcCtrl.obtenerImagenesPorPaciente
+);
 
 /**
  * @swagger
@@ -150,7 +171,11 @@ router.get('/paciente/:pacienteId/imagenes', hcCtrl.obtenerImagenesPorPaciente);
  *       200:
  *         description: Imagen eliminada
  */
-router.delete('/imagenes/:imagenId', hcCtrl.eliminarImagenClinica);
+router.delete(
+  '/imagenes/:imagenId',
+  requirePermiso('historia_clinica', 'eliminar'),
+  hcCtrl.eliminarImagenClinica
+);
 
 
 export default router;

@@ -6,6 +6,7 @@ import {
   vActualizarDiente,
   vAgregarCaraTratada,
 } from '../validators/odontogramaValidator.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
 const router = Router();
 
@@ -36,7 +37,11 @@ router.use(requireAuth);
  *       200:
  *         description: Odontograma del paciente
  */
-router.get('/:pacienteId', oCtrl.obtenerOdontograma);
+router.get(
+  '/:pacienteId',
+  requirePermiso('odontograma', 'ver'),
+  oCtrl.obtenerOdontograma
+);
 
 /**
  * @swagger
@@ -65,7 +70,12 @@ router.get('/:pacienteId', oCtrl.obtenerOdontograma);
  *       201:
  *         description: Odontograma creado
  */
-router.post('/:pacienteId', vCrearOdontograma, oCtrl.crearOdontograma);
+router.post(
+  '/:pacienteId',
+  requirePermiso('odontograma', 'editar'),
+  vCrearOdontograma,
+  oCtrl.crearOdontograma
+);
 
 /**
  * @swagger
@@ -95,7 +105,12 @@ router.post('/:pacienteId', vCrearOdontograma, oCtrl.crearOdontograma);
  *       200:
  *         description: Diente actualizado
  */
-router.put('/:odontogramaId/diente/:numero', vActualizarDiente, oCtrl.actualizarDiente);
+router.put(
+  '/:odontogramaId/diente/:numero',
+  requirePermiso('odontograma', 'editar'),
+  vActualizarDiente,
+  oCtrl.actualizarDiente
+);
 
 /**
  * @swagger
@@ -120,6 +135,11 @@ router.put('/:odontogramaId/diente/:numero', vActualizarDiente, oCtrl.actualizar
  *       201:
  *         description: Cara tratada registrada
  */
-router.post('/diente/:dienteId/caras', vAgregarCaraTratada, oCtrl.agregarCaraTratada);
+router.post(
+  '/diente/:dienteId/caras',
+  requirePermiso('odontograma', 'editar'),
+  vAgregarCaraTratada,
+  oCtrl.agregarCaraTratada
+);
 
 export default router;

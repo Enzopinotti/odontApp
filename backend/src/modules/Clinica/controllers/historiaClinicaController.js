@@ -4,6 +4,7 @@ import * as hcSvc from '../services/historiaClinicaService.js';
 import ApiError from '../../../utils/ApiError.js';
 
 /* ---------- OBTENER HISTORIA CLÍNICA POR PACIENTE ---------- */
+// Permiso requerido: historia → ver
 export const obtenerHistoriaClinica = async (req, res) => {
   const pacienteId = parseInt(req.params.pacienteId);
   if (isNaN(pacienteId)) {
@@ -15,6 +16,7 @@ export const obtenerHistoriaClinica = async (req, res) => {
 };
 
 /* ---------- REGISTRAR ENTRADA CLÍNICA ---------- */
+// Permiso requerido: historia → crear
 export const registrarEntradaClinica = async (req, res) => {
   const pacienteId = parseInt(req.params.pacienteId);
   if (isNaN(pacienteId)) {
@@ -26,6 +28,7 @@ export const registrarEntradaClinica = async (req, res) => {
 };
 
 /* ---------- SUBIR IMAGEN CLÍNICA ---------- */
+// Permiso requerido: historia → editar
 export const subirImagenClinica = async (req, res) => {
   const historiaClinicaId = parseInt(req.params.historiaClinicaId);
   if (isNaN(historiaClinicaId)) {
@@ -49,6 +52,7 @@ export const subirImagenClinica = async (req, res) => {
 };
 
 /* ---------- LISTAR TODAS LAS IMÁGENES DE UN PACIENTE ---------- */
+// Permiso requerido: historia → ver
 export const obtenerImagenesPorPaciente = async (req, res) => {
   const pacienteId = parseInt(req.params.pacienteId);
   if (isNaN(pacienteId)) {
@@ -60,6 +64,7 @@ export const obtenerImagenesPorPaciente = async (req, res) => {
 };
 
 /* ---------- ELIMINAR IMAGEN CLÍNICA ---------- */
+// Permiso requerido: historia → eliminar
 export const eliminarImagenClinica = async (req, res) => {
   const imagenId = parseInt(req.params.imagenId);
   if (isNaN(imagenId)) {

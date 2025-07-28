@@ -4,6 +4,7 @@ import * as odontogramaSvc from '../services/odontogramaService.js';
 import ApiError from '../../../utils/ApiError.js';
 
 /* ---------- OBTENER ODONTOGRAMA POR PACIENTE ---------- */
+// Permiso requerido: odontograma → ver
 export const obtenerOdontograma = async (req, res) => {
   const pacienteId = parseInt(req.params.pacienteId);
   if (isNaN(pacienteId)) {
@@ -19,6 +20,7 @@ export const obtenerOdontograma = async (req, res) => {
 };
 
 /* ---------- CREAR ODONTOGRAMA PARA PACIENTE ---------- */
+// Permiso requerido: odontograma → editar
 export const crearOdontograma = async (req, res) => {
   const pacienteId = parseInt(req.params.pacienteId);
   if (isNaN(pacienteId)) {
@@ -35,6 +37,7 @@ export const crearOdontograma = async (req, res) => {
 };
 
 /* ---------- ACTUALIZAR ESTADO DE DIENTE ---------- */
+// Permiso requerido: odontograma → editar
 export const actualizarDiente = async (req, res) => {
   const odontogramaId = parseInt(req.params.odontogramaId);
   const numero = req.params.numero;
@@ -56,6 +59,7 @@ export const actualizarDiente = async (req, res) => {
 };
 
 /* ---------- AGREGAR CARA TRATADA A DIENTE ---------- */
+// Permiso requerido: odontograma → editar
 export const agregarCaraTratada = async (req, res) => {
   const dienteId = parseInt(req.params.dienteId);
   if (isNaN(dienteId)) {
@@ -66,7 +70,8 @@ export const agregarCaraTratada = async (req, res) => {
   res.created(cara, 'Cara tratada registrada');
 };
 
-/* ---------- ACTUALIZAR CARA TRATADA (opcional) ---------- */
+/* ---------- ACTUALIZAR CARA TRATADA ---------- */
+// Permiso requerido: odontograma → editar
 export const actualizarCaraTratada = async (req, res) => {
   const caraId = parseInt(req.params.caraId);
   if (isNaN(caraId)) {
@@ -82,6 +87,7 @@ export const actualizarCaraTratada = async (req, res) => {
 };
 
 /* ---------- ELIMINAR CARA TRATADA ---------- */
+// Permiso requerido: odontograma → editar
 export const eliminarCaraTratada = async (req, res) => {
   const caraId = parseInt(req.params.caraId);
   if (isNaN(caraId)) {

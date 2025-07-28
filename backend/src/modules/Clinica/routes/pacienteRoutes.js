@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as pacienteCtrl from '../controllers/pacienteController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import { vCrearPaciente, vActualizarPaciente } from '../validators/pacienteValidator.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
 const router = Router();
 
@@ -26,7 +27,11 @@ router.use(requireAuth);
  *       200:
  *         description: Lista de pacientes
  */
-router.get('/', pacienteCtrl.listarPacientes);
+router.get(
+  '/',
+  requirePermiso('pacientes', 'listar'),
+  pacienteCtrl.listarPacientes
+);
 
 /**
  * @swagger
@@ -46,7 +51,11 @@ router.get('/', pacienteCtrl.listarPacientes);
  *       200:
  *         description: Detalle del paciente
  */
-router.get('/:id', pacienteCtrl.obtenerPacientePorId);
+router.get(
+  '/:id',
+  requirePermiso('pacientes', 'listar'),
+  pacienteCtrl.obtenerPacientePorId
+);
 
 /**
  * @swagger
@@ -78,7 +87,12 @@ router.get('/:id', pacienteCtrl.obtenerPacientePorId);
  *       201:
  *         description: Paciente creado
  */
-router.post('/', vCrearPaciente, pacienteCtrl.crearPaciente);
+router.post(
+  '/',
+  requirePermiso('pacientes', 'crear'),
+  vCrearPaciente,
+  pacienteCtrl.crearPaciente
+);
 
 /**
  * @swagger
@@ -103,7 +117,12 @@ router.post('/', vCrearPaciente, pacienteCtrl.crearPaciente);
  *       200:
  *         description: Paciente actualizado
  */
-router.put('/:id', vActualizarPaciente, pacienteCtrl.actualizarPaciente);
+router.put(
+  '/:id',
+  requirePermiso('pacientes', 'editar'),
+  vActualizarPaciente,
+  pacienteCtrl.actualizarPaciente
+);
 
 /**
  * @swagger
@@ -123,6 +142,10 @@ router.put('/:id', vActualizarPaciente, pacienteCtrl.actualizarPaciente);
  *       200:
  *         description: Paciente eliminado
  */
-router.delete('/:id', pacienteCtrl.eliminarPaciente);
+router.delete(
+  '/:id',
+  requirePermiso('pacientes', 'eliminar'),
+  pacienteCtrl.eliminarPaciente
+);
 
 export default router;

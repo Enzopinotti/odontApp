@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as tCtrl from '../controllers/tratamientoController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 import {
   vCrearTratamiento,
   vActualizarTratamiento,
@@ -29,7 +30,11 @@ router.use(requireAuth);
  *       200:
  *         description: Lista de tratamientos
  */
-router.get('/', tCtrl.listarTratamientos);
+router.get(
+  '/',
+  requirePermiso('tratamientos', 'listar'),
+  tCtrl.listarTratamientos
+);
 
 /**
  * @swagger
@@ -58,7 +63,12 @@ router.get('/', tCtrl.listarTratamientos);
  *       201:
  *         description: Tratamiento creado
  */
-router.post('/', vCrearTratamiento, tCtrl.crearTratamiento);
+router.post(
+  '/',
+  requirePermiso('tratamientos', 'crearPersonalizado'),
+  vCrearTratamiento,
+  tCtrl.crearTratamiento
+);
 
 /**
  * @swagger
@@ -83,7 +93,12 @@ router.post('/', vCrearTratamiento, tCtrl.crearTratamiento);
  *       200:
  *         description: Tratamiento actualizado
  */
-router.put('/:id', vActualizarTratamiento, tCtrl.actualizarTratamiento);
+router.put(
+  '/:id',
+  requirePermiso('tratamientos', 'crearPersonalizado'),
+  vActualizarTratamiento,
+  tCtrl.actualizarTratamiento
+);
 
 /**
  * @swagger
@@ -103,7 +118,11 @@ router.put('/:id', vActualizarTratamiento, tCtrl.actualizarTratamiento);
  *       200:
  *         description: Tratamiento eliminado
  */
-router.delete('/:id', tCtrl.eliminarTratamiento);
+router.delete(
+  '/:id',
+  requirePermiso('tratamientos', 'crearPersonalizado'),
+  tCtrl.eliminarTratamiento
+);
 
 /**
  * @swagger
@@ -123,7 +142,10 @@ router.delete('/:id', tCtrl.eliminarTratamiento);
  *       200:
  *         description: Lista de tratamientos históricos
  */
-router.get('/paciente/:pacienteId/historial', tCtrl.historialTratamientos);
-
+router.get(
+  '/paciente/:pacienteId/historial',
+  requirePermiso('tratamientos', 'listar'),
+  tCtrl.historialTratamientos
+);
 
 export default router;
