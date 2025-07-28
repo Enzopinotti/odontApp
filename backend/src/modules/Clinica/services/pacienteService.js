@@ -5,16 +5,51 @@ import ApiError from '../../../utils/ApiError.js';
 
 /* ---------- OBTENER TODOS LOS PACIENTES ---------- */
 export const obtenerTodos = async () => {
-  return repo.findAll(); // incluye Contacto y Dirección
+  const { rows: pacientes, count } = await repo.findPaginated(1, 100); // o tus valores de paginación
+
+  const pacientesConUltimaVisita = await Promise.all(
+    pacientes.map(async (p) => {
+      const ultimaVisita = await repo.getUltimaVisita(p.id);
+      return {
+        ...p.toJSON(),
+        ultimaVisita,
+      };
+    })
+  );
+
+  return { data: pacientesConUltimaVisita, total: count };
 };
 
-/* ---------- OBTENER POR ID ---------- */
+
+/* ---------- BUSCAR CON FILTROS ---------- */
+export const buscarConFiltros = async (filtros, page = 1, perPage = 20) => {
+  const { rows: pacientes, count } = await repo.findFiltered(filtros, page, perPage);
+
+  const pacientesConUltimaVisita = await Promise.all(
+    pacientes.map(async (p) => {
+      const ultimaVisita = await repo.getUltimaVisita(p.id);
+      return {
+        ...p.toJSON(),
+        ultimaVisita,
+      };
+    })
+  );
+
+  return { data: pacientesConUltimaVisita, total: count };
+};
+
+
 export const obtenerPorId = async (id) => {
   const paciente = await repo.findById(id);
   if (!paciente) {
     throw new ApiError('Paciente no encontrado', 404, null, 'PACIENTE_NO_EXISTE');
   }
-  return paciente;
+
+  const ultimaVisita = await repo.getUltimaVisita(id);
+  return {
+    ...paciente.toJSON(),
+    ultimaVisita,
+  };
 };
 
 /* ---------- CREAR PACIENTE ---------- */

@@ -107,3 +107,43 @@ export const eliminar = async (id) => {
   await tratamiento.destroy();
   return true;
 };
+
+
+export const historialPorPaciente = async (pacienteId) => {
+  const odontograma = await Odontograma.findOne({ where: { pacienteId } });
+
+  if (!odontograma) {
+    throw new ApiError('Paciente sin odontograma registrado', 404, null, 'ODONTOGRAMA_NO_EXISTE');
+  }
+
+  const dientes = await Diente.findAll({
+    where: { odontogramaId: odontograma.id },
+    include: {
+      model: CaraTratada,
+      include: [Tratamiento],
+    },
+    order: [['id', 'ASC']],
+  });
+
+  const historial = [];
+
+  dientes.forEach((diente, index) => {
+    diente.CaraTratadas.forEach((cara) => {
+      if (cara.Tratamiento) {
+        historial.push({
+          dienteNumero: index + 1,
+          cara: cara.estadoCara,
+          simbolo: cara.simbolo,
+          tratamiento: {
+            nombre: cara.Tratamiento.nombre,
+            descripcion: cara.Tratamiento.descripcion,
+          },
+          actualizado: cara.updatedAt,
+        });
+      }
+    });
+  });
+
+  // Ordenado por fecha descendente
+  return historial.sort((a, b) => new Date(b.actualizado) - new Date(a.actualizado));
+};

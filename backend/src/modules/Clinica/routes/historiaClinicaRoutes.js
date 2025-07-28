@@ -112,5 +112,45 @@ router.post('/:pacienteId', vRegistrarEntrada, hcCtrl.registrarEntradaClinica);
  */
 router.post('/:historiaClinicaId/imagenes', uploadImagenesClinicas.single('imagen'), vSubirImagen, hcCtrl.subirImagenClinica);
 
+/**
+ * @swagger
+ * /clinica/historia/paciente/{pacienteId}/imagenes:
+ *   get:
+ *     summary: Obtener todas las imágenes clínicas de un paciente
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: pacienteId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de imágenes clínicas
+ */
+router.get('/paciente/:pacienteId/imagenes', hcCtrl.obtenerImagenesPorPaciente);
+
+/**
+ * @swagger
+ * /clinica/historia/imagenes/{imagenId}:
+ *   delete:
+ *     summary: Eliminar imagen clínica
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: imagenId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Imagen eliminada
+ */
+router.delete('/imagenes/:imagenId', hcCtrl.eliminarImagenClinica);
+
 
 export default router;

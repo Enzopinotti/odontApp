@@ -105,4 +105,25 @@ router.put('/:id', vActualizarTratamiento, tCtrl.actualizarTratamiento);
  */
 router.delete('/:id', tCtrl.eliminarTratamiento);
 
+/**
+ * @swagger
+ * /clinica/tratamientos/paciente/{pacienteId}/historial:
+ *   get:
+ *     summary: Ver historial de tratamientos de un paciente
+ *     tags: [Tratamientos]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: pacienteId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de tratamientos históricos
+ */
+router.get('/paciente/:pacienteId/historial', tCtrl.historialTratamientos);
+
+
 export default router;

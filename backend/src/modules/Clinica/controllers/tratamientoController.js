@@ -58,3 +58,14 @@ export const eliminarTratamiento = async (req, res) => {
 
   res.ok(null, 'Tratamiento eliminado');
 };
+
+export const historialTratamientos = async (req, res) => {
+  const pacienteId = parseInt(req.params.pacienteId);
+  if (isNaN(pacienteId)) {
+    throw new ApiError('ID de paciente inválido', 400, null, 'PACIENTE_ID_INVALIDO');
+  }
+
+  const historial = await tratamientoSvc.historialPorPaciente(pacienteId);
+  res.ok(historial);
+};
+

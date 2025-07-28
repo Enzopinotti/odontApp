@@ -47,3 +47,25 @@ export const subirImagenClinica = async (req, res) => {
 
   res.created(imagen, 'Imagen subida correctamente');
 };
+
+/* ---------- LISTAR TODAS LAS IMÁGENES DE UN PACIENTE ---------- */
+export const obtenerImagenesPorPaciente = async (req, res) => {
+  const pacienteId = parseInt(req.params.pacienteId);
+  if (isNaN(pacienteId)) {
+    throw new ApiError('ID inválido', 400, null, 'PACIENTE_ID_INVALIDO');
+  }
+
+  const imagenes = await hcSvc.obtenerImagenesPorPaciente(pacienteId);
+  res.ok(imagenes);
+};
+
+/* ---------- ELIMINAR IMAGEN CLÍNICA ---------- */
+export const eliminarImagenClinica = async (req, res) => {
+  const imagenId = parseInt(req.params.imagenId);
+  if (isNaN(imagenId)) {
+    throw new ApiError('ID inválido', 400, null, 'IMAGEN_ID_INVALIDO');
+  }
+
+  await hcSvc.eliminarImagen(imagenId);
+  res.ok(null, 'Imagen eliminada');
+};

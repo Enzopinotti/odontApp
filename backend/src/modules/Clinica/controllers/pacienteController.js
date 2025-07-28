@@ -5,8 +5,15 @@ import ApiError from '../../../utils/ApiError.js';
 
 /* ---------- LISTAR PACIENTES ---------- */
 export const listarPacientes = async (req, res) => {
-  const pacientes = await pacienteSvc.obtenerTodos();
-  res.ok(pacientes);
+  const { page = 1, perPage = 20, ...filtros } = req.query;
+
+  const resultado = await pacienteSvc.buscarConFiltros(
+    filtros,
+    parseInt(page),
+    parseInt(perPage)
+  );
+
+  res.ok(resultado);
 };
 
 /* ---------- OBTENER PACIENTE POR ID ---------- */

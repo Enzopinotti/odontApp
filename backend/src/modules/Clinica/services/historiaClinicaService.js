@@ -99,3 +99,34 @@ export const eliminar = async (id) => {
   await historia.destroy();
   return true;
 };
+
+export const obtenerImagenesPorPaciente = async (pacienteId) => {
+  return ImagenClinica.findAll({
+    include: {
+      model: HistoriaClinica,
+      where: { pacienteId },
+      attributes: [],
+    },
+    order: [['fechaCarga', 'DESC']],
+  });
+};
+
+
+export const eliminarImagen = async (imagenId) => {
+  const imagen = await ImagenClinica.findByPk(imagenId);
+  if (!imagen) {
+    throw new ApiError('Imagen no encontrada', 404, null, 'IMAGEN_NO_EXISTE');
+  }
+
+  // Eliminar de Cloudinary
+  try {
+    const parts = imagen.url.split('/');
+    const publicId = parts.slice(-2).join('/').split('.')[0]; // odontapp/historias/xxxx
+    await cloudinary.uploader.destroy(publicId);
+  } catch (e) {
+    console.warn('⚠️ Error al borrar imagen de Cloudinary:', imagen.url);
+  }
+
+  await imagen.destroy();
+  return true;
+};
