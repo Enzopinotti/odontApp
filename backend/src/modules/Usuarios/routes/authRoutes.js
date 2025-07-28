@@ -223,6 +223,30 @@ router.get(
   }
 );
 
+/**
+ * @swagger
+ * /auth/2fa/login:
+ *   post:
+ *     summary: Login con 2FA usando email y código TOTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, token]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso con JWT
+ */
+router.post('/2fa/login', twoFA.login2FA);
+
 
 /* --------- Endpoints de perfil --------- */
 
@@ -366,29 +390,7 @@ router.post('/2fa/setup', twoFA.setup2FA);
  */
 router.post('/2fa/verify', twoFA.verify2FA);
 
-/**
- * @swagger
- * /auth/2fa/login:
- *   post:
- *     summary: Login con 2FA usando email y código TOTP
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [email, token]
- *             properties:
- *               email:
- *                 type: string
- *               token:
- *                 type: string
- *     responses:
- *       200:
- *         description: Login exitoso con JWT
- */
-router.post('/2fa/login', twoFA.login2FA);
+
 
 
 /**

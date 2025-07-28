@@ -96,6 +96,16 @@ export function handleApiError(error, showToast, setFieldErrors, showModal) {
     });
     return;
   }
+  // 🔐 2FA (Autenticación en dos pasos)
+  if (code === '2FA_NO_CONFIGURADO') {
+    showToast('No se ha configurado la autenticación en dos pasos para este usuario.', 'error');
+    return;
+  }
+
+  if (code === '2FA_INVALIDO') {
+    showToast('Código de verificación inválido. Intentá nuevamente.', 'error');
+    return;
+  }
 
   // 📋 ERRORES DE VALIDACIÓN POR CAMPO
   if (details && Array.isArray(details) && typeof setFieldErrors === 'function') {

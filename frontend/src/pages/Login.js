@@ -42,7 +42,9 @@ export default function Login() {
         }
       } else {
         const { data } = await login2FA({ email: form.email, token: token2FA });
+        console.log('data de 2fa: ', data);
         setUser(data.data?.user);
+        
         showToast('2FA exitoso', 'success');
         navigate('/');
       }
