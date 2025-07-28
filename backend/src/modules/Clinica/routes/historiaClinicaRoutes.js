@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as hcCtrl from '../controllers/historiaClinicaController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { uploadImagenesClinicas } from '../../../utils/upload/multerCloudinary.js';
 
 const router = Router();
 
@@ -105,6 +106,10 @@ router.post('/:pacienteId', hcCtrl.registrarEntradaClinica);
  *       201:
  *         description: Imagen subida
  */
-router.post('/:historiaClinicaId/imagenes', hcCtrl.subirImagenClinica);
+router.post(
+   '/:historiaClinicaId/imagenes',
+   uploadImagenesClinicas.single('imagen'),
+   hcCtrl.subirImagenClinica
+);
 
 export default router;

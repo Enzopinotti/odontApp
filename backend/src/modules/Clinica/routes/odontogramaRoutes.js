@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as oCtrl from '../controllers/odontogramaController.js';
+import * as oCtrl from '../controllers/odontogramaController.js'
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
 
 const router = Router();
