@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as pacienteCtrl from '../controllers/pacienteController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { vCrearPaciente, vActualizarPaciente } from '../validators/pacienteValidator.js';
 
 const router = Router();
 
@@ -77,7 +78,7 @@ router.get('/:id', pacienteCtrl.obtenerPacientePorId);
  *       201:
  *         description: Paciente creado
  */
-router.post('/', pacienteCtrl.crearPaciente);
+router.post('/', vCrearPaciente, pacienteCtrl.crearPaciente);
 
 /**
  * @swagger
@@ -102,7 +103,7 @@ router.post('/', pacienteCtrl.crearPaciente);
  *       200:
  *         description: Paciente actualizado
  */
-router.put('/:id', pacienteCtrl.actualizarPaciente);
+router.put('/:id', vActualizarPaciente, pacienteCtrl.actualizarPaciente);
 
 /**
  * @swagger

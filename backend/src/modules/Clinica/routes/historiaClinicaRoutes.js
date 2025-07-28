@@ -2,6 +2,10 @@ import { Router } from 'express';
 import * as hcCtrl from '../controllers/historiaClinicaController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import { uploadImagenesClinicas } from '../../../utils/upload/multerCloudinary.js';
+import {
+  vRegistrarEntrada,
+  vSubirImagen,
+} from '../validators/historiaClinicaValidator.js';
 
 const router = Router();
 
@@ -69,7 +73,7 @@ router.get('/:pacienteId', hcCtrl.obtenerHistoriaClinica);
  *       201:
  *         description: Consulta registrada
  */
-router.post('/:pacienteId', hcCtrl.registrarEntradaClinica);
+router.post('/:pacienteId', vRegistrarEntrada, hcCtrl.registrarEntradaClinica);
 
 /**
  * @swagger
@@ -106,10 +110,7 @@ router.post('/:pacienteId', hcCtrl.registrarEntradaClinica);
  *       201:
  *         description: Imagen subida
  */
-router.post(
-   '/:historiaClinicaId/imagenes',
-   uploadImagenesClinicas.single('imagen'),
-   hcCtrl.subirImagenClinica
-);
+router.post('/:historiaClinicaId/imagenes', uploadImagenesClinicas.single('imagen'), vSubirImagen, hcCtrl.subirImagenClinica);
+
 
 export default router;

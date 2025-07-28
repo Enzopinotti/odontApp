@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import * as oCtrl from '../controllers/odontogramaController.js'
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import {
+  vCrearOdontograma,
+  vActualizarDiente,
+  vAgregarCaraTratada,
+} from '../validators/odontogramaValidator.js';
 
 const router = Router();
 
@@ -60,7 +65,7 @@ router.get('/:pacienteId', oCtrl.obtenerOdontograma);
  *       201:
  *         description: Odontograma creado
  */
-router.post('/:pacienteId', oCtrl.crearOdontograma);
+router.post('/:pacienteId', vCrearOdontograma, oCtrl.crearOdontograma);
 
 /**
  * @swagger
@@ -90,7 +95,7 @@ router.post('/:pacienteId', oCtrl.crearOdontograma);
  *       200:
  *         description: Diente actualizado
  */
-router.put('/:odontogramaId/diente/:numero', oCtrl.actualizarDiente);
+router.put('/:odontogramaId/diente/:numero', vActualizarDiente, oCtrl.actualizarDiente);
 
 /**
  * @swagger
@@ -115,6 +120,6 @@ router.put('/:odontogramaId/diente/:numero', oCtrl.actualizarDiente);
  *       201:
  *         description: Cara tratada registrada
  */
-router.post('/diente/:dienteId/caras', oCtrl.agregarCaraTratada);
+router.post('/diente/:dienteId/caras', vAgregarCaraTratada, oCtrl.agregarCaraTratada);
 
 export default router;

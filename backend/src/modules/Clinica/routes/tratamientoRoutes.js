@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import * as tCtrl from '../controllers/tratamientoController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import {
+  vCrearTratamiento,
+  vActualizarTratamiento,
+} from '../validators/tratamientoValidator.js';
 
 const router = Router();
 
@@ -54,7 +58,7 @@ router.get('/', tCtrl.listarTratamientos);
  *       201:
  *         description: Tratamiento creado
  */
-router.post('/', tCtrl.crearTratamiento);
+router.post('/', vCrearTratamiento, tCtrl.crearTratamiento);
 
 /**
  * @swagger
@@ -79,7 +83,7 @@ router.post('/', tCtrl.crearTratamiento);
  *       200:
  *         description: Tratamiento actualizado
  */
-router.put('/:id', tCtrl.actualizarTratamiento);
+router.put('/:id', vActualizarTratamiento, tCtrl.actualizarTratamiento);
 
 /**
  * @swagger
