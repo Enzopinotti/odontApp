@@ -30,3 +30,8 @@ export const remove = async (id) => {
   const usuario = await getById(id); // ya lanza ApiError si no existe
   await repo.remove(usuario);
 };
+
+export const buscarConFiltros = async (filtros, page, perPage) => {
+  const { rows, count } = await repo.findFiltered(filtros, page, perPage);
+  return { data: rows, total: count };
+};
