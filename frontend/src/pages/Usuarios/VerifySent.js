@@ -1,7 +1,7 @@
 // src/pages/VerifySent.jsx
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import ResendConfirmationModal from '../components/ResendConfirmationModal';
+import ResendConfirmationModal from '../../components/ResendConfirmationModal';
 
 export default function VerifySent() {
   const location = useLocation();

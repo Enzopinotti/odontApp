@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register, googleUrl } from '../api/auth';
+import { register, googleUrl } from '../../api/auth';
 import { FcGoogle } from 'react-icons/fc';
 import { AiOutlineInfoCircle } from 'react-icons/ai';
 import { BsEye, BsEyeSlash } from 'react-icons/bs';
-import useToast from '../hooks/useToast';
-import { handleApiError } from '../utils/handleApiError';
+import useToast from '../../hooks/useToast';
+import { handleApiError } from '../../utils/handleApiError';
 
 const normalizeName = (str) =>
   str
