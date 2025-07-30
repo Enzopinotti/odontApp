@@ -1,22 +1,6 @@
-import { body, param, validationResult } from 'express-validator';
-import ApiError from '../../../utils/ApiError.js';
+import { body, param } from 'express-validator';
+import validate from '../../../utils/validateRequest.js';
 
-/**
- * Middleware genérico que revisa el resultado de express-validator
- * y lanza ApiError con detalles si hay errores.
- */
-const validar = (req, _res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    // details = array con { field, message }
-    const details = errors.array().map(err => ({
-      field: err.param,
-      message: err.msg,
-    }));
-    return next(new ApiError('Datos inválidos', 422, details));
-  }
-  next();
-};
 
 /* 🆕 Crear usuario */
 export const validarCrearUsuario = [
@@ -25,7 +9,7 @@ export const validarCrearUsuario = [
   body('email').isEmail().withMessage('Email inválido'),
   body('password').isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
   body('telefono').optional().isMobilePhone().withMessage('Teléfono inválido'),
-  validar,
+  validate,
 ];
 
 /* ✏️  Editar usuario */
@@ -34,6 +18,6 @@ export const validarEditarUsuario = [
   body('email').optional().isEmail().withMessage('Email inválido'),
   body('password').optional().isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
   body('telefono').optional().isMobilePhone().withMessage('Teléfono inválido'),
-  validar,
+  validate,
 ];
 

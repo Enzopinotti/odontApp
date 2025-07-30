@@ -1,41 +1,30 @@
-export default function responseHandler(req, res, next) {
-  /**
-   * Éxito genérico → 200
-   * @param {any} data – payload a devolver
-   * @param {string} message – mensaje opcional
-   */
+// src/middlewares/responseMiddleware.js
+
+export default function responseMiddleware(req, res, next) {
   res.ok = (data = null, message = 'OK') => {
-    return res.status(200).json({ success: true, message, data });
+    return res.json({ success: true, message, data });
   };
 
-  /**
-   * Creado → 201
-   */
   res.created = (data = null, message = 'Creado') => {
     return res.status(201).json({ success: true, message, data });
   };
 
-  /**
-   * Respuesta paginada → 200
-   * meta: { page, perPage, total }
-   */
-  res.paginated = (data, meta, message = 'OK') => {
-    return res.status(200).json({ success: true, message, data, meta });
+  res.paginated = (data, pagination, message = 'Listado') => {
+    return res.json({
+      success: true,
+      message,
+      data,
+      pagination,
+    });
   };
 
-  /**
-   * Error controlado
-   * e: instancia de ApiError o Error genérico
-   * status: HTTP opcional
-   */
-  res.fail = (e, status = 500) => {
-    const payload = {
+  res.fail = (error, status = 400) => {
+    return res.status(status).json({
       success: false,
-      message: e.message || 'Error interno',
-    };
-    // Si el error trae detalles (ej. validaciones) los incluimos
-    if (e.details) payload.details = e.details;
-    return res.status(status).json(payload);
+      message: error.message || 'Error',
+      ...(error.details && { details: error.details }),
+      ...(error.code && { code: error.code }),
+    });
   };
 
   next();

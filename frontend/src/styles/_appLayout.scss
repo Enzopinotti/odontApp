@@ -9,11 +9,11 @@
 .app-body {
   display: flex;
   flex: 1;
-  overflow: hidden;
 }
 
 .main-content {
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
+  background-color: #DCEFF9;
 }

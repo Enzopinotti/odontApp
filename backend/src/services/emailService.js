@@ -1,4 +1,6 @@
+// backend/src/services/emailService.js
 import nodemailer from 'nodemailer';
+import { templates } from './emailTemplates.js';
 
 const {
   SMTP_HOST,
@@ -6,7 +8,6 @@ const {
   SMTP_USER,
   SMTP_PASS,
   SMTP_FROM,
-  NODE_ENV,
 } = process.env;
 
 const transporter = nodemailer.createTransport({
@@ -19,11 +20,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const enviarCorreo = async ({ to, subject, html }) => {
-  if (NODE_ENV !== 'production') {
-    console.log('📧 Simulado:', { to, subject, html });
-    return;
-  }
+export const enviarCorreo = async ({ to, subject, html, template, vars = {} }) => {
+  const finalHtml = template && templates[template]
+    ? templates[template](vars)
+    : html;
 
-  await transporter.sendMail({ from: SMTP_FROM, to, subject, html });
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      html: finalHtml,
+    });
+
+    console.log(`✅ Correo enviado a ${to}: ${info.messageId}`);
+  } catch (err) {
+    console.error('❌ Error enviando correo:', err.message);
+    throw err;
+  }
 };
