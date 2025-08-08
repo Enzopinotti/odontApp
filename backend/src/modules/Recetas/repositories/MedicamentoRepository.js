@@ -1,5 +1,5 @@
 import  Medicamento  from "../models/Medicamento.js";
-import { sequelize } from "../../../../config/db.js";
+import { sequelize } from "../../../config/db.js";
 import { where } from "sequelize";
 
 class MedicamentoRepository {

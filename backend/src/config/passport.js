@@ -1,11 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-<<<<<<< HEAD:backend/config/passport.js
-import { Usuario, Rol } from '../src/modules/Usuarios/models/index.js';
-=======
 import { Usuario } from '../modules/Usuarios/models/index.js';
 
->>>>>>> 8cd53e16d8cfdd0f392a076dd7d5191fd3d35b07:backend/src/config/passport.js
 
 passport.use(
   new GoogleStrategy(

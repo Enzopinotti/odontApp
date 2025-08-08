@@ -3,7 +3,7 @@ import MedicamentoRecetado from '../models/MedicamentoRecetado.js';
 import Medicamento from '../models/Medicamento.js'; 
 import {Paciente}  from "../../Clinica/models/index.js";
 import {Odontologo}   from "../../Usuarios/models/index.js";
-import { sequelize } from "../../../../config/db.js";
+import { sequelize } from "../../../config/db.js";
 
 class RecetaRepository {
   async findAll() {

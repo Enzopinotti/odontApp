@@ -1,9 +1,9 @@
 @use 'variables';
 @use 'modal';
-@use 'header';
-@use 'sidebar';
-@use 'appLayout';
-@use 'publicLayout';
+@use 'layout/header';
+@use 'layout/sidebar';
+@use 'layout/appLayout';
+@use 'layout/publicLayout';
 @use 'authForm';
 @use 'login';
 @use 'notFound';

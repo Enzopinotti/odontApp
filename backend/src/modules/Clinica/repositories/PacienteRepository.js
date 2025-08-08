@@ -1,5 +1,5 @@
 import Paciente from '../models/Paciente.js';
-import {sequelize} from '../../../../config/db.js';
+"../../../config/db.js";
 class PacienteRepository {
   async findAll() {
     return Paciente.findAll();

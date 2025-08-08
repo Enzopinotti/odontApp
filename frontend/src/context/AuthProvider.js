@@ -3,6 +3,16 @@ import { createContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import * as authApi from '../api/auth';
 
+
+const devMode = process.env.NODE_ENV === 'development';
+
+const mockUser = {
+  id: 999,
+  nombre: 'Dr. Simulado',
+  email: 'demo@odontapp.com',
+  rol: 'odontologo'
+};
+
 export const AuthCtx = createContext();
 
 export default function AuthProvider({ children }) {
@@ -16,6 +26,12 @@ export default function AuthProvider({ children }) {
       setState({ user: null, loading: false });
       return;
     }
+
+      if (devMode) {
+    setState({ user: mockUser, loading: false });
+    return;
+  }
+
 
     (async () => {
       try {
