@@ -1,6 +1,11 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+<<<<<<< HEAD:backend/config/passport.js
 import { Usuario, Rol } from '../src/modules/Usuarios/models/index.js';
+=======
+import { Usuario } from '../modules/Usuarios/models/index.js';
+
+>>>>>>> 8cd53e16d8cfdd0f392a076dd7d5191fd3d35b07:backend/src/config/passport.js
 
 passport.use(
   new GoogleStrategy(
@@ -13,7 +18,7 @@ passport.use(
       try {
         const email = profile.emails[0].value;
         const avatar = profile.photos[0]?.value || null;
-
+        console.log('📦 GOOGLE_CALLBACK_URL usado:', process.env.GOOGLE_CALLBACK_URL);
         // ‼️ 1) Si ya existe el usuario, lo reutilizamos
         let user = await Usuario.findOne({ where: { email } });
 

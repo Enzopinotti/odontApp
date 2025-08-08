@@ -1,8 +1,20 @@
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import jwt from 'jsonwebtoken';
 import ApiError from '../../../utils/ApiError.js';
-import { Usuario } from '../models/index.js';
+import { Usuario, Rol } from '../models/index.js';
+import { registrarLog } from '../services/auditService.js';
 
+const cookieOpts = {
+  httpOnly : true,
+  secure   : process.env.NODE_ENV === 'production',
+  sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  domain   : process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+  path     : '/',
+};
+
+
+/* ---------- GENERAR QR Y SECRETO ---------- */
 export const setup2FA = async (req, res) => {
   const secret = speakeasy.generateSecret({
     name: 'odontApp',
@@ -10,10 +22,10 @@ export const setup2FA = async (req, res) => {
   });
 
   const qr = await qrcode.toDataURL(secret.otpauth_url);
-
   res.ok({ qr, secret: secret.base32 }, 'Secreto generado');
 };
 
+/* ---------- ACTIVAR 2FA ---------- */
 export const verify2FA = async (req, res) => {
   const { token, secret } = req.body;
 
@@ -23,30 +35,41 @@ export const verify2FA = async (req, res) => {
     token,
   });
 
-  if (!valid) throw new ApiError('Código inválido', 400);
+  if (!valid) throw new ApiError('Código inválido', 400, null, '2FA_INVALIDO');
 
   const user = await Usuario.findByPk(req.user.id);
   user.twoFactorEnabled = true;
   user.twoFactorSecret = secret;
   await user.save();
 
+  await registrarLog(user.id, 'auth', '2fa_activated');
   res.ok(null, '2FA activado');
 };
 
+/* ---------- LOGIN CON 2FA ---------- */
 export const login2FA = async (req, res) => {
   const { email, token } = req.body;
 
   const user = await Usuario.findOne({ where: { email } });
-  if (!user || !user.twoFactorEnabled || !user.twoFactorSecret)
-    throw new ApiError('2FA no configurado para este usuario', 400);
-
-  const valid = speakeasy.totp.verify({
-    secret: user.twoFactorSecret,
+  if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+    throw new ApiError('2FA no configurado para este usuario', 400, null, '2FA_NO_CONFIGURADO');
+  }
+  console.log('Intentando login 2FA con:', token, 'para', user.email);
+  const delta = speakeasy.totp.verifyDelta({
+    secret  : user.twoFactorSecret,
     encoding: 'base32',
     token,
+    window  : 2, // tolerancia de ±60s
   });
 
-  if (!valid) throw new ApiError('Código inválido', 401);
+  if (delta === null) {
+    await registrarLog(user.id, 'auth', '2fa_fail');
+    throw new ApiError('Código inválido', 401, null, '2FA_INVALIDO');
+  }
+
+  const fullUser = await Usuario.findByPk(user.id, {
+    include: [{ model: Rol, as: 'Rol' }],
+  });
 
   const accessToken = jwt.sign(
     { id: user.id, email: user.email, roleId: user.RolId },
@@ -60,18 +83,22 @@ export const login2FA = async (req, res) => {
     { expiresIn: process.env.JWT_REFRESH_EXP || '7d' }
   );
 
-  res
-    .cookie('accessToken', accessToken, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', domain: process.env.COOKIE_DOMAIN, path: '/' })
-    .cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', domain: process.env.COOKIE_DOMAIN, path: '/' })
-    .ok({ accessToken, refreshToken }, 'Login con 2FA exitoso');
+  await user.update({ ultimoLogin: new Date() });
+  await registrarLog(user.id, 'auth', '2fa_success');
+
+  return res
+    .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
+    .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
+    .ok({ user: fullUser, accessToken, refreshToken }, 'Login con 2FA exitoso');
 };
 
+/* ---------- DESACTIVAR 2FA ---------- */
 export const disable2FA = async (req, res) => {
   const user = await Usuario.findByPk(req.user.id);
-
   user.twoFactorEnabled = false;
   user.twoFactorSecret = null;
-
   await user.save();
+
+  await registrarLog(user.id, 'auth', '2fa_disabled');
   res.ok(null, '2FA desactivado');
 };

@@ -11,9 +11,22 @@ import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import { uploadAvatar } from '../../../utils/upload/multerCloudinary.js';
 import * as authSvc from '../services/authService.js';
 import * as twoFA from '../controllers/2faController.js';
-import passport from '../../../../config/passport.js';
+
+
+import passport from '../../../config/passport.js';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const cookieOpts = {
+  httpOnly : true,
+  secure   : isProd,                     // 🔒 true en prod, false en local
+  sameSite : isProd ? 'none' : 'lax',    // ✅ 'none' en prod para cross-domain, 'lax' en local
+  domain   : isProd ? 'odontapp.com' : undefined, // solo setea dominio en prod
+  path     : '/',
+};
 
 /**
  * @swagger
@@ -179,7 +192,12 @@ router.post('/resend-confirmation', validarForgotPassword, c.resendConfirmation)
 
 
 // Redirección a Google
-router.get('/google', passport.authenticate('google', { session: false, scope: ['profile', 'email'] }));
+router.get('/google', (req, res, next) => {
+  const redirectUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  console.log('🌐 Redirigiendo a Google desde:', redirectUrl);
+  next();
+}, passport.authenticate('google', { session: false, scope: ['profile', 'email'] }));
+
 
 // Callback de Google
 router.get(
@@ -203,9 +221,33 @@ router.get(
     res
       .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
       .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
-      .redirect(`${process.env.APP_URL}/dashboard`); // o devuelve JSON si tu front es SPA
+      .redirect(`${process.env.FRONTEND_URL}/`); // o devuelve JSON si tu front es SPA
   }
 );
+
+/**
+ * @swagger
+ * /auth/2fa/login:
+ *   post:
+ *     summary: Login con 2FA usando email y código TOTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, token]
+ *             properties:
+ *               email:
+ *                 type: string
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login exitoso con JWT
+ */
+router.post('/2fa/login', twoFA.login2FA);
 
 
 /* --------- Endpoints de perfil --------- */
@@ -350,29 +392,7 @@ router.post('/2fa/setup', twoFA.setup2FA);
  */
 router.post('/2fa/verify', twoFA.verify2FA);
 
-/**
- * @swagger
- * /auth/2fa/login:
- *   post:
- *     summary: Login con 2FA usando email y código TOTP
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [email, token]
- *             properties:
- *               email:
- *                 type: string
- *               token:
- *                 type: string
- *     responses:
- *       200:
- *         description: Login exitoso con JWT
- */
-router.post('/2fa/login', twoFA.login2FA);
+
 
 
 /**

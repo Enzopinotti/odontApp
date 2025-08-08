@@ -1,8 +1,7 @@
 // src/modules/Usuarios/models/index.js
 import { Sequelize, DataTypes } from 'sequelize';
-import { sequelize } from '../../../../config/db.js';
+import { sequelize } from '../../../config/db.js';
 import applyAssociations from './associations.js';
-
 
 import usuarioModel from './usuario.js';
 import rolModel from './rol.js';

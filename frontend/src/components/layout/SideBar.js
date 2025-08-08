@@ -1,22 +1,50 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  FaUser,
+  FaCalendarAlt,
+  FaUsers,
+  FaFileInvoiceDollar,
+  FaReceipt,
+  FaChartBar,
+  FaCog
+} from 'react-icons/fa';
+
 export default function SideBar() {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      {/* botón hamburguesa solo visible en móvil via CSS */}
       <button className="burger" onClick={() => setOpen(!open)}>☰</button>
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <nav>
-          <NavLink to="/" className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()}> <FontAwesomeIcon icon="fa-solid fa-stethoscope" className='icon'/>Pacientes</NavLink>
-          <NavLink to="/agenda"className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()}><FontAwesomeIcon icon="fa-solid fa-calendar-days" className='icon'/>Agenda</NavLink>
-          <NavLink to="/facturacion"className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()} ><FontAwesomeIcon icon="fa-solid fa-file-invoice-dollar" className='icon'/>Facturación</NavLink>  
-          <NavLink to="/recetas"className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()}><FontAwesomeIcon icon="fa-solid fa-prescription-bottle-medical" className='icon'/>Recetas</NavLink>  
-          <NavLink to="/reportes"className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()}><FontAwesomeIcon icon="fa-solid fa-chart-pie" className='icon'/>Reportes</NavLink>  
-          <NavLink to="/configuracion"className={({isActive})=>`navItem ${isActive ? 'active':''}`.trim()}><FontAwesomeIcon icon="fa-solid fa-gear"className='icon' />Configuración</NavLink>  
+          <div className="nav-section">
+            <NavLink to="/pacientes" title="Pacientes">
+              <FaUsers /> <span>Pacientes</span>
+            </NavLink>
+            <NavLink to="/agenda" title="Agenda">
+              <FaCalendarAlt /> <span>Agenda</span>
+            </NavLink>
+            <NavLink to="/facturacion" title="Facturación">
+              <FaFileInvoiceDollar /> <span>Facturación</span>
+            </NavLink>
+            <NavLink to="/recetas" title="Recetas">
+              <FaReceipt /> <span>Recetas</span>
+            </NavLink>
+            <NavLink to="/reportes" title="Reportes">
+              <FaChartBar /> <span>Reportes</span>
+            </NavLink>
+          </div>
+
+          <div className="nav-footer">
+            <NavLink to="/profile" title="Perfil y configuración">
+              <FaUser /> <span>Perfil</span>
+            </NavLink>
+            <NavLink to="/configuracion" title="Configuración">
+              <FaCog /> <span>Configuración</span>
+            </NavLink>
+          </div>
         </nav>
       </aside>
     </>

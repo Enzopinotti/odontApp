@@ -1,21 +1,16 @@
-import { body, validationResult } from 'express-validator';
-import ApiError from '../../../utils/ApiError.js';
-
-const finish = (req, _res, next) => {
-  const e = validationResult(req);
-  if (!e.isEmpty()) return next(new ApiError('Datos inválidos', 422, e.array()));
-  next();
-};
+// src/modules/Usuarios/validators/meValidator.js
+import { body } from 'express-validator';
+import validate from '../../../utils/validateRequest.js';
 
 export const vUpdateMe = [
-  body('nombre').optional().notEmpty(),
-  body('apellido').optional().notEmpty(),
-  body('telefono').optional().isMobilePhone(),
-  finish,
+  body('nombre').optional().notEmpty().withMessage('Nombre requerido'),
+  body('apellido').optional().notEmpty().withMessage('Apellido requerido'),
+  body('telefono').optional().isMobilePhone().withMessage('Teléfono inválido'),
+  validate,
 ];
 
 export const vChangePassword = [
-  body('actual').notEmpty(),
-  body('nueva').isLength({ min: 6 }),
-  finish,
+  body('actual').notEmpty().withMessage('Contraseña actual requerida'),
+  body('nueva').isLength({ min: 6 }).withMessage('Mínimo 6 caracteres'),
+  validate,
 ];

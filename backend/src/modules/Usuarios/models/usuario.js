@@ -1,3 +1,6 @@
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken'; 
+
 export default (sequelize, DataTypes) => {
   const Usuario = sequelize.define('Usuario', {
     nombre:   { type: DataTypes.STRING, allowNull: false },
@@ -5,7 +8,7 @@ export default (sequelize, DataTypes) => {
     email:    { type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } },
     password: { type: DataTypes.STRING, allowNull: true }, 
     telefono: DataTypes.STRING,
-    activo:   { type: DataTypes.BOOLEAN, defaultValue: true },
+    activo:   { type: DataTypes.BOOLEAN, defaultValue: false },
     fechaAlta: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     intentosFallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
     bloqueadoHasta: DataTypes.DATE,

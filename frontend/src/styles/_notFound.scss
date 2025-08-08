@@ -1,0 +1,29 @@
+@use 'variables';
+.not-found {
+  text-align: center;
+    margin-top: 8rem;
+  p {
+    margin: 1rem 0;
+    color: variables.$color-text;
+    font-size: 1rem;
+  }
+
+  .actions {
+    margin-top: 1.5rem;
+
+    .link {
+      display: inline-block;
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: variables.$radius;
+      background: variables.$color-primary;
+      color: variables.$color-white;
+      text-decoration: none;
+      transition: background 0.2s ease;
+
+      &:hover {
+        color: white;
+      }
+    }
+  }
+}
