@@ -5,6 +5,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import GuestRoute from '../components/GuestRoute'; 
 
 import Login from '../pages/Login';
+<<<<<<< HEAD
 import Register from '../pages/Register';
 import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
@@ -13,6 +14,9 @@ import VerifyEmail from '../pages/VerifyEmail';
 import Profile from '../pages/Profile';
 import ChangePassword from '../pages/ChangePassword';
 import NotFound from '../pages/NotFound';
+=======
+import Receta from '../pages/Receta';
+>>>>>>> feature/recipes-ui
 
 function AppRouter() {
   return (
@@ -42,8 +46,14 @@ function AppRouter() {
         </ProtectedRoute>
         }
       >
+<<<<<<< HEAD
         <Route path="profile" element={<Profile />} />
         <Route path="cambiar-password" element={<ChangePassword />} />
+=======
+
+        <Route path='recetas' element={<Receta/>} />
+        {/* Rutas privadas aquí */}
+>>>>>>> feature/recipes-ui
       </Route>
 
       <Route path="*" element={<NotFound />} />
