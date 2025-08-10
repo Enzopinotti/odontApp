@@ -148,4 +148,41 @@ router.put("/:id", vActualizarPaciente, PacienteController.actualizarPaciente);
 
 //eliminar paciente
 router.delete("/:id", PacienteController.eliminarPaciente);
+/**
+ * @swagger
+ * /api/pacientes/buscar:
+ *   get:
+ *     summary: Buscar pacientes por nombre, apellido o DNI
+ *     tags: [Pacientes]
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Texto a buscar (nombre, apellido o DNI)
+ *     responses:
+ *       200:
+ *         description: Lista de pacientes coincidentes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   nombre:
+ *                     type: string
+ *                   apellido:
+ *                     type: string
+ *                   dni:
+ *                     type: string
+ *       400:
+ *         description: Falta parámetro de búsqueda
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get("/buscar", PacienteController.buscarPacientes);
 export default router;

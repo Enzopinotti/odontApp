@@ -1,5 +1,7 @@
-import Paciente from '../models/Paciente.js';
+import { Paciente } from "../models/index.js";
 "../../../config/db.js";
+import { Op } from "sequelize";
+
 class PacienteRepository {
   async findAll() {
     return Paciente.findAll();
@@ -27,6 +29,19 @@ class PacienteRepository {
       return paciente.destroy();
     }
     throw new Error('Paciente not found');
+  }
+   async findByNombreApellidoODni(texto) {
+    return Paciente.findAll({
+      where: {
+        [Op.or]: [
+          { nombre: { [Op.like]: `%${texto}%` } },
+          { apellido: { [Op.like]: `%${texto}%` } },
+          { dni: { [Op.like]: `%${texto}%` } },
+        ],
+      },
+      limit: 5,
+      order: [["apellido", "ASC"]],
+    });
   }
 }   
 export default new PacienteRepository();

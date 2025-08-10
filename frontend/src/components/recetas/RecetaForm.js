@@ -31,11 +31,10 @@ export default function RecetaForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="form-container">
         <label>Paciente</label>
         <AutocompletePaciente name="paciente" control={control} />
-        <div className="form-input">
+        <div className="form-group">
           <label>Diagnóstico</label>
           <input {...register("diagnostico", { required: true })} />
         </div>
-        
 
         <h3>Medicamentos</h3>
 
@@ -49,15 +48,26 @@ export default function RecetaForm() {
           />
         ))}
         <div>
-          <button type="button" onClick={() => append({})}>
+          <button
+            type="button"
+            className="more-button"
+            onClick={() => append({})}
+          >
             + Agregar Medicamento
           </button>
         </div>
-<div className="form-input">
+        <div className="form-input">
           <label>Indicaciones</label>
           <textarea {...register("indicaciones", { required: true })} />
         </div>
-        <button type="submit">Guardar receta</button>
+        <div className="buttons-row">
+          <button type="submit" className="save-button">
+            Imprimir receta
+          </button>
+          <button type="submit" className="send-button">
+            Enviar receta
+          </button>
+        </div>
       </form>
     </div>
   );

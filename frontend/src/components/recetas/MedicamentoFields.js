@@ -1,6 +1,6 @@
 import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState } from "react";
+import {FaTrashAlt} from 'react-icons/fa';
 
 //harcodeado para el ejemplo
 const medicamentos = [
@@ -98,8 +98,9 @@ export default function MedicamentoFields({
   };
   return (
     <div className="medicamento-item">
-      <div className="form-group">
-        <label>Medicamento (Nombre genérico)</label>
+      <div className=" form-row">
+        <div className="form-group">
+        <label>Nombre genérico </label>
         <select
           value={seleccion.nombreGenerico}
           onChange={(e) => handleChange("nombreGenerico", e.target.value)}
@@ -113,8 +114,15 @@ export default function MedicamentoFields({
           ))}
         </select>
       </div>
+      <button type="button" onClick={onRemove} className="remove-button">
+            <FaTrashAlt/>
+      </button>
+      </div>
+      
 
-      <div className="form-group">
+
+      <div className="form-row">
+              <div className="form-group">
         <label>Forma Farmacéutica</label>
         <select
           value={seleccion.formaFarmaceutica}
@@ -131,7 +139,6 @@ export default function MedicamentoFields({
         </select>
       </div>
 
-      <div className="form-row">
         <div className="form-group">
           <label>Dosis</label>
           <select
@@ -165,9 +172,7 @@ export default function MedicamentoFields({
           </select>
         </div>
 
-        <button type="button" onClick={onRemove} className="remove-button">
-          <FontAwesomeIcon icon="fa-solid fa-trash-can" className="icon" />
-        </button>
+        
       </div>
     </div>
   );

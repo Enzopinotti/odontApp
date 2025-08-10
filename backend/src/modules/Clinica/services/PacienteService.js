@@ -33,6 +33,12 @@ class PacienteService {
         throw new ApiError(404, "Paciente no encontrado");
         }
     }
+     async buscarPacientes(texto) {
+    if (!texto || texto.trim() === "") {
+      throw new ApiError(400, "Falta parámetro de búsqueda");
+    }
+    return PacienteRepository.findByNombreApellidoODni(texto);
+  }
 
 }
 export default new PacienteService();

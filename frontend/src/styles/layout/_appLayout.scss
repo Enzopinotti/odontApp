@@ -1,10 +1,10 @@
-@use '../variables';
+@use "../variables";
 
 .app-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
-   background-color: variables.$color-background;
+  background-color: variables.$color-background;
 }
 
 .app-body {
@@ -18,17 +18,16 @@
   padding: 3rem;
   overflow-y: auto;
 }
-.content-wrapper{
+.content-wrapper {
   background-color: variables.$color-white;
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 1.4rem;
   width: 100%;
   max-width: 1200px;
-  overflow-x: hidden;  /* evita desbordes horizontales */
-  overflow-y: auto;    /* permite scroll si el contenido vertical crece */
+  overflow-x: hidden; /* evita desbordes horizontales */
+  overflow-y: auto; /* permite scroll si el contenido vertical crece */
   box-sizing: border-box;
   margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    height: 100%; 
-
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  height: 100%;
 }

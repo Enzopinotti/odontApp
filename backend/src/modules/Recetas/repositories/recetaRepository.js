@@ -1,6 +1,6 @@
 import  Receta  from "../models/Receta.js";
-import MedicamentoRecetado from '../models/MedicamentoRecetado.js';
-import Medicamento from '../models/Medicamento.js'; 
+import { MedicamentoRecetado } from '../models/index.js';
+import { Medicamento } from '../models/index.js';
 import {Paciente}  from "../../Clinica/models/index.js";
 import {Odontologo}   from "../../Usuarios/models/index.js";
 import { sequelize } from "../../../config/db.js";
