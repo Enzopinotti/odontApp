@@ -61,8 +61,6 @@ frontend/
 │   │       │   ├── PacienteNuevo.jsx
 │   │       │   ├── PacienteEditar.jsx
 │   │       │   └── PacienteDetalle.jsx
-│   │       └── styles/
-│   │           └── _pacienteDetalle.scss
 │   ├── hooks/                   # hooks compartidos
 │   │   ├── useDebouncedValue.js
 │   │   └── useToast.js
@@ -71,6 +69,7 @@ frontend/
 │   │   └── AppRouter.jsx
 │   ├── styles/
 │   │   ├── _variables.scss      # design tokens (colores, radios, sombras)
+│   │   ├── el resto de componentes de styles 
 │   │   └── main.scss            # import global + parciales
 │   ├── App.jsx
 │   └── main.jsx
