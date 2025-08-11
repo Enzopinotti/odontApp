@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { changePassword } from '../../api/auth';
-import useToast from '../../hooks/useToast';
-import { handleApiError } from '../../utils/handleApiError';
+import { changePassword } from '../../../api/auth';
+import useToast from '../../../hooks/useToast';
+import { handleApiError } from '../../../utils/handleApiError';
 
 export default function ChangePassword() {
   const { showToast } = useToast();

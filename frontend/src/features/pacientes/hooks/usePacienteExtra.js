@@ -5,7 +5,7 @@ import {
   getHistoriaClinica,
   getImagenesPaciente,
   getHistorialTratamientos,
-} from '../api/clinica';
+} from '../../../api/clinica';
 
 /**
  * Trae en paralelo: Odontograma, Historia, Imágenes, Tratamientos

@@ -4,20 +4,20 @@ import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import GuestRoute from '../components/GuestRoute';
 
-import Login from '../pages/Usuarios/Login';
-import Register from '../pages/Usuarios/Register';
-import ForgotPassword from '../pages/Usuarios/ForgotPassword';
-import ResetPassword from '../pages/Usuarios/ResetPassword';
-import VerifySent from '../pages/Usuarios/VerifySent';
-import VerifyEmail from '../pages/Usuarios/VerifyEmail';
-import Profile from '../pages/Usuarios/Profile';
-import ChangePassword from '../pages/Usuarios/ChangePassword';
+import Login from '../features/auth/pages/Login';
+import Register from '../features/auth/pages/Register';
+import ForgotPassword from '../features/auth/pages/ForgotPassword';
+import ResetPassword from '../features/auth/pages/ResetPassword';
+import VerifySent from '../features/auth/pages/VerifySent';
+import VerifyEmail from '../features/auth/pages/VerifyEmail';
+import Profile from '../features/auth/pages/Profile';
+import ChangePassword from '../features/auth/pages/ChangePassword';
 import NotFound from '../pages/Usuarios/NotFound';
 
-import Pacientes from '../pages/Pacientes/Pacientes';
-import PacienteNuevo from '../pages/Pacientes/PacienteNuevo';
-import PacienteEditar from '../pages/Pacientes/PacienteEditar';
-import PacienteDetalle from '../pages/Pacientes/PacienteDetalle'; 
+import Pacientes from '../features/pacientes/pages/Pacientes';
+import PacienteNuevo from '../features/pacientes/pages/PacienteNuevo';
+import PacienteEditar from '../features/pacientes/pages/PacienteEditar';
+import PacienteDetalle from '../features/pacientes/pages/PacienteDetalle'; 
 
 function AppRouter() {
   return (

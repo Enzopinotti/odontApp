@@ -1,6 +1,6 @@
 // src/hooks/usePrefetchPaciente.js
 import { useQueryClient } from '@tanstack/react-query';
-import { getPacienteById } from '../api/clinica';
+import { getPacienteById } from '../../../api/clinica';
 
 /**
  * Prefetch del paciente para entrada "instantánea".

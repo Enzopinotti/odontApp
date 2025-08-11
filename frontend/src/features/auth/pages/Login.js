@@ -1,13 +1,13 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, login2FA, googleUrl } from '../../api/auth';
-import useAuth from '../../hooks/useAuth';
-import useToast from '../../hooks/useToast';
-import useModal from '../../hooks/useModal';
+import { login, login2FA, googleUrl } from '../../../api/auth';
+import useAuth from '../hooks/useAuth';
+import useToast from '../../../hooks/useToast';
+import useModal from '../../../hooks/useModal';
 import { FcGoogle } from 'react-icons/fc';
 import { BsEye, BsEyeSlash } from 'react-icons/bs';
-import { handleApiError } from '../../utils/handleApiError';
+import { handleApiError } from '../../../utils/handleApiError';
 
 export default function Login() {
   const { setUser } = useAuth();

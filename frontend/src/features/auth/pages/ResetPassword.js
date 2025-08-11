@@ -2,9 +2,9 @@
 // ===============================
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { resetPassword } from '../../api/auth';
-import useToast from '../../hooks/useToast';
-import { handleApiError } from '../../utils/handleApiError';
+import { resetPassword } from '../../../api/auth';
+import useToast from '../../../hooks/useToast';
+import { handleApiError } from '../../../utils/handleApiError';
 import { BsEye, BsEyeSlash } from 'react-icons/bs';
 
 export default function ResetPassword() {

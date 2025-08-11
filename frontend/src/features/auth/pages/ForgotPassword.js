@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { forgotPassword } from '../../api/auth';
-import useToast from '../../hooks/useToast';
+import { forgotPassword } from '../../../api/auth';
+import useToast from '../../../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
-import { handleApiError } from '../../utils/handleApiError';
+import { handleApiError } from '../../../utils/handleApiError';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

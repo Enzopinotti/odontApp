@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { login2FA } from '../../api/auth';
-import useToast from '../../hooks/useToast';
+import { login2FA } from '../../../api/auth';
+import useToast from '../../../hooks/useToast';
 import { useNavigate, useLocation } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../features/auth/hooks/useAuth';
 
 export default function TwoFactorLogin() {
   const [code, setCode] = useState('');

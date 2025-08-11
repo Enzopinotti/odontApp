@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { setup2FA, verify2FA, disable2FA } from '../../api/auth';
-import useAuth from '../../hooks/useAuth';
-import useToast from '../../hooks/useToast';
+import { setup2FA, verify2FA, disable2FA } from '../../../api/auth';
+import useAuth from '../../auth/hooks/useAuth';
+import useToast from '../../../hooks/useToast';
 
 export default function SecuritySettings() {
   const { user, setUser } = useAuth();

@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { crearPaciente } from '../../api/clinica';
-import PacienteForm from '../../components/pacientes/PacienteForm';
-import { handleApiError } from '../../utils/handleApiError';
-import useToast from '../../hooks/useToast';
-import useModal from '../../hooks/useModal';
+import { crearPaciente } from '../../../api/clinica';
+import PacienteForm from '../components/PacienteForm';
+import { handleApiError } from '../../../utils/handleApiError';
+import useToast from '../../../hooks/useToast';
+import useModal from '../../../hooks/useModal';
 import { useNavigate } from 'react-router-dom';
-import BackBar from '../../components/BackBar';
+import BackBar from '../../../components/BackBar';
 
 const EMPTY = {
   nombre: '',

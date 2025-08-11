@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { updateMe, uploadAvatar } from '../../api/auth';
-import useAuth from '../../hooks/useAuth';
-import useToast from '../../hooks/useToast';
-import { handleApiError } from '../../utils/handleApiError';
+import { updateMe, uploadAvatar } from '../../../api/auth';
+import useAuth from '../../auth/hooks/useAuth';
+import useToast from '../../../hooks/useToast';
+import { handleApiError } from '../../../utils/handleApiError';
 import { FaUser, FaLock, FaCamera } from 'react-icons/fa';
-import SecuritySettings from './SecuritySettings';
-import avatarDefecto from '../../assets/img/avatarDefecto.webp';
+import SecuritySettings from '../../auth/pages/SecuritySettings';
+import avatarDefecto from '../../../assets/img/avatarDefecto.webp';
 
 export default function Profile() {
   const { user, setUser } = useAuth();

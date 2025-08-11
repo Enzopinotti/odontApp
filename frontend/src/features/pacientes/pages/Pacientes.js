@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useContext } from 'react';
-import { usePacientes } from '../../hooks/usePacientes';
-import PacientesHeader from '../../components/pacientes/PacientesHeader';
-import useToast from '../../hooks/useToast';
-import { handleApiError } from '../../utils/handleApiError';
+import { usePacientes } from '../hooks/usePacientes';
+import PacientesHeader from '../components/PacientesHeader';
+import useToast from '../../../hooks/useToast';
+import { handleApiError } from '../../../utils/handleApiError';
 import Lottie from 'lottie-react';
-import loadingAnim from '../../assets/video/pacientes-loading.json';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { AuthCtx } from '../../context/AuthProvider';
-import useDebouncedValue from '../../hooks/useDebouncedValue';
-import usePrefetchPaciente from '../../hooks/usePrefetchPaciente';
+import { AuthCtx } from '../../../context/AuthProvider';
+import useDebouncedValue from '../../../hooks/useDebouncedValue';
+import usePrefetchPaciente from '../hooks/usePrefetchPaciente';
 
 export default function Pacientes() {
   const { showToast } = useToast();

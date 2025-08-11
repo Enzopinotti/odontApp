@@ -1,13 +1,13 @@
 // src/pages/Clinica/PacienteDetalle.jsx
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import BackBar from '../../components/BackBar';
-import usePaciente from '../../hooks/usePaciente';
-import usePacienteExtra from '../../hooks/usePacienteExtra';
-import usePrefetchPaciente from '../../hooks/usePrefetchPaciente';
-import useToast from '../../hooks/useToast';
-import useModal from '../../hooks/useModal';
-import { handleApiError } from '../../utils/handleApiError';
+import BackBar from '../../../components/BackBar';
+import usePaciente from '../hooks/usePaciente';
+import usePacienteExtra from '../hooks/usePacienteExtra';
+import usePrefetchPaciente from '../hooks/usePrefetchPaciente';
+import useToast from '../../../hooks/useToast';
+import useModal from '../../../hooks/useModal';
+import { handleApiError } from '../../../utils/handleApiError';
 import {
   FaEdit, FaTooth, FaHistory, FaImages,
   FaPhone, FaEnvelope, FaMapMarkerAlt, FaCopy, FaExternalLinkAlt

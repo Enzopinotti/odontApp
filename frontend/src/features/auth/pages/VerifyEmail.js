@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { verifyEmail } from '../../api/auth';
-import useToast from '../../hooks/useToast';
-import ResendConfirmationModal from '../../components/ResendConfirmationModal';
+import { verifyEmail } from '../../../api/auth';
+import useToast from '../../../hooks/useToast';
+import ResendConfirmationModal from '../../../components/ResendConfirmationModal';
 
 export default function VerifyEmail() {
   const { token } = useParams();

@@ -1,13 +1,13 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Lottie from 'lottie-react';
-import loadingAnim from '../../assets/video/pacientes-loading.json';
-import PacienteForm from '../../components/pacientes/PacienteForm';
-import usePaciente from '../../hooks/usePaciente';
-import usePacienteMutations from '../../hooks/usePacienteMutations';
-import useToast from '../../hooks/useToast';
-import useModal from '../../hooks/useModal';
-import { handleApiError } from '../../utils/handleApiError';
-import BackBar from '../../components/BackBar';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
+import PacienteForm from '../components/PacienteForm';
+import usePaciente from '../hooks/usePaciente';
+import usePacienteMutations from '../hooks/usePacienteMutations';
+import useToast from '../../../hooks/useToast';
+import useModal from '../../../hooks/useModal';
+import { handleApiError } from '../../../utils/handleApiError';
+import BackBar from '../../../components/BackBar';
 
 /* Normalizador → form-friendly */
 const normalizePacienteForForm = (p = {}) => ({

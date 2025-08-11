@@ -3,11 +3,11 @@ import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
-import { AuthCtx } from '../../context/AuthProvider';
-import useModal from '../../hooks/useModal';
-import usePacienteMutations from '../../hooks/usePacienteMutations';
-import { handleApiError } from '../../utils/handleApiError';
-import useToast from '../../hooks/useToast';
+import { AuthCtx } from '../../../context/AuthProvider';
+import useModal from '../../../hooks/useModal';
+import usePacienteMutations from '../hooks/usePacienteMutations';
+import { handleApiError } from '../../../utils/handleApiError';
+import useToast from '../../../hooks/useToast';
 
 export default function PacienteRow({ paciente }) {
   const navigate = useNavigate();

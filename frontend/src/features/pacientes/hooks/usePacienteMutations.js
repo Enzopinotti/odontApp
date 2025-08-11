@@ -1,8 +1,8 @@
 // src/hooks/usePacienteMutations.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { actualizarPaciente, eliminarPaciente } from '../api/clinica';
-import { handleApiError } from '../utils/handleApiError';
-import useToast from './useToast';
+import { actualizarPaciente, eliminarPaciente } from '../../../api/clinica';
+import { handleApiError } from '../../../utils/handleApiError';
+import useToast from '../../../hooks/useToast';
 
 export default function usePacienteMutations() {
   const queryClient = useQueryClient();

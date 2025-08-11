@@ -1,6 +1,6 @@
 // src/hooks/usePaciente.js
 import { useQuery } from '@tanstack/react-query';
-import { getPacienteById } from '../api/clinica';
+import { getPacienteById } from '../../../api/clinica';
 
 export default function usePaciente(id, enabled = true) {
   return useQuery({
