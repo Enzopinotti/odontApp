@@ -9,7 +9,12 @@ export default function AuthProvider({ children }) {
   const [state, setState] = useState({ user: null, loading: true });
   const location = useLocation();
 
-  const isPublicPath = ['/login', '/register', '/forgot-password', '/verify-sent'].includes(location.pathname);
+  const isPublicPath = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/verify-sent',
+  ].includes(location.pathname);
 
   useEffect(() => {
     if (isPublicPath) {
@@ -21,6 +26,7 @@ export default function AuthProvider({ children }) {
       try {
         const { data, status } = await authApi.me();
         if (status === 200) {
+          console.log('👤 user: ', data.data); // 🔹 Deja el console.log
           setState({ user: data.data, loading: false });
         } else {
           setState({ user: null, loading: false });
@@ -38,7 +44,18 @@ export default function AuthProvider({ children }) {
     window.location = '/login';
   };
 
-  const value = { ...state, setUser: (u) => setState({ ...state, user: u }), logout };
+  /** 🔹 Helper para permisos */
+  const hasPermiso = (recurso, accion) => {
+    const permisos = state.user?.permisos || [];
+    return permisos.some((p) => p.recurso === recurso && p.accion === accion);
+  };
+
+  const value = {
+    ...state,
+    setUser: (u) => setState({ ...state, user: u }),
+    logout,
+    hasPermiso,
+  };
 
   return (
     <AuthCtx.Provider value={value}>

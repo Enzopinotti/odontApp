@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import GuestRoute from '../components/GuestRoute'; 
+import GuestRoute from '../components/GuestRoute';
 
 import Login from '../pages/Usuarios/Login';
 import Register from '../pages/Usuarios/Register';
@@ -13,12 +13,15 @@ import VerifyEmail from '../pages/Usuarios/VerifyEmail';
 import Profile from '../pages/Usuarios/Profile';
 import ChangePassword from '../pages/Usuarios/ChangePassword';
 import NotFound from '../pages/Usuarios/NotFound';
+
 import Pacientes from '../pages/Pacientes/Pacientes';
+import PacienteNuevo from '../pages/Pacientes/PacienteNuevo';
+import PacienteEditar from '../pages/Pacientes/PacienteEditar';
+import PacienteDetalle from '../pages/Pacientes/PacienteDetalle'; 
 
 function AppRouter() {
   return (
     <Routes>
-      {/* 🧑‍🚫 Layout público solo para no logueados */}
       <Route
         element={
           <GuestRoute>
@@ -45,7 +48,12 @@ function AppRouter() {
       >
         <Route path="profile" element={<Profile />} />
         <Route path="cambiar-password" element={<ChangePassword />} />
-        <Route path="pacientes" element={<Pacientes />} />
+        <Route path="pacientes">
+          <Route index element={<Pacientes />} /> 
+          <Route path="nuevo" element={<PacienteNuevo />} />
+          <Route path=":id/editar" element={<PacienteEditar />} />
+          <Route path=":id" element={<PacienteDetalle />} /> 
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />

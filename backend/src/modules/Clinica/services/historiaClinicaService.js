@@ -43,6 +43,11 @@ export const crear = async (pacienteId, data, imagenes = []) => {
     descripcion: data.descripcion,
     fecha: data.fecha || new Date(),
   });
+  // ✅ Actualizamos ultimaVisita
+  await Paciente.update(
+    { ultimaVisita: historia.fecha },
+    { where: { id: pacienteId } }
+  );
 
   if (imagenes.length > 0) {
     const urls = await Promise.all(
@@ -75,6 +80,18 @@ export const actualizar = async (id, data) => {
     descripcion: data.descripcion,
     fecha: data.fecha,
   });
+
+  // ✅ Si esta historia es la más reciente, actualizamos ultimaVisita
+  const ultimaHistoria = await HistoriaClinica.findOne({
+    where: { pacienteId: historia.pacienteId },
+    order: [['fecha', 'DESC']],
+  });
+  if (ultimaHistoria) {
+    await Paciente.update(
+      { ultimaVisita: ultimaHistoria.fecha },
+      { where: { id: historia.pacienteId } }
+    );
+  }
 
   return obtenerPorId(id);
 };

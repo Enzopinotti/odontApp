@@ -5,7 +5,7 @@ import * as authRepo from '../repositories/authRepository.js';
 import { enviarCorreo } from '../../../services/emailService.js';
 import ApiError from '../../../utils/ApiError.js';
 import { registrarLog } from './auditService.js';
-import { Rol, Usuario } from '../models/index.js';
+import { Permiso, Rol, Usuario } from '../models/index.js';
 import cloudinary from '../../../utils/upload/cloudinary.js';
 
 const {
@@ -279,9 +279,37 @@ export const resendConfirmation = async (email) => {
 
 /* ----------- PERFIL ----------- */
 export const getMe = async (id) => {
-  return Usuario.findByPk(id, {
-    include: [{ model: Rol, as: 'Rol' }],
+  const usuario = await Usuario.findByPk(id, {
+    include: [
+      {
+        model: Rol,
+        as: 'Rol',
+        include: [
+          {
+            model: Permiso,
+            through: { attributes: [] }, // Oculta tabla pivote
+          },
+        ],
+      },
+    ],
   });
+
+  if (!usuario) return null;
+
+  const data = usuario.toJSON();
+
+  // 🔹 Flatten: Rol.Permisos -> permisos[]
+  data.permisos =
+    data.Rol?.Permisos?.map((p) => ({
+      id: p.id,
+      recurso: p.recurso,
+      accion: p.accion,
+    })) || [];
+
+  // Eliminamos Permisos para no duplicar
+  if (data.Rol?.Permisos) delete data.Rol.Permisos;
+
+  return data;
 };
 
 export const updateMe = async (userId, data) => {

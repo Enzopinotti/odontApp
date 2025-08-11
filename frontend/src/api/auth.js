@@ -8,6 +8,12 @@ export const me = () =>
   api.get('/auth/me', {
     validateStatus: (status) => status < 500,
   });
+
+export const refresh = () =>
+  api.post('/auth/refresh', null, {
+    validateStatus: (status) => status < 500, // Captura 401/403
+  });
+  
 export const updateMe          = (data)        => api.put('/auth/me', data);
 export const changePassword    = (data)        => api.put('/auth/me/password', data);
 

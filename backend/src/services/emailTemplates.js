@@ -5,7 +5,7 @@ const colors = {
   light: '#F3F4F6',
   dark: '#1C1C1E',
   white: '#ffffff',
-  accent: '#C1C1C1',
+  accent: '#9b9b9b',
 };
 
 const baseLayout = (content) => `

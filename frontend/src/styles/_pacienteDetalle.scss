@@ -1,0 +1,486 @@
+/* src/styles/pacienteDetalle.scss */
+@use './variables' as *;
+
+/* ===========================================================
+   PACIENTE DETALLE – OdontApp
+   Cohesivo con login/auth-card: sombras suaves, bordes redondos,
+   foco visible, animaciones moderadas y responsivo.
+   =========================================================== */
+
+/* --------- Helpers --------- */
+@mixin ring($color: $color-primary, $alpha: .32) {
+  box-shadow: 0 0 0 2px rgba($color, $alpha);
+}
+
+@mixin elevate($y: -2px) {
+  transform: translateY($y);
+}
+
+/* Accesibilidad: foco visible solo con teclado */
+:where(button, a, .icon-btn, .qa-btn, .link-btn):focus-visible {
+  outline: none;
+  @include ring($color-primary, .35);
+  border-radius: calc($radius - 2px);
+}
+
+/* Preferencia del usuario: reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ===========================================================
+   Página
+   =========================================================== */
+.paciente-detalle-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0.75rem;
+  animation: fadeInUp .45s ease-out;
+
+  @media (min-width: 768px) {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+}
+
+/* ===========================================================
+   Backbar – acciones a la derecha
+   =========================================================== */
+.actions-right {
+  display: flex;
+  gap: .5rem;
+
+  .btn.ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: $color-white;
+    border: 1px solid #e4e6ed;
+    border-radius: $radius;
+    padding: .42rem .72rem;
+    cursor: pointer;
+    transition: background .18s ease, box-shadow .18s ease, transform .14s ease;
+
+    svg { font-size: .95rem; }
+
+    &:hover { background: $color-light; box-shadow: $shadow; @include elevate(-1px); }
+    &:active { transform: translateY(0); }
+  }
+}
+
+/* ===========================================================
+   Card base
+   =========================================================== */
+.card {
+  background: $color-white;
+  border-radius: $radius;
+  padding: 1.2rem 1rem;
+  box-shadow: $shadow;
+  transition: box-shadow .18s ease, transform .18s ease;
+
+  &:hover { box-shadow: 0 12px 24px rgba(0,0,0,.08); }
+  @media (min-width: 600px) { padding: 1.6rem 1.4rem; }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .75rem;
+
+    h3 { margin: 0; font-size: 1.05rem; color: $color-text; }
+  }
+}
+
+/* ===========================================================
+   Header
+   =========================================================== */
+.detalle-header {
+  animation: fadeIn .35s ease;
+
+  .header-grid {
+    display: grid;
+    gap: 1rem;
+
+    @media (min-width: 820px) {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+  }
+
+  .identidad {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .avatar {
+    width: 64px; height: 64px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba($color-primary, .10), rgba($color-primary, .22));
+    color: $color-primary;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 1.2rem;
+    box-shadow: inset 0 0 0 1px rgba($color-primary, .25);
+    user-select: none;
+    transition: transform .18s ease;
+
+    &:hover { transform: rotate(-1deg) scale(1.01); }
+  }
+
+  .id-text {
+    h2 {
+      margin: 0 0 .25rem;
+      font-size: 1.35rem;
+      color: $color-text;
+      letter-spacing: .2px;
+    }
+    .muted { color: #667085; display: inline-flex; align-items: center; }
+  }
+
+  .icon-btn {
+    margin-left: .45rem;
+    border: none; background: transparent; cursor: pointer;
+    color: #8a93a5; display: inline-flex; align-items: center;
+    padding: .15rem;
+    border-radius: .5rem;
+    transition: color .18s ease, transform .12s ease, background .18s ease;
+    background: transparent !important;
+    &:hover { color: $color-primary; transform: translateY(-1px); background: rgba($color-primary,.06); }
+    &:active { transform: translateY(0); }
+  }
+
+  .pills {
+    display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem;
+
+    .pill {
+      background: $color-light;
+      color: $color-text;
+      border-radius: 999px;
+      padding: .28rem .64rem;
+      font-size: .82rem;
+      border: 1px solid #eef0f6;
+      animation: popIn .28s ease;
+    }
+  }
+
+  .quick-actions {
+    display: grid;
+    grid-auto-flow: column;
+    gap: .5rem;
+    justify-content: start;
+
+    .qa-btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: $color-primary; color: $color-white; border: none;
+      border-radius: $radius; padding: .56rem .82rem; cursor: pointer;
+      transition: filter .18s, transform .15s, box-shadow .18s;
+      box-shadow: 0 4px 14px rgba($color-primary, .18);
+
+      svg { font-size: .95rem; }
+
+      &:hover   { filter: brightness(.97); @include elevate(-1px); }
+      &:active  { transform: translateY(0); }
+      &:focus-visible { @include ring($color-primary, .4); }
+    }
+  }
+}
+
+/* ===========================================================
+   Grilla principal
+   =========================================================== */
+.grid-2 {
+  display: grid;
+  gap: 1rem;
+
+  @media (min-width: 920px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ===========================================================
+   Bloque: Información de contacto
+   =========================================================== */
+.info-list {
+  display: grid; gap: .68rem;
+
+  .info-row {
+    display: flex; align-items: center; gap: .6rem;
+    line-height: 1.3;
+    .icon-btn {
+        margin-left: .45rem;
+        border: none; background: transparent; cursor: pointer;
+        color: #8a93a5; display: inline-flex; align-items: center;
+        padding: .15rem;
+        border-radius: .5rem;
+        transition: color .18s ease, transform .12s ease, background .18s ease;
+        background: transparent !important;
+        &:hover { color: $color-primary; transform: translateY(-1px); background: rgba($color-primary,.06); }
+        &:active { transform: translateY(0); }
+    }
+
+    svg { color: $color-primary; flex-shrink: 0; }
+    a   { color: $color-primary; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .muted { color: #6b7280; }
+  }
+}
+
+/* ===========================================================
+   Odontograma – Resumen
+   =========================================================== */
+.odo-resumen {
+  display: grid; gap: .6rem;
+
+  .badge.estado {
+    width: fit-content;
+    padding: .26rem .62rem;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    border: 1px solid transparent;
+    animation: popIn .28s ease;
+
+    &.sano {
+      background: rgba(34,197,94,.14); color: #16a34a;
+      border-color: rgba(34,197,94,.22);
+    }
+    &.en_tratamiento, &.en-tratamiento {
+      background: rgba(245,158,11,.14); color: #d97706;
+      border-color: rgba(245,158,11,.22);
+    }
+    &.critico {
+      background: rgba(239,68,68,.14); color: #dc2626;
+      border-color: rgba(239,68,68,.22);
+    }
+  }
+
+  .stats {
+    display: grid;
+    grid-auto-flow: column;
+    gap: .6rem;
+    justify-content: start;
+
+    .stat {
+      background: $color-light;
+      border-radius: .8rem;
+      padding: .55rem .75rem;
+      text-align: center;
+      min-width: 88px;
+      transition: transform .15s ease, box-shadow .18s ease, background .18s ease;
+      border: 1px solid #eef0f6;
+
+      .stat-num   { font-size: 1.12rem; font-weight: 800; color: $color-text; line-height: 1; padding-right: 1rem; }
+      .stat-label { font-size: .8rem; color: #667085; position: relative; bottom: 2px;}
+
+      &:hover { @include elevate(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.06); background: #f7f8fb; }
+      &:active { transform: translateY(0); }
+    }
+  }
+
+  .link-btn {
+    border: none; background: transparent; color: $color-primary; cursor: pointer;
+    display: inline-flex; gap: .42rem; align-items: center; padding: .1rem .2rem;
+    border-radius: .5rem;
+    transition: color .18s ease, background .18s ease, transform .12s ease;
+
+    svg { font-size: .9rem; }
+
+    &:hover { text-decoration: underline; background: rgba($color-primary,.06); }
+    &:active { transform: translateY(0); }
+  }
+}
+
+/* ===========================================================
+   Timeline – Historia clínica
+   =========================================================== */
+.timeline {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; gap: .9rem;
+
+  li {
+    position: relative;
+    display: grid; gap: .35rem;
+    padding-left: 1.1rem;
+    border-left: 2px solid rgba($color-primary,.25);
+    animation: fadeIn .3s ease;
+
+    /* punto de la línea de tiempo */
+    &::before {
+      content: '';
+      position: absolute;
+      left: -6px; top: .35rem;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary,.18);
+      animation: pulseDot 1.4s ease-out infinite;
+    }
+  }
+
+  .tl-date { font-weight: 700; color: $color-text; }
+  .tl-body { color: #444; }
+  .muted  { color: #667085; }
+}
+
+/* ===========================================================
+   Imágenes
+   =========================================================== */
+.thumb-grid {
+  display: grid; gap: .6rem;
+  grid-template-columns: repeat(2, 1fr);
+
+  @media (min-width: 560px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .thumb {
+    position: relative;
+    display: block;
+    border-radius: .66rem;
+    overflow: hidden;
+    box-shadow: $shadow;
+    transition: transform .16s ease, box-shadow .2s ease;
+
+    img {
+      width: 100%; height: 118px; object-fit: cover; display: block;
+      transition: transform .25s ease;
+    }
+
+    .thumb-caption {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: .4rem .55rem;
+      font-size: .82rem; color: #f8fafc;
+      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.45) 100%);
+      transform: translateY(8px);
+      opacity: .95;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+
+    &:hover {
+      box-shadow: 0 14px 26px rgba(0,0,0,.12);
+      @include elevate(-2px);
+
+      img { transform: scale(1.03); }
+      .thumb-caption { transform: translateY(0); opacity: 1; }
+    }
+  }
+}
+
+/* ===========================================================
+   Tratamientos
+   =========================================================== */
+.treat-list {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; gap: .66rem;
+
+  li {
+    padding: .4rem .45rem;
+    border-radius: .6rem;
+    border: 1px solid #eef0f6;
+    background: #fbfcff;
+    transition: background .18s ease, transform .12s ease;
+
+    &:hover { background: #f7f9ff; @include elevate(-1px); }
+    &:active { transform: translateY(0); }
+  }
+
+  .treat-name { font-weight: 600; color: $color-text; }
+  .small { font-size: .82rem; color: #667085; }
+}
+
+/* ===========================================================
+   Skeletons (Shimmer)
+   =========================================================== */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #f2f4f7;
+  border-radius: .5rem;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: shimmer 1.25s infinite;
+  }
+}
+
+.header-skeleton { display: flex; gap: 1rem; align-items: center; }
+.sk-avatar { width: 64px; height: 64px; border-radius: 14px; }
+.sk-lines { display: grid; gap: .4rem; }
+.sk-line { height: 12px; }
+.w180 { width: 180px; } .w120 { width: 120px; } .w240 { width: 240px; }
+
+.skeleton-block { display: grid; gap: .5rem; }
+.skeleton-list  { display: grid; gap: .6rem; }
+.skeleton-grid  { display: grid; gap: .6rem; grid-template-columns: repeat(3, 1fr); }
+.sk-thumb { height: 118px; border-radius: .66rem; }
+
+/* ===========================================================
+   Utilidades
+   =========================================================== */
+.muted { color: #667085; }
+.sr-only { position: absolute; left: -9999px; }
+
+/* Enlaces textual-style */
+.link-btn {
+  background: none; border: none; color: $color-primary; cursor: pointer;
+  padding: 0; font-weight: 600; text-decoration: none;
+  display: inline-flex; align-items: center; gap: .38rem;
+
+  &:hover { text-decoration: underline; }
+}
+
+/* ===========================================================
+   Animaciones
+   =========================================================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes popIn {
+  from { transform: scale(.98); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0 rgba($color-primary,.22); }
+  70%  { box-shadow: 0 0 0 6px rgba($color-primary, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($color-primary, 0); }
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ===========================================================
+   Responsive tweaks & print
+   =========================================================== */
+@media (max-width: 480px) {
+  .detalle-header .id-text h2 { font-size: 1.15rem; }
+  .thumb-grid .thumb img { height: 110px; }
+}
+
+@media print {
+  .paciente-detalle-page {
+    padding: 0;
+    gap: .6rem;
+  }
+  .actions-right, .quick-actions, .icon-btn, .link-btn { display: none !important; }
+  .card { box-shadow: none !important; border: 1px solid #e5e7eb; }
+  .badge.estado, .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

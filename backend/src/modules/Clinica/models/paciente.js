@@ -1,4 +1,3 @@
-// backend/src/modules/Clinica/models/paciente.js
 export default (sequelize, DataTypes) => {
   return sequelize.define('Paciente', {
     nombre: {
@@ -19,6 +18,10 @@ export default (sequelize, DataTypes) => {
     },
     nroAfiliado: {
       type: DataTypes.STRING,
+    },
+    ultimaVisita: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   }, {
     tableName: 'pacientes',
