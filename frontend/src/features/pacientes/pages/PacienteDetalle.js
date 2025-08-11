@@ -1,10 +1,10 @@
-// src/pages/Clinica/PacienteDetalle.jsx
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import BackBar from '../../../components/BackBar';
 import usePaciente from '../hooks/usePaciente';
 import usePacienteExtra from '../hooks/usePacienteExtra';
 import usePrefetchPaciente from '../hooks/usePrefetchPaciente';
+import useOdontoMut from '../hooks/useOdontogramaMutations';
 import useToast from '../../../hooks/useToast';
 import useModal from '../../../hooks/useModal';
 import { handleApiError } from '../../../utils/handleApiError';
@@ -19,16 +19,32 @@ function copy(text, showToast) {
   showToast('Copiado al portapapeles', 'success');
 }
 
+const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
+const buildWhatsApp = (tel) => {
+  const t = onlyDigits(tel);
+  if (!t) return null;
+  return `https://wa.me/${t}`;
+};
+const buildMaps = (dir) => {
+  if (!dir) return null;
+  const str = [
+    dir.calle, dir.numero, dir.ciudad, dir.provincia, dir.pais
+  ].filter(Boolean).join(' ');
+  if (!str.trim()) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(str)}`;
+};
+
 export default function PacienteDetalle() {
   const { id } = useParams();
   const pacienteId = Number(id);
   const navigate = useNavigate();
-  const location = useLocation();                 // ← lo usamos para backTo y preview
+  const location = useLocation();
   const preview = location.state?.pacientePreview;
 
   const { showToast } = useToast();
   const { showModal } = useModal();
   const prefetchPaciente = usePrefetchPaciente();
+  const { crear: crearOdonto } = useOdontoMut();
 
   const { data: paciente, isLoading, isError, error } = usePaciente(pacienteId, true);
   const {
@@ -38,7 +54,6 @@ export default function PacienteDetalle() {
     tratamientos, trLoading,
   } = usePacienteExtra(pacienteId);
 
-  // Manejo de error
   useEffect(() => {
     if (isError) {
       handleApiError(error, showToast, null, showModal);
@@ -46,43 +61,32 @@ export default function PacienteDetalle() {
     }
   }, [isError, error, showToast, showModal, navigate]);
 
-  // Título instantáneo con preview si aún no cargó el paciente
   const title = useMemo(() => {
-    if (paciente) {
-      return `${paciente.apellido || ''} ${paciente.nombre || ''}`.trim() || 'Detalle del paciente';
-    }
-    if (preview) {
-      return `${preview.apellido || ''} ${preview.nombre || ''}`.trim() || 'Detalle del paciente';
-    }
+    if (paciente) return `${paciente.apellido || ''} ${paciente.nombre || ''}`.trim() || 'Detalle del paciente';
+    if (preview)  return `${preview.apellido || ''} ${preview.nombre || ''}`.trim() || 'Detalle del paciente';
     return 'Detalle del paciente';
   }, [paciente, preview]);
 
-  // Derivadas defensivas
   const tel   = paciente?.Contacto?.telefonoMovil || paciente?.Contacto?.telefonoFijo || null;
   const email = paciente?.Contacto?.email || null;
   const dir   = paciente?.Contacto?.Direccion || null;
+  const pref  = paciente?.Contacto?.preferenciaContacto || null;
 
   const estadoGeneral = odontograma?.estadoGeneral || '—';
-  const fechaOdo = odontograma?.fechaCreacion ? new Date(odontograma.fechaCreacion).toLocaleDateString() : '—';
-  const totalDientes = odontograma?.Dientes?.length || odontograma?.dientes?.length || 0;
-  const ultimoTurno  = paciente?.ultimaVisita ? new Date(paciente.ultimaVisita).toLocaleDateString() : '—';
+  const fechaOdo      = odontograma?.fechaCreacion ? new Date(odontograma.fechaCreacion).toLocaleDateString() : '—';
+  const totalDientes  = odontograma?.Dientes?.length || odontograma?.dientes?.length || 0;
+  const ultimoTurno   = paciente?.ultimaVisita ? new Date(paciente.ultimaVisita).toLocaleDateString() : '—';
 
-  // 👉 Al ir a editar pasamos backTo con el pathname actual
-  const goEditar = () =>
+  const goEditar      = () =>
     navigate(`/pacientes/${pacienteId}/editar`, {
-      state: {
-        pacientePreview: {
-          id: pacienteId,
-          nombre: paciente?.nombre,
-          apellido: paciente?.apellido,
-        },
-        backTo: location.pathname, // ← clave para volver al detalle
-      },
+      state: { pacientePreview: { id: pacienteId, nombre: paciente?.nombre, apellido: paciente?.apellido }, backTo: location.pathname },
     });
-
   const goOdontograma = () => navigate(`/pacientes/${pacienteId}/odontograma`);
   const goHistoria    = () => navigate(`/pacientes/${pacienteId}/historia`);
   const goImagenes    = () => navigate(`/pacientes/${pacienteId}/imagenes`);
+
+  const waLink   = buildWhatsApp(tel);
+  const mapsLink = buildMaps(dir);
 
   return (
     <div className="paciente-detalle-page">
@@ -127,12 +131,7 @@ export default function PacienteDetalle() {
                 <h2>{paciente?.apellido}, {paciente?.nombre}</h2>
                 <p className="muted">
                   DNI: <strong>{paciente?.dni}</strong>
-                  <button
-                    className="icon-btn"
-                    onClick={() => copy(paciente?.dni, showToast)}
-                    title="Copiar DNI"
-                    aria-label="Copiar DNI"
-                  >
+                  <button className="icon-btn" onClick={() => copy(paciente?.dni, showToast)} title="Copiar DNI" aria-label="Copiar DNI">
                     <FaCopy />
                   </button>
                 </p>
@@ -140,6 +139,7 @@ export default function PacienteDetalle() {
                   {paciente?.obraSocial && <span className="pill">Obra Social: {paciente.obraSocial}</span>}
                   {paciente?.nroAfiliado && <span className="pill">Afiliado: {paciente.nroAfiliado}</span>}
                   <span className="pill">Últ. visita: {ultimoTurno}</span>
+                  {pref && <span className="pill pref">Pref.: {pref}</span>}
                 </div>
               </div>
             </div>
@@ -171,64 +171,70 @@ export default function PacienteDetalle() {
               <div className="skeleton sk-line w150" />
             </div>
           ) : (
-            <div className="info-list">
-              <div className="info-row">
-                <FaPhone />
-                {tel ? (
-                  <>
-                    <a href={`tel:${tel}`}>{tel}</a>
-                    <button
-                      className="icon-btn"
-                      onClick={() => copy(tel, showToast)}
-                      title="Copiar teléfono"
-                      aria-label="Copiar teléfono"
-                    >
-                      <FaCopy />
-                    </button>
-                  </>
-                ) : <span className="muted">—</span>}
+            <>
+              <div className="info-list">
+                <div className="info-row">
+                  <FaPhone />
+                  {tel ? (
+                    <>
+                      <a href={`tel:${tel}`}>{tel}</a>
+                      <button className="icon-btn" onClick={() => copy(tel, showToast)} title="Copiar teléfono" aria-label="Copiar teléfono"><FaCopy /></button>
+                    </>
+                  ) : <span className="muted">—</span>}
+                </div>
+                <div className="info-row">
+                  <FaEnvelope />
+                  {email ? (
+                    <>
+                      <a href={`mailto:${email}`}>{email}</a>
+                      <button className="icon-btn" onClick={() => copy(email, showToast)} title="Copiar email" aria-label="Copiar email"><FaCopy /></button>
+                    </>
+                  ) : <span className="muted">—</span>}
+                </div>
+                <div className="info-row">
+                  <FaMapMarkerAlt />
+                  {dir ? (
+                    <span>
+                      {dir.calle || ''} {dir.numero || ''}{dir.calle || dir.numero ? ', ' : ''}
+                      {dir.ciudad || ''}{dir.ciudad ? ', ' : ''}{dir.provincia || ''}{dir.provincia ? ', ' : ''}{dir.pais || ''}
+                    </span>
+                  ) : <span className="muted">—</span>}
+                </div>
               </div>
-              <div className="info-row">
-                <FaEnvelope />
-                {email ? (
-                  <>
-                    <a href={`mailto:${email}`}>{email}</a>
-                    <button
-                      className="icon-btn"
-                      onClick={() => copy(email, showToast)}
-                      title="Copiar email"
-                      aria-label="Copiar email"
-                    >
-                      <FaCopy />
-                    </button>
-                  </>
-                ) : <span className="muted">—</span>}
-              </div>
-              <div className="info-row">
-                <FaMapMarkerAlt />
-                {dir ? (
-                  <span>
-                    {dir.calle || ''} {dir.numero || ''}{dir.calle || dir.numero ? ', ' : ''}
-                    {dir.ciudad || ''}{dir.ciudad ? ', ' : ''}{dir.provincia || ''}{dir.provincia ? ', ' : ''}{dir.pais || ''}
-                  </span>
-                ) : <span className="muted">—</span>}
-              </div>
-            </div>
+              {(waLink || mapsLink) && (
+                <div className="contact-actions">
+                  {waLink && <a className="btn mini ghost" href={waLink} target="_blank" rel="noreferrer">WhatsApp</a>}
+                  {mapsLink && <a className="btn mini ghost" href={mapsLink} target="_blank" rel="noreferrer">Abrir mapa</a>}
+                </div>
+              )}
+            </>
           )}
         </article>
 
-        {/* Odontograma - resumen */}
+        {/* Odontograma - resumen o CTA de creación */}
         <article className="card">
           <h3>Odontograma</h3>
+
           {odLoading ? (
             <div className="skeleton-block">
               <div className="skeleton sk-line w140" />
               <div className="skeleton sk-line w120" />
               <div className="skeleton sk-line w180" />
             </div>
+          ) : odontograma === null ? (
+            <div className="empty-odo">
+              <p className="muted">Este paciente no tiene odontograma.</p>
+              <button
+                className="btn primary"
+                onClick={() => crearOdonto.mutate({ pacienteId, observaciones: '' })}
+                disabled={crearOdonto.isLoading}
+              >
+                {crearOdonto.isLoading ? 'Creando…' : 'Crear odontograma'}
+              </button>
+            </div>
           ) : (
             <div className="odo-resumen">
-              <div className={`badge estado ${estadoGeneral.toLowerCase()}`}>{estadoGeneral}</div>
+              <div className={`badge estado ${String(estadoGeneral).toLowerCase().replace(/\s+/g,'_')}`}>{estadoGeneral}</div>
               <p className="muted">Creado: {fechaOdo}</p>
               <div className="stats">
                 <div className="stat">
@@ -325,6 +331,7 @@ export default function PacienteDetalle() {
                     {t.fecha ? new Date(t.fecha).toLocaleDateString() : '—'}
                     {t.estado ? ` · ${t.estado}` : ''}
                     {typeof t.precio === 'number' ? ` · $${t.precio.toFixed(2)}` : ''}
+                    {typeof t.duracionMin === 'number' ? ` · ${t.duracionMin} min` : ''}
                   </div>
                 </li>
               ))}

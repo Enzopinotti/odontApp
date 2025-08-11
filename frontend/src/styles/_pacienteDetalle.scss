@@ -484,3 +484,43 @@
   .card { box-shadow: none !important; border: 1px solid #e5e7eb; }
   .badge.estado, .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+
+/* Pills extra */
+.detalle-header .pills .pill.pref {
+  background: rgba($color-primary, .08);
+  color: $color-primary;
+  border: 1px solid rgba($color-primary, .18);
+}
+
+/* Acciones de contacto */
+.contact-actions {
+  margin-top: .75rem;
+  display: flex;
+  gap: .5rem;
+
+  .btn.mini {
+    padding: .35rem .6rem;
+    border-radius: .6rem;
+    font-size: .85rem;
+  }
+}
+
+/* Empty odontograma */
+.empty-odo {
+  display: grid;
+  gap: .6rem;
+
+  .btn.primary {
+    background: $color-primary;
+    color: $color-white;
+    border: none;
+    border-radius: $radius;
+    padding: .55rem .8rem;
+    cursor: pointer;
+    transition: filter .18s, transform .15s;
+
+    &:hover { filter: brightness(.95); transform: translateY(-1px); }
+    &:disabled { opacity: .7; cursor: default; transform: none; }
+  }
+}

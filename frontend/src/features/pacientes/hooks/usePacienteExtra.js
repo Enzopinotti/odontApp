@@ -1,4 +1,3 @@
-// src/hooks/usePacienteExtra.js
 import { useQuery } from '@tanstack/react-query';
 import {
   getOdontograma,
@@ -8,8 +7,8 @@ import {
 } from '../../../api/clinica';
 
 /**
- * Trae en paralelo: Odontograma, Historia, Imágenes, Tratamientos
- * Devuelve flags de loading individuales para pintar skeletons por card.
+ * Trae en paralelo: Odontograma, Historia, Imágenes, Tratamientos.
+ * Si el odontograma no existe (404) devolvemos `null` para habilitar el CTA de creación.
  */
 export default function usePacienteExtra(pacienteId) {
   const pid = Number(pacienteId);
@@ -20,11 +19,18 @@ export default function usePacienteExtra(pacienteId) {
   } = useQuery({
     queryKey: ['paciente', pid, 'odontograma'],
     queryFn: async () => {
-      const res = await getOdontograma(pid);
-      return res.data;
+      try {
+        const res = await getOdontograma(pid);
+        return res.data;
+      } catch (err) {
+        const status = err?.response?.status;
+        if (status === 404) return null; // ← no existe aún
+        throw err;
+      }
     },
     enabled: Number.isFinite(pid) && pid > 0,
     staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 
   const {

@@ -133,3 +133,12 @@ export async function eliminarImagenClinica(imagenId) {
   const res = await api.delete(`/clinica/historia/imagenes/${imagenId}`);
   return res.data;
 }
+
+export async function actualizarCaraTratada(caraId, data) {
+  const res = await api.put(`/clinica/odontograma/caras/${caraId}`, data);
+  return res.data;
+}
+export async function eliminarCaraTratada(caraId) {
+  const res = await api.delete(`/clinica/odontograma/caras/${caraId}`);
+  return res.data;
+}
