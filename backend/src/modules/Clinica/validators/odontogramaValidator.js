@@ -1,4 +1,3 @@
-// src/modules/Clinica/validators/odontogramaValidator.js
 import { body, param } from 'express-validator';
 import validate from '../../../utils/validateRequest.js';
 
@@ -20,5 +19,16 @@ export const vAgregarCaraTratada = [
   body('simbolo').notEmpty().withMessage('Símbolo requerido'),
   body('tipoTrazo').notEmpty().withMessage('Tipo de trazo requerido'),
   body('estadoCara').notEmpty().withMessage('Estado de la cara requerido'),
+  validate,
+];
+
+/* --- NUEVO: aplicar tratamiento del catálogo a un diente --- */
+export const vAplicarTratamiento = [
+  param('dienteId').isInt().withMessage('ID de diente inválido'),
+  body('tratamientoId').isInt().withMessage('tratamientoId requerido'),
+  body('estado').optional().isString(),
+  body('color').optional().isString(), // hex
+  body('trazo').optional().isIn(['Continuo', 'Punteado']),
+  body('caras').optional().isArray(),
   validate,
 ];

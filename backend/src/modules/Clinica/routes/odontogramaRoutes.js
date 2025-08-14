@@ -5,6 +5,7 @@ import {
   vCrearOdontograma,
   vActualizarDiente,
   vAgregarCaraTratada,
+  vAplicarTratamiento,
 } from '../validators/odontogramaValidator.js';
 import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
@@ -140,6 +141,14 @@ router.post(
   requirePermiso('odontograma', 'editar'),
   vAgregarCaraTratada,
   oCtrl.agregarCaraTratada
+);
+
+
+router.post(
+  '/diente/:dienteId/aplicar-tratamiento',
+  requirePermiso('odontograma', 'editar'),
+  vAplicarTratamiento,
+  oCtrl.aplicarTratamiento
 );
 
 export default router;

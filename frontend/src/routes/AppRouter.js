@@ -18,7 +18,7 @@ import Pacientes from '../features/pacientes/pages/Pacientes';
 import PacienteNuevo from '../features/pacientes/pages/PacienteNuevo';
 import PacienteEditar from '../features/pacientes/pages/PacienteEditar';
 import PacienteDetalle from '../features/pacientes/pages/PacienteDetalle'; 
-import PacienteOdontograma from '../features/pacientes/pages/PacienteOdontograma';
+import PacienteOdontograma from '../features/odontograma/pages/PacienteOdontograma';
 
 function AppRouter() {
   return (

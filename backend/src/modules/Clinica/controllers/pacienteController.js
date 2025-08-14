@@ -29,6 +29,7 @@ export const obtenerPacientePorId = async (req, res) => {
 
 /* ---------- CREAR PACIENTE ---------- */
 export const crearPaciente = async (req, res) => {
+  console.debug('🟢 [POST] /clinica/pacientes body →', req.body);
   const nuevoPaciente = await pacienteSvc.crear(req.body);
   res.created(nuevoPaciente, 'Paciente creado correctamente');
 };

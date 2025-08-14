@@ -5,42 +5,73 @@ import api from './axios';
 const isEmptyStr = (v) => typeof v === 'string' && v.trim() === '';
 const toNullIfEmpty = (v) => (isEmptyStr(v) ? null : v);
 
-/** Quita objetos anidados vacíos (Contacto/Direccion) y normaliza DATEONLY */
 export function sanitizePacientePayload(form) {
   const out = structuredClone(form);
 
   // normalizar date-only
   out.ultimaVisita = out.ultimaVisita ? out.ultimaVisita : null;
 
-  // trim básicos
+  // trims
   ['nombre','apellido','dni','obraSocial','nroAfiliado'].forEach(k => {
     if (typeof out[k] === 'string') out[k] = out[k].trim();
   });
 
-  // Contacto
+  // --- Contacto / Dirección ---
+  // Aseguramos estructura
+  out.Contacto = out.Contacto ?? {};
+  out.Contacto.Direccion = out.Contacto.Direccion ?? {};
+
+  // Normalizamos vacíos a null
+  const c = out.Contacto;
+  c.email         = toNullIfEmpty(c.email);
+  c.telefonoMovil = toNullIfEmpty(c.telefonoMovil);
+  c.telefonoFijo  = toNullIfEmpty(c.telefonoFijo);
+
+  const d = c.Direccion;
+  ['calle','numero','detalle','codigoPostal','ciudad','provincia','pais'].forEach(k=>{
+    d[k] = toNullIfEmpty(d[k]);
+  });
+
+  // Si Dirección quedó toda null, la removemos
+  const allNullDir = Object.values(d).every(v => v == null);
+  if (allNullDir) c.Direccion = null;
+
+  // Si Contacto quedó todo null (sin preferencia ni Dirección), lo removemos
+  const allNullContacto = (c.email ?? c.telefonoMovil ?? c.telefonoFijo ?? c.preferenciaContacto ?? c.Direccion) == null;
+  if (allNullContacto) out.Contacto = null;
+
+  /* 👇👇 AQUI EL TRUCO: espejamos keys para que el validador (lowercase)
+         y el create(include) (CamelCase) estén felices */
   if (out.Contacto) {
-    const c = out.Contacto;
-    c.email         = toNullIfEmpty(c.email);
-    c.telefonoMovil = toNullIfEmpty(c.telefonoMovil);
-    c.telefonoFijo  = toNullIfEmpty(c.telefonoFijo);
-
-    // Direccion
-    if (c.Direccion) {
-      const d = c.Direccion;
-      ['calle','numero','detalle','codigoPostal','ciudad','provincia','pais'].forEach(k=>{
-        d[k] = toNullIfEmpty(d[k]);
-      });
-
-      const allNullDir = Object.values(d).every(v => v == null);
-      if (allNullDir) c.Direccion = null;
+    // contacto (lowercase) para el validator
+    out.contacto = out.contacto ?? structuredClone(out.Contacto);
+    // direccion (lowercase) también
+    if (out.contacto.Direccion && !out.contacto.direccion) {
+      out.contacto.direccion = structuredClone(out.contacto.Direccion);
     }
+  }
 
-    const allNullContacto = (c.email ?? c.telefonoMovil ?? c.telefonoFijo ?? c.preferenciaContacto ?? c.Direccion) == null;
-    if (allNullContacto) out.Contacto = null;
+  // (opcional) si te viniera en lowercase desde algún form, espejamos al Camel
+  if (out.contacto && !out.Contacto) {
+    out.Contacto = structuredClone(out.contacto);
+    if (out.contacto.direccion && !out.Contacto.Direccion) {
+      out.Contacto.Direccion = structuredClone(out.contacto.direccion);
+    }
   }
 
   return out;
 }
+
+export async function crearPaciente(data) {
+  const payload = sanitizePacientePayload(data);
+  if (process.env.NODE_ENV !== 'production') {
+    // 🔎 Log útil para ver lo que realmente enviamos
+    console.log('[crearPaciente] payload →', payload);
+  }
+  const res = await api.post('/clinica/pacientes', payload);
+  return res.data;
+}
+
 
 /** Pacientes --------------------------------------------------- */
 export async function getPacientes(params) {
@@ -55,10 +86,6 @@ export async function getPacienteById(id) {
   return res.data; // SOBRE { success, message, data: paciente }
 }
 
-export async function crearPaciente(data) {
-  const res = await api.post('/clinica/pacientes', sanitizePacientePayload(data));
-  return res.data;
-}
 
 export async function actualizarPaciente(id, data) {
   const res = await api.put(`/clinica/pacientes/${id}`, sanitizePacientePayload(data));
@@ -141,4 +168,10 @@ export async function actualizarCaraTratada(caraId, data) {
 export async function eliminarCaraTratada(caraId) {
   const res = await api.delete(`/clinica/odontograma/caras/${caraId}`);
   return res.data;
+}
+
+export async function aplicarTratamientoADiente(dienteId, payload) {
+  // payload: { tratamientoId, estado?, color?, trazo?, caras? }
+  const res = await api.post(`/clinica/odontograma/diente/${dienteId}/aplicar-tratamiento`, payload);
+  return res.data; // { success, data: { creadas, modoDibujo, alcance } }
 }

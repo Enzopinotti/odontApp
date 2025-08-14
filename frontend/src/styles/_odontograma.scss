@@ -1,384 +1,365 @@
 @use './variables' as *;
 
-/* ===========================================================
-   ODONTOGRAMA – OdontApp (clásico, compacto y 100% responsive)
-   =========================================================== */
+/* ================================================
+   ODONTOGRAMA – estilos globales (sin mixins)
+   ================================================ */
 
-/* ---------- Helpers ---------- */
-@mixin ring($color: $color-primary, $alpha: .32) { box-shadow: 0 0 0 2px rgba($color, $alpha); }
-@mixin elevate($y: -2px) { transform: translateY($y); }
-
-/* Foco accesible */
-:where(button, a, .btn, .chip, .swatch):focus-visible {
-  outline: none;
-  @include ring($color-primary, .35);
-  border-radius: calc($radius - 2px);
+/* Vars locales del módulo (CSS custom props + SCSS) */
+:root {
+  --tooth-size: 68px;        /* tamaño de cada diente */
+  --popover-w: 280px;        /* ancho del menú de cara */
 }
+$muted: #6b7280;
 
-/* Respeta prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
-}
-
-/* ===========================================================
-   Página
-   =========================================================== */
-.paciente-odo-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+/* Page wrapper */
+.odo-page {
+  font-family: $fuente-base;
   padding: .75rem;
-  animation: fadeInUp .45s ease-out;
-
-  @media (min-width: 768px) { padding: 1rem; gap: 1.25rem; }
+  display: grid;
+  gap: 1rem;
 }
 
-/* ===========================================================
-   Card base
-   =========================================================== */
+/* Card base (cohesivo con el resto del UI) */
 .card {
   background: $color-white;
   border-radius: $radius;
-  padding: 1rem .85rem;
+  padding: 1rem;
   box-shadow: $shadow;
-  transition: box-shadow .18s ease, transform .18s ease;
-
-  &:hover { box-shadow: 0 12px 24px rgba(0,0,0,.08); }
-  @media (min-width: 600px) { padding: 1.25rem 1.1rem; }
+  border: 1px solid #e6e9f2;
 }
 
-/* Encabezado */
+/* Layout principal: grilla + panel lateral */
+.odo-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1rem;
+}
+
+/* Columna izquierda: odontograma */
+.odo-left {
+  display: grid;
+  gap: .6rem;
+  /* Habilitamos scroll horizontal del odontograma */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Scrollbar sutil */
+  scrollbar-color: rgba(0,0,0,.22) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar { height: 8px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,.18);
+    border-radius: 999px;
+  }
+}
+
+/* Columna derecha: picker de tratamientos */
+.odo-right {
+  background: $color-light;
+  border: 1px dashed #e1e5ef;
+  border-radius: $radius;
+  padding: .75rem;
+  height: max-content;
+  position: sticky;
+  top: .75rem;
+}
+
+/* Encabezado pequeño con badges */
 .odo-head {
   display: flex;
   gap: .5rem;
   align-items: center;
-  margin-bottom: .55rem;
 
   .badge {
-    display: inline-flex; align-items: center; gap: .35rem;
-    padding: .24rem .56rem; border-radius: 999px;
-    font-weight: 700; letter-spacing: .2px;
-    border: 1px solid rgba($color-primary,.15);
-    background: rgba($color-primary,.08);
-    color: $color-text;
-    animation: popIn .28s ease;
+    background: #eef2ff;
+    color: #1e293b;
+    border: 1px solid #dfe5ff;
+    border-radius: 999px;
+    padding: .18rem .55rem;
+    font-size: .8rem;
 
-    &.alt { background: #f5f5f5; border-color: #eaeaea; }
-  }
-}
-
-/* Estados vacíos / loader */
-.odo-loader { color: #666; }
-.empty-odo {
-  display: grid; gap: .5rem;
-  h3 { margin: 0; }
-  p  { margin: 0; color: #667085; }
-}
-
-/* Botón crear */
-.btn.create {
-  display: inline-flex; align-items: center; gap: .5rem;
-  background: $color-primary; color: $color-white; border: none;
-  border-radius: $radius; padding: .5rem .82rem; cursor: pointer;
-  box-shadow: 0 4px 14px rgba($color-primary, .18);
-  transition: filter .18s, transform .14s, box-shadow .18s;
-
-  svg { font-size: .95rem; }
-  &:hover   { filter: brightness(.97); @include elevate(-1px); }
-  &:active  { transform: translateY(0); }
-  &:disabled{ opacity: .7; cursor: default; transform: none; }
-}
-
-/* ===========================================================
-   WRAP (scroll horizontal opcional + fades laterales)
-   =========================================================== */
-.odo-wrap {
-  /* Tamaño compacto por defecto */
-  --tooth: clamp(42px, 3.2vw + 18px, 64px); /* lado del SVG */
-  --cell:  calc(var(--tooth) + 8px);        /* ancho de celda */
-  --gap:   clamp(.28rem, 1vw, .6rem);
-
-  position: relative;
-  overflow-x: auto;        /* aparece solo si no entra en ancho */
-  overflow-y: visible;     /* el popover no se recorta */
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: .2rem;
-
-  /* Fades laterales para insinuar scroll */
-  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
-}
-
-/* Línea media (solo en desktop clásico 16 col) */
-.odo-wrap.has-classic-line::after {
-  content: '';
-  position: absolute;
-  left: 50%; top: 44px; bottom: 44px;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, #e8ebf2 18%, #e8ebf2 82%, transparent);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-/* ===========================================================
-   GRID CLÁSICO 2×16 (Q1|Q2 arriba, Q4|Q3 abajo)
-   Si no entra, el wrap permite scroll horizontal.
-   =========================================================== */
-.odo-grid {
-  display: grid;
-  grid-template-columns: repeat(16, var(--cell));
-  gap: var(--gap);
-  justify-content: start;
-  justify-items: center;
-  align-items: start;
-
-  /* fuerza ancho total (para scroll cuando sea necesario) */
-  min-width: calc(16 * var(--cell) + 15 * var(--gap));
-  scroll-snap-type: x proximity;
-}
-
-/* Respirador central por fila (entre col 8 y 9) */
-.odo-grid > .tooth-cell:nth-child(9),
-.odo-grid > .tooth-cell:nth-child(25) {
-  margin-left: clamp(.25rem, 1.8vw, .9rem);
-}
-
-/* Numeración: arriba en fila 1, abajo en fila 2 */
-.odo-grid > .tooth-cell {
-  display: grid;
-  grid-template-rows: auto auto;
-  justify-items: center;
-  scroll-snap-align: start;
-}
-.odo-grid > .tooth-cell:nth-child(-n+16) .tooth-num { order: -1; padding-bottom: .08rem; }
-.odo-grid > .tooth-cell:nth-child(n+17)  .tooth-num { order:  2; padding-top:    .08rem; }
-
-/* ===========================================================
-   Diente (celda + SVG) – geometría clásica compacta
-   =========================================================== */
-.tooth-cell {
-  width: 100%;
-  max-width: var(--cell);
-  padding: .24rem .18rem;
-  background: $color-white;
-  border-radius: .66rem;
-  box-shadow: $shadow;
-  transition: box-shadow .2s ease, transform .12s ease, background .2s ease;
-
-  &:hover { box-shadow: 0 12px 22px rgba(0,0,0,.10); @include elevate(-1px); }
-  &.is-target { outline: 2px solid rgba($color-primary,.18); outline-offset: 2px; }
-}
-
-.tooth-svg {
-  width: var(--tooth);
-  height: var(--tooth);
-  display: block;
-
-  /* Superficies clicables */
-  .face {
-    cursor: pointer;
-    transition: transform .12s ease, opacity .12s ease, stroke .12s ease, filter .12s ease;
-    stroke: #cfd3dd;       /* contorno suave por defecto */
-    stroke-width: 1.2;
-
-    /* Hover solo en zonas clicables */
-    &:hover { stroke: rgba($color-primary,.45); filter: brightness(1.02); }
-    &:active { transform: scale(.985); }
-  }
-
-  /* Trazo punteado (por si el componente agrega la clase/attr) */
-  .face.punteado,
-  .face[data-trazo="Punteado"] {
-    stroke-dasharray: 3 3;
-  }
-
-  /* Elementos de apoyo (bordes/guías) no capturan eventos */
-  & > rect[pointer-events="none"],
-  & > line[pointer-events="none"] {
-    pointer-events: none;
-  }
-}
-
-.tooth-num {
-  font-size: .72rem;
-  color: #667085;
-  font-weight: 700;
-  letter-spacing: .2px;
-}
-
-/* Estados por diente (opcional, si alguna vez se usa) */
-.tooth-cell.state--planificado { background: #fff8ef; }
-.tooth-cell.state--realizado   { background: #f1fff6; }
-.tooth-cell.state--antiguo     { background: #fff5f5; }
-
-/* ===========================================================
-   Leyenda
-   =========================================================== */
-.odo-legend {
-  display: flex; align-items: center; gap: .75rem;
-  margin-top: .55rem; color: #555; font-size: .9rem; flex-wrap: wrap;
-
-  .dot {
-    width: 10px; height: 10px; border-radius: 999px; display: inline-block;
-    margin-right: .35rem; box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
-  }
-}
-
-/* ===========================================================
-   Menú contextual (popover) – grupos, paleta y acción
-   =========================================================== */
-.face-popover {
-  position: fixed; /* la posición la define el componente */
-  z-index: 10050;
-  background: $color-white;
-  border: 1px solid #e6e9f2;
-  border-radius: .75rem;
-  box-shadow: 0 22px 40px rgba(13, 26, 62, .15);
-  padding: .42rem .46rem;
-  display: grid;
-  grid-auto-flow: row;
-  gap: .35rem;
-  animation: scaleFade .14s ease-out;
-  max-width: min(320px, calc(100vw - 16px));
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -6px; left: 14px;
-    width: 10px; height: 10px;
-    background: $color-white;
-    border-left: 1px solid #e6e9f2;
-    border-top: 1px solid #e6e9f2;
-    transform: rotate(45deg);
-  }
-
-  .fp-head {
-    font-weight: 800; font-size: .88rem; color: $color-text;
-    padding: .1rem .1rem .2rem;
-  }
-
-  .fp-group {
-    display: flex; flex-wrap: wrap; gap: .28rem;
-    align-items: center;
-  }
-
-  .fp-title {
-    font-size: .74rem; font-weight: 700; color: #6b7280; margin-right: .25rem;
-    text-transform: uppercase; letter-spacing: .04em;
-  }
-
-  .chip {
-    display: inline-flex; align-items: center; gap: .45rem;
-    padding: .36rem .56rem; border-radius: .66rem; cursor: pointer;
-    border: 1px solid #eef0f6; background: #fbfcff; font-size: .88rem;
-    transition: transform .1s ease, background .15s ease, box-shadow .15s ease;
-
-    .dot { width: 10px; height: 10px; border-radius: 999px; }
-
-    &:hover  { background: #f5f8ff; transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.06); }
-    &:active { transform: translateY(0); }
-    &.danger { border-color: #fee2e2; background: #fff1f1; color: #b91c1c; }
-  }
-
-  .fp-swatches {
-    display: grid;
-    grid-auto-flow: column;
-    gap: .28rem;
-    .swatch {
-      width: 28px; height: 28px; border-radius: 8px; border: 1px solid #e6e9f2;
-      display: grid; place-items: center; cursor: pointer; padding: 0;
-      background: #fff; transition: transform .1s ease, box-shadow .15s ease;
-
-      span { display: block; width: 18px; height: 18px; border-radius: 5px; }
-      &:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.06); }
+    &.alt {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
     }
   }
-
-  .fp-actions { display: flex; justify-content: flex-end; }
 }
 
-/* ===========================================================
-   Utilidades
-   =========================================================== */
-.link-btn {
-  background: none; border: none; color: $color-primary; cursor: pointer;
-  padding: 0; font-weight: 600; text-decoration: none;
-  display: inline-flex; align-items: center; gap: .38rem;
-  &:hover { text-decoration: underline; }
-}
-.muted  { color: #667085; }
-.sr-only{ position: absolute; left: -9999px; }
+/* =========================
+   GRILLA DE DIENTES (SVG)
+   ========================= */
+.odo-grid {
+  /* ancho natural del contenido para permitir scroll-x */
+  width: max-content;
 
-/* ===========================================================
-   Animaciones
-   =========================================================== */
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: translateY(0);} }
-@keyframes popIn    { from { transform: scale(.98); opacity: 0;} to { transform: scale(1); opacity: 1;} }
-@keyframes scaleFade{ from { opacity: 0; transform: translateY(4px) scale(.98);} to { opacity: 1; transform: translateY(0) scale(1);} }
-
-/* ===========================================================
-   Responsive: reducimos tamaño y cambiamos distribución
-   =========================================================== */
-
-/* <= 1120px: más compacto aún */
-@media (max-width: 1120px) {
-  .odo-wrap { --tooth: clamp(40px, 3vw + 16px, 58px); --gap: clamp(.24rem, .8vw, .5rem); }
+  display: grid;
+  grid-template-columns: repeat(16, minmax(44px, var(--tooth-size)));
+  gap: .6rem .35rem;
+  justify-content: center;
+  padding: .35rem .2rem .6rem;
+  background: $color-white;
+  border-radius: $radius;
+  box-shadow: inset 0 0 0 1px #eef0f6;
 }
 
-/* <= 980px: pasamos a 8 columnas x 4 filas */
-@media (max-width: 980px) {
-  .odo-wrap.has-classic-line::after { display: none; }
+/* Célula de diente */
+.tooth-cell {
+  position: relative;
+  width: var(--tooth-size);
+  height: var(--tooth-size);
+  display: grid;
+  place-items: center;
+  user-select: none;
+}
+
+.tooth-svg { width: 100%; height: 100%; display: block; }
+
+/* Etiqueta del número FDI */
+.tooth-num {
+  position: absolute;
+  bottom: -1.05rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .72rem;
+  color: #6b7280;
+}
+
+/* Superficies clicables */
+.face {
+  cursor: pointer;
+  transition: opacity .15s ease, transform .05s ease;
+
+  &:hover { opacity: .88; }
+  &:active { transform: scale(.998); }
+}
+
+/* =========================
+   MENÚ CONTEXTUAL DE CARA
+   ========================= */
+.face-popover {
+  position: fixed;
+  top: 0; left: 0; /* se posiciona por inline-style */
+  width: var(--popover-w);
+  max-width: calc(100vw - 16px);
+  background: $color-white;
+  border: 1px solid #e6e9f2;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.08);
+  padding: .75rem;
+  z-index: 60;
+  animation: odoFadeIn .18s ease;
+}
+
+.fp-head {
+  font-weight: 700;
+  color: $color-text;
+  margin-bottom: .45rem;
+}
+
+.fp-group { margin-top: .5rem; }
+
+.fp-title {
+  font-size: .8rem;
+  color: $muted;
+  margin-bottom: .35rem;
+}
+
+/* chips de acciones */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: $color-text;
+  border-radius: 999px;
+  padding: .34rem .6rem;
+  font-size: .85rem;
+  cursor: pointer;
+  margin: 0 .35rem .35rem 0;
+  transition: background .15s ease, border-color .15s ease, transform .12s ease;
+
+  &:hover { background: #f3f4f6; border-color: #e0e3ea; }
+  &:active { transform: translateY(1px); }
+
+  &.danger {
+    background: #fff1f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+  }
+}
+
+/* punto de color */
+.dot {
+  display: inline-block;
+  width: .7rem; height: .7rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+}
+
+/* paleta rápida */
+.fp-swatches {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: transform .12s ease, border-color .15s ease, background .15s ease;
+
+  > span {
+    width: 18px; height: 18px; border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.05);
+  }
+
+  &:hover { transform: translateY(-1px); border-color: #d7dbe5; background: #fafbfc; }
+  &:active { transform: translateY(0); }
+}
+
+/* =========================
+   LEYENDA
+   ========================= */
+.odo-legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: .92rem;
+  color: #4b5563;
+  padding: .35rem 0 .15rem;
+}
+
+/* =========================
+   PANEL: TREATMENT PICKER
+   ========================= */
+.tpicker-panel {
+  display: grid;
+  gap: .6rem;
+}
+
+.tpicker-panel.muted { color: $muted; }
+
+.tpicker-head .title {
+  font-weight: 700;
+  color: $color-text;
+}
+.tpicker-head .sub {
+  font-size: .82rem;
+  color: $muted;
+}
+
+.tpicker-state {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+
+  label {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .92rem; color: $color-text;
+  }
+
+  input[type="radio"] {
+    accent-color: $color-primary;
+    cursor: pointer;
+  }
+}
+
+.tpicker-list {
+  display: grid;
+  gap: .45rem;
+  max-height: 55vh;
+  overflow: auto;
+  padding-right: .25rem;
+}
+
+.tp-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: .4rem;
+  background: $color-white;
+  border: 1px solid #e6e9f2;
+  border-radius: 10px;
+  padding: .55rem .7rem;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .12s ease;
+
+  .name { font-weight: 600; color: $color-text; text-align: left; }
+  .sigla {
+    font-size: .7rem;
+    background: #eef2ff;
+    color: #273a8a;
+    border: 1px solid #dee6ff;
+    border-radius: 6px;
+    padding: .1rem .35rem;
+    justify-self: start;
+  }
+  .price { color: #0f172a; font-weight: 700; }
+
+  &:hover { background: #f9fafc; border-color: #dde2ef; transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+
+/* =========================
+   FOCUS visible (accesible)
+   ========================= */
+:where(.chip, .swatch, .tp-item, .odo-grid .face):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba($color-primary, .35);
+  border-radius: 8px;
+}
+
+/* =========================
+   ESTADOS VACÍOS / LOADERS
+   ========================= */
+.odo-loader {
+  color: $muted;
+  padding: .5rem 0;
+}
+.empty-odo {
+  display: grid; gap: .6rem;
+  .muted { color: $muted; }
+}
+
+/* =========================
+   ANIMACIONES
+   ========================= */
+@keyframes odoFadeIn {
+  from { opacity: 0; transform: scale(.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 1024px) {
+  .odo-layout { grid-template-columns: 1fr; }
+  .odo-right { position: relative; top: 0; }
+  /* menos columnas visibles en pantallas medianas */
   .odo-grid {
-    min-width: 0;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    justify-content: center;
-    gap: var(--gap);
-    scroll-snap-type: none;
+    grid-template-columns: repeat(12, minmax(42px, var(--tooth-size)));
   }
-  /* separador entre col 4 y 5 de cada fila */
-  .odo-grid > .tooth-cell:nth-child(5),
-  .odo-grid > .tooth-cell:nth-child(13),
-  .odo-grid > .tooth-cell:nth-child(21),
-  .odo-grid > .tooth-cell:nth-child(29) {
-    margin-left: clamp(.25rem, 2vw, .8rem);
+}
+
+@media (max-width: 640px) {
+  :root { --tooth-size: 56px; }
+  /* 8 columnas + scroll X suave */
+  .odo-grid {
+    grid-template-columns: repeat(8, minmax(38px, var(--tooth-size)));
   }
-  /* números debajo para lectura pareja */
-  .odo-grid > .tooth-cell:nth-child(-n+16) .tooth-num { order: 2; padding-bottom: 0; padding-top: .08rem; }
 }
 
-/* <= 760px: 6 columnas */
-@media (max-width: 760px) {
-  .odo-wrap { --tooth: clamp(38px, 7vw + 4px, 54px); }
-  .odo-grid  { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-}
-
-/* <= 560px: 4 columnas */
-@media (max-width: 560px) {
-  .odo-wrap { --tooth: clamp(36px, 8.5vw, 50px); }
-  .odo-grid  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-/* <= 420px: 3 columnas (cae a 2 si el viewport es mínimo) */
-@media (max-width: 420px) {
-  .odo-grid  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .tooth-num { font-size: .7rem; }
-  .face-popover { grid-auto-flow: row; padding: .36rem; &::after { left: 10px; } }
-}
-@media (max-width: 340px) {
-  .odo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-/* Evita desbordes del popover con safe-areas en iOS */
-@supports (padding: max(0px)) {
-  .face-popover { padding-bottom: max(.32rem, env(safe-area-inset-bottom)); }
-}
-
-/* ===========================================================
-   Print
-   =========================================================== */
+/* =========================
+   IMPRESIÓN
+   ========================= */
 @media print {
-  .paciente-odo-page { padding: 0; gap: .5rem; }
-  .btn, .link-btn, .face-popover { display: none !important; }
-  .card { box-shadow: none !important; border: 1px solid #e5e7eb; }
-  .odo-legend .dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .odo-page { padding: 0; }
+  .card { box-shadow: none; border: 1px solid #e6e9f2; }
+  .face-popover, .odo-right { display: none !important; }
 }

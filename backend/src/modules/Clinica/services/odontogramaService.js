@@ -1,5 +1,3 @@
-// backend/src/modules/Clinica/services/odontogramaService.js
-
 import { sequelize } from '../models/index.js';
 import {
   Paciente,
@@ -9,6 +7,9 @@ import {
   Tratamiento,
 } from '../models/index.js';
 import ApiError from '../../../utils/ApiError.js';
+
+/* utils */
+const hexToInt = (hex) => parseInt(String(hex || '').replace('#', ''), 16);
 
 /* ---------- Verifica si ya existe odontograma para paciente ---------- */
 export const existeParaPaciente = async (pacienteId) => {
@@ -27,12 +28,12 @@ export const crearParaPaciente = async (pacienteId, data) => {
       {
         pacienteId,
         fechaCreacion: new Date(),
-        observaciones: data.observaciones,
+        observaciones: data?.observaciones ?? null,
       },
       { transaction: t }
     );
 
-    const dientes = Array.from({ length: 32 }, (_, i) => ({
+    const dientes = Array.from({ length: 32 }, () => ({
       odontogramaId: odontograma.id,
       estadoDiente: 'Sano',
       notas: null,
@@ -62,7 +63,7 @@ export const obtenerPorPaciente = async (pacienteId) => {
 export const actualizarDiente = async (odontogramaId, numero, data) => {
   const diente = await Diente.findOne({
     where: { odontogramaId },
-    offset: parseInt(numero) - 1,
+    offset: parseInt(numero, 10) - 1,
     limit: 1,
     order: [['id', 'ASC']],
   });
@@ -70,8 +71,8 @@ export const actualizarDiente = async (odontogramaId, numero, data) => {
   if (!diente) return null;
 
   await diente.update({
-    estadoDiente: data.estadoDiente || diente.estadoDiente,
-    notas: data.notas ?? diente.notas,
+    estadoDiente: data?.estadoDiente || diente.estadoDiente,
+    notas: data?.notas ?? diente.notas,
   });
 
   return diente;
@@ -84,10 +85,10 @@ export const agregarCara = async (dienteId, data) => {
 
   const nueva = await CaraTratada.create({
     dienteId,
-    simbolo: data.simbolo,
-    tipoTrazo: data.tipoTrazo,
-    colorEstado: data.colorEstado,
-    estadoCara: data.estadoCara,
+    simbolo: data.simbolo,                 // 'O' | 'M' | 'D' | 'B' | 'L'
+    tipoTrazo: data.tipoTrazo,            // 'Continuo' | 'Punteado'
+    colorEstado: data.colorEstado,        // int (RGB)
+    estadoCara: data.estadoCara,          // ENUM
     tratamientoId: data.tratamientoId || null,
   });
 
@@ -117,4 +118,99 @@ export const eliminarCara = async (caraId) => {
 
   await cara.destroy();
   return true;
+};
+
+/* ---------- Aplicar un tratamiento del CATÁLOGO a un DIENTE ---------- */
+/* Usa Tratamiento.config para decidir colores/alcance/caras por defecto */
+export const aplicarTratamiento = async (
+  dienteId,
+  { tratamientoId, estado = 'Planificado', color, trazo, caras }
+) => {
+  const diente = await Diente.findByPk(dienteId);
+  if (!diente) throw new ApiError('Diente no encontrado', 404, null, 'DIENTE_NO_EXISTE');
+
+  const tto = await Tratamiento.findByPk(tratamientoId);
+  if (!tto) throw new ApiError('Tratamiento no encontrado', 404, null, 'TRATAMIENTO_NO_EXISTE');
+
+  const cfg = tto.config || {};
+
+  // Determinar superficies objetivo
+  let carasObjetivo = caras;
+  if (!carasObjetivo) {
+    if (cfg.alcance === 'cara') {
+      carasObjetivo =
+        (Array.isArray(cfg.carasPorDefecto) && cfg.carasPorDefecto.length)
+          ? cfg.carasPorDefecto
+          : ['O'];
+    } else if (cfg.alcance === 'diente') {
+      carasObjetivo = ['O', 'M', 'D', 'B', 'L'];
+    } else {
+      // multi / arcada / cuadrante / boca / noRender: no crean caras por defecto
+      carasObjetivo = [];
+    }
+  }
+
+  const colorFinal =
+    color ??
+    (estado === 'Realizado'
+      ? (cfg.colorRealizado || '#2563eb')
+      : (cfg.colorPlanificado || cfg.colorRealizado || '#ef4444'));
+
+  const trazoFinal = trazo ?? (cfg.trazoSugerido || 'Continuo');
+
+  const payload = carasObjetivo.map((simbolo) => ({
+    dienteId,
+    simbolo,
+    tipoTrazo: trazoFinal,
+    colorEstado: hexToInt(colorFinal),
+    estadoCara: estado,
+    tratamientoId: tto.id,
+  }));
+
+  if (payload.length) await CaraTratada.bulkCreate(payload);
+
+  return {
+    creadas: payload.length,
+    modoDibujo: cfg.modoDibujo || 'fill',
+    alcance: cfg.alcance || 'cara',
+  };
+};
+
+/* ---------- Historial por paciente (timeline desde CaraTratada) ---------- */
+export const historialPorPaciente = async (pacienteId) => {
+  const odontograma = await Odontograma.findOne({ where: { pacienteId } });
+  if (!odontograma) {
+    throw new ApiError('Paciente sin odontograma registrado', 404, null, 'ODONTOGRAMA_NO_EXISTE');
+  }
+
+  const dientes = await Diente.findAll({
+    where: { odontogramaId: odontograma.id },
+    include: {
+      model: CaraTratada,
+      include: [Tratamiento],
+    },
+    order: [['id', 'ASC']],
+  });
+
+  const historial = [];
+  dientes.forEach((diente, idx) => {
+    diente.CaraTratadas.forEach((cara) => {
+      if (cara.Tratamiento) {
+        historial.push({
+          dienteNumero: idx + 1, // posición relativa 1..32
+          cara: cara.estadoCara,
+          simbolo: cara.simbolo,
+          tratamiento: {
+            id: cara.Tratamiento.id,
+            nombre: cara.Tratamiento.nombre,
+            descripcion: cara.Tratamiento.descripcion,
+            config: cara.Tratamiento.config,
+          },
+          actualizado: cara.updatedAt,
+        });
+      }
+    });
+  });
+
+  return historial.sort((a, b) => new Date(b.actualizado) - new Date(a.actualizado));
 };

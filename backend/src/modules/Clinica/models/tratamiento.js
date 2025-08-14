@@ -1,5 +1,4 @@
 // backend/src/modules/Clinica/models/tratamiento.js
-
 export default (sequelize, DataTypes) => {
   return sequelize.define('Tratamiento', {
     nombre: {
@@ -17,6 +16,10 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       comment: 'Duración en minutos',
     },
+    config: {
+      type: DataTypes.JSON,
+      comment: 'Metadatos clínicos: alcance, caras por defecto, color, trazo, sigla, preventivo, etc.'
+    }
   }, {
     tableName: 'tratamientos',
     timestamps: true,
