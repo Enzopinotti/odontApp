@@ -4,10 +4,11 @@ import * as usuarioService from '../services/usuarioService.js';
 export const obtenerUsuarios = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const perPage = parseInt(req.query.perPage) || 20;
-  const { data, total } = await usuarioService.getPaginated(page, perPage);
+  const { ...filtros } = req.query;
+
+  const { data, total } = await usuarioService.buscarConFiltros(filtros, page, perPage);
   return res.paginated(data, { page, perPage, total }, 'Usuarios listados');
 };
-
 /* POST /api/usuarios */
 export const crearUsuario = async (req, res) => {
   const usuario = await usuarioService.create(req.body);
@@ -45,6 +46,8 @@ export const forgotPassword = (_req, res) =>
 /* POST /api/usuarios/reset-password/:token */
 export const resetPassword = (_req, res) =>
   res.ok(null, 'Endpoint pendiente');
+
+
 
 export default {
   obtenerUsuarios,

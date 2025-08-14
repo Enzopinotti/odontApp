@@ -31,7 +31,6 @@ export default function ReactQueryProvider({ children }) {
       },
     });
   }, [showToast]);
-
   return (
     <QueryClientProvider client={queryClient}>
       {children}

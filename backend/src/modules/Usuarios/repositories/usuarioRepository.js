@@ -1,5 +1,6 @@
 // backend/src/modules/Usuarios/repositories/usuarioRepository.js
 import { Usuario, Rol } from '../models/index.js';
+import { Op } from 'sequelize';
 
 export const findPaginated = (page = 1, perPage = 20) => {
   const offset = (page - 1) * perPage;
@@ -32,6 +33,40 @@ export const create = (data) => Usuario.create(data);
 export const update = (instancia, data) => instancia.update(data);
 
 export const remove = (instancia) => instancia.destroy();
+
+export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
+  const offset = (page - 1) * perPage;
+
+  const where = {};
+
+  if (filtros.nombre) {
+    where.nombre = { [Op.like]: `%${filtros.nombre}%` };
+  }
+
+  if (filtros.apellido) {
+    where.apellido = { [Op.like]: `%${filtros.apellido}%` };
+  }
+
+  if (filtros.email) {
+    where.email = { [Op.like]: `%${filtros.email}%` };
+  }
+
+  if (filtros.rolId) {
+    where.RolId = filtros.rolId;
+  }
+
+  if (filtros.activo !== undefined) {
+    where.activo = filtros.activo === 'true';
+  }
+
+  return Usuario.findAndCountAll({
+    where,
+    offset,
+    limit: perPage,
+    include: { model: Rol, as: 'Rol' },
+    order: [['createdAt', 'DESC']],
+  });
+};
 
 export default {
   findPaginated,
