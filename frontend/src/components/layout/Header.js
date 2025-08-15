@@ -1,6 +1,6 @@
 // src/components/layout/Header.jsx
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth';
+import useAuth from '../../features/auth/hooks/useAuth';
 import avatarDefecto from '../../assets/img/avatarDefecto.webp';
 import { FaBell, FaSignOutAlt } from 'react-icons/fa';
 import { logout } from '../../api/auth';

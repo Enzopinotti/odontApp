@@ -1,4 +1,5 @@
 @use 'variables';
+@use 'mixins';
 @use 'modal';
 @use 'header';
 @use 'sidebar';
@@ -9,6 +10,11 @@
 @use 'notFound';
 @use 'profile';
 @use 'toast';
+@use 'pacientes';
+@use 'formsClinica';
+@use 'progressBar';
+@use 'pacienteDetalle';
+@use 'odontograma';
 
 *{
     box-sizing: border-box;
@@ -39,4 +45,11 @@ a { color: variables.$color-primary; }
   padding:0;
   font-weight:500;
   &:hover{text-decoration:underline}
+}
+
+input:-internal-autofill-selected {
+    appearance: unset !important; /* Resets appearance to its default */
+    background-image: unset !important; /* Resets background-image */
+    background-color: white !important; /* Resets background-color */
+    color: unset !important; /* Resets color */
 }

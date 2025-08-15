@@ -2,22 +2,27 @@ import { Routes, Route } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import GuestRoute from '../components/GuestRoute'; 
+import GuestRoute from '../components/GuestRoute';
 
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import ForgotPassword from '../pages/ForgotPassword';
-import ResetPassword from '../pages/ResetPassword';
-import VerifySent from '../pages/VerifySent';
-import VerifyEmail from '../pages/VerifyEmail';
-import Profile from '../pages/Profile';
-import ChangePassword from '../pages/ChangePassword';
-import NotFound from '../pages/NotFound';
+import Login from '../features/auth/pages/Login';
+import Register from '../features/auth/pages/Register';
+import ForgotPassword from '../features/auth/pages/ForgotPassword';
+import ResetPassword from '../features/auth/pages/ResetPassword';
+import VerifySent from '../features/auth/pages/VerifySent';
+import VerifyEmail from '../features/auth/pages/VerifyEmail';
+import Profile from '../features/auth/pages/Profile';
+import ChangePassword from '../features/auth/pages/ChangePassword';
+import NotFound from '../pages/Usuarios/NotFound';
+
+import Pacientes from '../features/pacientes/pages/Pacientes';
+import PacienteNuevo from '../features/pacientes/pages/PacienteNuevo';
+import PacienteEditar from '../features/pacientes/pages/PacienteEditar';
+import PacienteDetalle from '../features/pacientes/pages/PacienteDetalle'; 
+import PacienteOdontograma from '../features/odontograma/pages/PacienteOdontograma';
 
 function AppRouter() {
   return (
     <Routes>
-      {/* 🧑‍🚫 Layout público solo para no logueados */}
       <Route
         element={
           <GuestRoute>
@@ -44,6 +49,13 @@ function AppRouter() {
       >
         <Route path="profile" element={<Profile />} />
         <Route path="cambiar-password" element={<ChangePassword />} />
+        <Route path="pacientes">
+          <Route index element={<Pacientes />} /> 
+          <Route path="nuevo" element={<PacienteNuevo />} />
+          <Route path=":id/editar" element={<PacienteEditar />} />
+          <Route path=":id/odontograma" element={<PacienteOdontograma />} />
+          <Route path=":id" element={<PacienteDetalle />} /> 
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
