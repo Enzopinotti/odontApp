@@ -1,0 +1,41 @@
+@use "variables";
+
+@mixin input-base{
+    width: 100%;
+    padding: .5rem .75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: variables.$radius-md;
+    background-color: variables.$color-white;
+
+    &:focus{
+        outline: none;
+        border-color: variables.$color-primary;     
+    }
+
+    &:disabled{
+        cursor: not-allowed;
+    }
+
+}
+
+@mixin select-width($w){
+    width: $w;
+    min-width: $w;
+}
+
+@mixin button-variant($bg, $border: transparent, $bgHover, $text: #fff, $hover-text:$text){
+    background-color: $bg;
+    color: $text;
+    border: 1px solid $border;
+    &:hover{
+        background: $bgHover;
+         color: $hover-text;
+    }
+}
+
+%label {
+  font-size: .875rem;
+  color: variables.$color-gray;
+  margin-bottom: .25rem;
+  display: inline-block;
+}

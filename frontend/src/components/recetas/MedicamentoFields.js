@@ -1,6 +1,6 @@
 import React from "react";
-import { useEffect, useState } from "react";
-import {FaTrashAlt} from 'react-icons/fa';
+import { useState } from "react";
+import { FaTrashAlt } from "react-icons/fa";
 
 //harcodeado para el ejemplo
 const medicamentos = [
@@ -36,12 +36,7 @@ const medicamentos = [
   },
 ];
 
-export default function MedicamentoFields({
-  index,
-  register,
-  onRemove,
-  onChange,
-}) {
+export default function MedicamentoFields({ index, onRemove, onChange }) {
   const [seleccion, setSeleccion] = useState({
     nombreGenerico: "",
     formaFarmaceutica: "",
@@ -97,55 +92,58 @@ export default function MedicamentoFields({
     onChange(nuevaSeleccion);
   };
   return (
-    <div className="medicamento-item">
-      <div className=" form-row">
-        <div className="form-group">
-        <label>Nombre genérico </label>
-        <select
-          value={seleccion.nombreGenerico}
-          onChange={(e) => handleChange("nombreGenerico", e.target.value)}
-          className="input-full"
+    <div className="recetas-item">
+      <div className=" recetas-item__row recetas-item__row--header">
+        <div className="recetas-item__field">
+          <label className="recetas-item__label">Nombre genérico </label>
+          <select
+            value={seleccion.nombreGenerico}
+            onChange={(e) => handleChange("nombreGenerico", e.target.value)}
+            className="recetas-item__select u-w-100"
+          >
+            <option value="">Seleccione un medicamento</option>
+            {nombresUnicos.map((nombre, i) => (
+              <option key={i} value={nombre}>
+                {nombre}{" "}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="icon-btn icon-btn--danger"
+          aria-label="Quitar"
         >
-          <option value="">Seleccione un medicamento</option>
-          {nombresUnicos.map((nombre, i) => (
-            <option key={i} value={nombre}>
-              {nombre}{" "}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button type="button" onClick={onRemove} className="remove-button">
-            <FaTrashAlt/>
-      </button>
-      </div>
-      
-
-
-      <div className="form-row">
-              <div className="form-group">
-        <label>Forma Farmacéutica</label>
-        <select
-          value={seleccion.formaFarmaceutica}
-          onChange={(e) => handleChange("formaFarmaceutica", e.target.value)}
-          disabled={!seleccion.nombreGenerico}
-          className="input-full"
-        >
-          <option value="">Seleccione forma</option>
-          {formasUnicas.map((forma, i) => (
-            <option key={i} value={forma}>
-              {forma}
-            </option>
-          ))}
-        </select>
+          <FaTrashAlt />
+        </button>
       </div>
 
-        <div className="form-group">
-          <label>Dosis</label>
+      <div className="recetas-item__row">
+        <div className="recetas-item__field">
+          <label className="recetas-item__label">Forma Farmacéutica</label>
+          <select
+            value={seleccion.formaFarmaceutica}
+            onChange={(e) => handleChange("formaFarmaceutica", e.target.value)}
+            disabled={!seleccion.nombreGenerico}
+            className="recetas-item__select recetas-item__select--md"
+          >
+            <option value="">Seleccione forma</option>
+            {formasUnicas.map((forma, i) => (
+              <option key={i} value={forma}>
+                {forma}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="recetas-item__field">
+          <label className="recetas-item__label">Dosis</label>
           <select
             value={seleccion.dosis}
             onChange={(e) => handleChange("dosis", e.target.value)}
             disabled={!seleccion.formaFarmaceutica}
-            className="select-small"
+            className="recetas-item__select recetas-item__select--sm"
           >
             <option value="">Seleccione dosis</option>
             {dosisUnicas.map((c, i) => (
@@ -155,13 +153,13 @@ export default function MedicamentoFields({
             ))}
           </select>
         </div>
-        <div className="form-group">
-          <label>Presentación</label>
+        <div className="recetas-item__field">
+          <label className="recetas-item__label">Presentación</label>
           <select
             value={seleccion.presentacion}
             onChange={(e) => handleChange("presentacion", e.target.value)}
             disabled={!seleccion.dosis}
-            className="select-medium"
+            className="recetas-item__select recetas-item__select--md"
           >
             <option value="">Seleccione presentación</option>
             {presentacionesUnicas.map((p, i) => (
@@ -171,8 +169,6 @@ export default function MedicamentoFields({
             ))}
           </select>
         </div>
-
-        
       </div>
     </div>
   );

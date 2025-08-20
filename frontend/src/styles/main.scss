@@ -9,7 +9,11 @@
 @use 'notFound';
 @use 'profile';
 @use 'toast';
-@use 'recetas';
+@use "mixins";
+@use "utilities";
+@use "components/buttons";
+@use "components/autocomplete";
+@use "components/recetas";
 
 *{
     box-sizing: border-box;

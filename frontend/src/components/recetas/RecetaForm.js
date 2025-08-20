@@ -26,49 +26,72 @@ export default function RecetaForm() {
     setMedicamentoSeleccionado(data);
   };
   return (
-    <div className="receta-form">
-      <h2>Nueva Receta</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="form-container">
-        <label>Paciente</label>
-        <AutocompletePaciente name="paciente" control={control} />
-        <div className="form-group">
-          <label>Diagnóstico</label>
-          <input {...register("diagnostico", { required: true })} />
+    <section className="recetas">
+      
+      <form onSubmit={handleSubmit(onSubmit)} className="recetas__form">
+        <div className="recetas__group recetas__group--full">
+          <label className="recetas__label">Paciente</label>
+          <AutocompletePaciente name="paciente" control={control} />
         </div>
 
-        <h3>Medicamentos</h3>
-
-        {fields.map((field, index) => (
-          <MedicamentoFields
-            key={field.id}
-            index={index}
-            register={register}
-            onRemove={() => remove(index)}
-            onChange={handleMedicamentoChange}
+        <div className="recetas__group recetas__group--full">
+          <label className="recetas__label" htmlFor="diagnostico">
+            Diagnóstico
+          </label>
+          <input
+            className="recetas__input"
+            placeholder="Ingrese un diagnóstico"
+            id="diagnostico"
+            {...register("diagnostico", { required: true })}
           />
-        ))}
-        <div>
+        </div>
+
+        <h3 className="recetas__subtitle recetas__group recetas__group--full">
+          Medicamentos
+        </h3>
+
+        <div className="recetas__list recetas__group recetas__group--full">
+          {fields.map((field, index) => (
+            <MedicamentoFields
+              key={field.id}
+              index={index}
+              register={register}
+              onRemove={() => remove(index)}
+              onChange={handleMedicamentoChange}
+            />
+          ))}
+        </div>
+
+        <div className="recetas__actions u-gap-sm recetas__group recetas__group--full">
           <button
             type="button"
-            className="more-button"
+            className="btn btn--ghost"
             onClick={() => append({})}
           >
             + Agregar Medicamento
           </button>
         </div>
-        <div className="form-input">
-          <label>Indicaciones</label>
-          <textarea {...register("indicaciones", { required: true })} />
+
+        <div className="recetas__group recetas__group--full">
+          <label className="recetas__label" htmlFor="indicaciones">
+            Indicaciones
+          </label>
+          <textarea
+            id="indicaciones"
+            {...register("indicaciones", { required: true })}
+            className="recetas__textarea"
+          />
         </div>
-        <div className="buttons-row">
-          <button type="submit" className="save-button">
+
+        <div className="recetas__actions recetas__group recetas__group--full">
+          <button type="submit" className="btn btn--primary">
             Imprimir receta
           </button>
-          <button type="submit" className="send-button">
+          <button type="submit" className="btn btn--secondary">
             Enviar receta
           </button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

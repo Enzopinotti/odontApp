@@ -3,7 +3,7 @@ import { createContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import * as authApi from '../api/auth';
 
-
+//mocking usuario
 const devMode = process.env.NODE_ENV === 'development';
 
 const mockUser = {
@@ -26,7 +26,7 @@ export default function AuthProvider({ children }) {
       setState({ user: null, loading: false });
       return;
     }
-
+//mocking usuario 
       if (devMode) {
     setState({ user: mockUser, loading: false });
     return;

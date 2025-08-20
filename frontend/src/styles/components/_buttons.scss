@@ -1,0 +1,56 @@
+@use "../mixins" as *;
+@use "../variables";
+.btn {
+  @include input-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: variables.$space-sm;
+  font-weight: 600;
+  cursor: pointer;
+  &--primary {
+    @include button-variant(
+      variables.$color-primary,
+      transparent,
+      lighten(variables.$color-primary, 10%),
+      #fff,
+      #fff
+    );
+  }
+  &--secondary {
+    @include button-variant(
+      #fff,
+      variables.$color-primary,
+      darken(#fff, 3%),
+      variables.$color-primary,
+      variables.$color-primary 
+    );
+  }
+
+  &--ghost{
+    background: transparent;
+    color:  variables.$color-primary;
+    border: none;
+    &:hover{
+        color: lighten(variables.$color-primary, 20%);
+    }
+  }
+}
+
+.icon-btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    background: none;
+    cursor: pointer;
+    border: none;
+   
+    &--danger{
+        color: variables.$color-danger;
+        &:hover{
+            color: darken(variables.$color-danger,20%);
+        }
+    }
+}
