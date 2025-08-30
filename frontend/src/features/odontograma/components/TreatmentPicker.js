@@ -4,9 +4,10 @@ import useApplyTratamiento from '../hooks/useApplyTratamiento';
 import { COLORS } from '../constants';
 
 /**
- * @param {{ pacienteId:number, dienteSeleccionado?:any, onApplied?:()=>void }} props
+ * Aparece solo si el usuario lo abre desde el FaceMenu.
+ * @param {{ pacienteId:number, dienteSeleccionado?:any, onApplied?:()=>void, onClose?:()=>void }} props
  */
-export default function TreatmentPicker({ pacienteId, dienteSeleccionado, onApplied }) {
+export default function TreatmentPicker({ pacienteId, dienteSeleccionado, onApplied, onClose }) {
   const { data: tratamientos, isLoading } = useTratamientosQuery();
   const { apply, apply: { isLoading: isApplying } } = useApplyTratamiento(pacienteId);
   const [estado, setEstado] = useState('Planificado');
@@ -14,6 +15,7 @@ export default function TreatmentPicker({ pacienteId, dienteSeleccionado, onAppl
   const list = useMemo(() => tratamientos || [], [tratamientos]);
 
   const onApply = async (t) => {
+    if (!dienteSeleccionado) return;
     await apply.mutateAsync({
       dienteId: dienteSeleccionado?.id,
       payload: {
@@ -28,14 +30,24 @@ export default function TreatmentPicker({ pacienteId, dienteSeleccionado, onAppl
   };
 
   if (!dienteSeleccionado) {
-    return <aside className="tpicker-panel muted">Seleccioná un diente para aplicar tratamientos</aside>;
+    return (
+      <aside className="tpicker-panel muted">
+        Seleccioná un diente para aplicar tratamientos
+        <div style={{ marginTop: 8 }}>
+          <button className="chip" onClick={onClose}>Cerrar</button>
+        </div>
+      </aside>
+    );
   }
 
   return (
     <aside className="tpicker-panel">
-      <header className="tpicker-head">
-        <div className="title">Aplicar tratamiento</div>
-        <div className="sub">Diente FDI {dienteSeleccionado._fdi}</div>
+      <header className="tpicker-head" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div>
+          <div className="title">Aplicar tratamiento</div>
+          <div className="sub">Diente FDI {dienteSeleccionado._fdi}</div>
+        </div>
+        <button className="chip" onClick={onClose}>Cerrar</button>
       </header>
 
       <div className="tpicker-state">

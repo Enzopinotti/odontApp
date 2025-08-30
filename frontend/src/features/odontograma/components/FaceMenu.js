@@ -2,15 +2,9 @@ import { useEffect, useRef } from 'react';
 import { FACE_LABELS, COLORS, COLOR_SWATCHES } from '../constants';
 
 /**
- * @param {{
- *  open:boolean, x:number, y:number,
- *  diente?:any, faceKey?:'O'|'M'|'D'|'B'|'L',
- *  current?:any,
- *  onAction: (opts:{estado?:string,color?:string,tipoTrazo?:string,remove?:boolean})=>void,
- *  onClose: ()=>void
- * }} props
+ * Popover simple: estado + trazo + color rápido + abrir catálogo
  */
-export default function FaceMenu({ open, x, y, diente, faceKey, current, onAction, onClose }) {
+export default function FaceMenu({ open, x, y, diente, faceKey, current, onAction, onOpenCatalog, onClose }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -67,13 +61,14 @@ export default function FaceMenu({ open, x, y, diente, faceKey, current, onActio
         </div>
       </div>
 
-      {current && (
-        <div className="fp-actions">
-          <button className="chip danger" onClick={() => onAction({ remove: true })}>
+      <div className="fp-actions" style={{ marginTop: '.5rem' }}>
+        <button className="chip" onClick={onOpenCatalog}>Abrir catálogo…</button>
+        {current && (
+          <button className="chip danger" style={{ marginLeft: '.35rem' }} onClick={() => onAction({ remove: true })}>
             Quitar marca
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
