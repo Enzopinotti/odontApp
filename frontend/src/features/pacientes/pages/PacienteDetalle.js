@@ -105,8 +105,8 @@ export default function PacienteDetalle() {
   const goHistoria    = () => navigate(`/pacientes/${pacienteId}/historia`);
   const goImagenes    = () => navigate(`/pacientes/${pacienteId}/imagenes`);
 
-  const waLink   = buildWhatsApp(tel);
-  const mapsLink = buildMaps(dir);
+  // const waLink   = buildWhatsApp(tel);
+  // const mapsLink = buildMaps(dir);
 
   if (!canVerPaciente) {
     return (
