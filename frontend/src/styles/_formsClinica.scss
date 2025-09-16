@@ -1,0 +1,256 @@
+/* src/styles/formsClinica.scss */
+@use 'variables';
+
+/* =========================================
+   WRAPPER
+   ========================================= */
+.paciente-form {
+  width: 100%;
+  padding: .5rem;
+}
+
+/* =========================================
+   CARD (mismo look&feel que el login)
+   ========================================= */
+.paciente-form .card {
+  width: 100%;
+  max-width: 980px; /* formulario amplio */
+  margin: 0 auto 2rem;
+  background: variables.$color-white;
+  border-radius: variables.$radius;
+  padding: 2.5rem 2rem;
+  box-shadow: variables.$shadow;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInUp 0.6s ease-out;
+  transition: box-shadow .2s ease, transform .2s ease;
+
+  h3 {
+    text-align: left;
+    margin-bottom: 1.6rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: .4px;
+    color: variables.$color-text;
+  }
+
+  @media (min-width: 600px) {
+    padding: 3rem 3.2rem;
+    border-radius: 12px;
+
+    h3 { font-size: 1.7rem; }
+  }
+
+  @media (max-width: 480px) {
+    padding: 1.8rem 1.4rem;
+  }
+}
+
+/* =========================================
+   SECTION / FIELDSET
+   ========================================= */
+.paciente-form .fieldset {
+  border: 0;
+  padding: 0;
+  margin: 1.25rem 0 1.6rem;
+
+  legend {
+    display: block;
+    font-size: .95rem;
+    font-weight: 700;
+    color: variables.$color-text;
+    margin: 0 0 .9rem 0;
+  }
+}
+
+/* =========================================
+   GRID
+   ========================================= */
+.paciente-form .grid {
+  display: grid;
+  gap: 1rem;
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.paciente-form .span-2 {
+  grid-column: 1 / -1;
+}
+
+/* =========================================
+   LABELS / ERRORES
+   ========================================= */
+.paciente-form label {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+
+  > span {
+    font-size: .9rem;
+    color: variables.$color-text;
+    font-weight: 600;
+  }
+
+  small,
+  .field-error {
+    display: block;
+    font-size: .8rem;
+    color: variables.$color-danger;
+    margin-top: .15rem;
+    animation: fadeIn .2s ease-in-out;
+  }
+
+  &.has-error input,
+  &.has-error select,
+  &.has-error textarea {
+    border-color: variables.$color-danger;
+    box-shadow: 0 0 0 1px rgba(variables.$color-danger, .28);
+  }
+
+  &.has-error > span {
+    color: variables.$color-danger;
+  }
+}
+
+/* =========================================
+   CONTROLES (inputs/selects/textarea)
+   – mismos focus que login
+   ========================================= */
+.paciente-form input,
+.paciente-form select,
+.paciente-form textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: variables.$radius;
+  font-size: 1rem;
+  background: #fff;
+  color: variables.$color-text;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: variables.$color-primary;
+    box-shadow: 0 0 0 2px rgba(variables.$color-primary, 0.2);
+  }
+
+  &:disabled {
+    background: #f6f7f9;
+    color: #9aa0a6;
+  }
+}
+
+/* inputs con icono a la izquierda (opcional) */
+.paciente-form .input-icon {
+  position: relative;
+
+  .icon {
+    position: absolute;
+    top: 50%;
+    left: .85rem;
+    transform: translateY(-50%);
+    font-size: 1.05rem;
+    color: #8b8b8b;
+    pointer-events: none;
+  }
+
+  input {
+    padding-left: 2.4rem;
+  }
+}
+
+/* =========================================
+   ACCIONES / BOTONES
+   – misma estética que login
+   ========================================= */
+.paciente-form .form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+  margin-top: .6rem;
+}
+
+.paciente-form .btn {
+  padding: 0.7rem 1.15rem;
+  border: none;
+  border-radius: variables.$radius;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, transform .15s, filter .15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled { opacity: .7; cursor: not-allowed; }
+}
+
+.paciente-form .btn.primary {
+  background: variables.$color-primary;
+  color: variables.$color-white;
+
+  &:hover { background: darken(variables.$color-primary, 6%); transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+
+.paciente-form .btn.ghost {
+  background: transparent;
+  color: variables.$color-text;
+  border: 1px solid #ccc;
+
+  &:hover { background: #f4f6f8; }
+}
+
+.paciente-form .btn.danger {
+  background: variables.$color-danger;
+  color: variables.$color-white;
+
+  &:hover { filter: brightness(.95); }
+}
+
+/* =========================================
+   ANIMACIONES
+   ========================================= */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* --- BackBar --- */
+.backbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .5rem .75rem;
+    border: 1px solid #ddd;
+    border-radius: variables.$radius;
+    background: #fff;
+    color: variables.$color-text;
+    cursor: pointer;
+    transition: background .18s, transform .12s;
+
+    svg { font-size: .95rem; }
+    &:hover { background: #f6f7f9; transform: translateY(-1px); }
+  }
+
+  .backbar-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: variables.$color-text;
+  }
+
+  .backbar-right { display: flex; align-items: center; gap: .5rem; }
+}

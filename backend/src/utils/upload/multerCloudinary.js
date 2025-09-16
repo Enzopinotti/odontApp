@@ -1,13 +1,11 @@
+// backend/src/utils/upload/multerCloudinary.js
+
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from './cloudinary.js';
 
 /**
  * Uploader para avatares de usuario.
- * Carpeta: odontapp/avatars
- * Tamaño: 300x300 (limite)
- * Formatos: JPG, JPEG, PNG
- * Límite de archivo: 4MB
  */
 const storageAvatar = new CloudinaryStorage({
   cloudinary,
@@ -21,6 +19,27 @@ const storageAvatar = new CloudinaryStorage({
 export const uploadAvatar = multer({
   storage: storageAvatar,
   limits: {
-    fileSize: 4 * 1024 * 1024, // 4MB
+    fileSize: 4 * 1024 * 1024,
+  },
+});
+
+/**
+ * Uploader para imágenes clínicas.
+ * Carpeta: odontapp/historias
+ * No transforma tamaño.
+ * Permite JPG/JPEG/PNG, hasta 8MB.
+ */
+const storageImagenClinica = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'odontapp/historias',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+  },
+});
+
+export const uploadImagenesClinicas = multer({
+  storage: storageImagenClinica,
+  limits: {
+    fileSize: 8 * 1024 * 1024, // 8MB por archivo
   },
 });

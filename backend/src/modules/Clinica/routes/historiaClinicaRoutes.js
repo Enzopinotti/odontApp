@@ -1,0 +1,181 @@
+import { Router } from 'express';
+import * as hcCtrl from '../controllers/historiaClinicaController.js';
+import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { uploadImagenesClinicas } from '../../../utils/upload/multerCloudinary.js';
+import {
+  vRegistrarEntrada,
+  vSubirImagen,
+} from '../validators/historiaClinicaValidator.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
+
+const router = Router();
+
+router.use(requireAuth);
+
+/**
+ * @swagger
+ * tags:
+ *   - name: Historia Clínica
+ *     description: Consultas, evolución y multimedia del paciente
+ */
+
+/**
+ * @swagger
+ * /clinica/historia/{pacienteId}:
+ *   get:
+ *     summary: Obtener historia clínica del paciente
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: pacienteId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Entradas clínicas del paciente
+ */
+router.get(
+  '/:pacienteId',
+  requirePermiso('historia_clinica', 'ver'),
+  hcCtrl.obtenerHistoriaClinica
+);
+
+/**
+ * @swagger
+ * /clinica/historia/{pacienteId}:
+ *   post:
+ *     summary: Registrar nueva consulta en historia clínica
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: pacienteId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fecha:
+ *                 type: string
+ *                 format: date
+ *               motivoConsulta:
+ *                 type: string
+ *               diagnostico:
+ *                 type: string
+ *               evolucion:
+ *                 type: string
+ *               observaciones:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Consulta registrada
+ */
+router.post(
+  '/:pacienteId',
+  requirePermiso('historia_clinica', 'crear'),
+  vRegistrarEntrada,
+  hcCtrl.registrarEntradaClinica
+);
+
+
+/**
+ * @swagger
+ * /clinica/historia/{historiaClinicaId}/imagenes:
+ *   post:
+ *     summary: Subir imagen clínica (radiografía, escaneo, foto)
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: historiaClinicaId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [imagen]
+ *             properties:
+ *               imagen:
+ *                 type: string
+ *                 format: binary
+ *               tipoImagen:
+ *                 type: string
+ *                 enum: [Radiografia, Foto, Escaneo, Otro]
+ *               fechaCarga:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Imagen subida
+ */
+router.post(
+  '/:historiaClinicaId/imagenes',
+  requirePermiso('historia_clinica', 'crear'),
+  uploadImagenesClinicas.single('imagen'),
+  vSubirImagen,
+  hcCtrl.subirImagenClinica
+);
+
+/**
+ * @swagger
+ * /clinica/historia/paciente/{pacienteId}/imagenes:
+ *   get:
+ *     summary: Obtener todas las imágenes clínicas de un paciente
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: pacienteId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de imágenes clínicas
+ */
+router.get(
+  '/paciente/:pacienteId/imagenes',
+  requirePermiso('historia_clinica', 'ver'),
+  hcCtrl.obtenerImagenesPorPaciente
+);
+
+/**
+ * @swagger
+ * /clinica/historia/imagenes/{imagenId}:
+ *   delete:
+ *     summary: Eliminar imagen clínica
+ *     tags: [Historia Clínica]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: imagenId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Imagen eliminada
+ */
+router.delete(
+  '/imagenes/:imagenId',
+  requirePermiso('historia_clinica', 'eliminar'),
+  hcCtrl.eliminarImagenClinica
+);
+
+
+export default router;

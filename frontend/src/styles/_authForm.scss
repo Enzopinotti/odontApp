@@ -1,357 +1,357 @@
-@use 'variables';
+  @use 'variables';
 
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto 2rem;
-  background: variables.$color-white;
-  border-radius: variables.$radius;
-  padding: 2.5rem 3rem;
-  box-shadow: variables.$shadow;
-  display: flex;
-  flex-direction: column;
-  animation: fadeInUp 0.6s ease-out;
-  transition: all 0.3s ease;
-}
-
-.auth-card h2 {
-  text-align: center;
-  margin-bottom: 1.8rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: variables.$color-text;
-}
-
-.auth-card input {
-  width: 100%;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: variables.$radius;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  background: #fff;
-  color: variables.$color-text;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.auth-card input:focus {
-  outline: none;
-  border-color: variables.$color-primary;
-  box-shadow: 0 0 0 2px rgba(variables.$color-primary, 0.2);
-}
-
-.auth-card button {
-  width: 100%;
-  background: variables.$color-primary;
-  color: variables.$color-white ;
-  border: none;
-  padding: 0.7rem;
-  border-radius: variables.$radius;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: background 0.2s ease;
-  
-}
-
-.noLoRecibiste{
-  color: white !important;
-}
-
-.auth-card button:hover {
-  background: darken(variables.$color-primary, 6%);
-}
-
-.auth-card .actions {
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.auth-card .actions .link {
-  display: block;
-  color: variables.$color-primary;
-  margin-top: 0.6rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.auth-card .actions .link:hover {
-  text-decoration: underline;
-  color: darken(variables.$color-primary, 10%);
-}
-
-.google-btn {
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  background: #fff;
-  color: #555;
-  border: 1px solid #ccc;
-  border-radius: variables.$radius;
-  padding: 0.55rem 1rem;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.google-btn:hover {
-  background: #f2f3f5;
-  transform: translateY(-1px);
-}
-
-.google-btn svg {
-  font-size: 1.2rem;
-}
-
-/* Ícono multicolor Google como letra G */
-.google-icon {
-  background: conic-gradient(
-    from 45deg,
-    #ea4335 0deg 90deg,
-    #fbbc05 90deg 180deg,
-    #34a853 180deg 270deg,
-    #4285f4 270deg 360deg
-  );
-  -webkit-background-clip: text;
-  color: transparent;
-  font-weight: 900;
-  font-size: 1.8rem;
-}
-
-/* Info icon */
-.info-icon {
-  position: absolute;
-  top: 0.5rem;
-  right: 1rem;
-  font-size: 1.6rem; // Más grande
-  color: variables.$color-primary;
-  cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.2s ease;
-}
-
-.info-icon:hover {
-  transform: scale(1.1);
-}
-
-.info-box {
-  position: absolute;
-  top: 7.8rem;
-  right: 5rem;
-  background: variables.$color-white;
-  border: 1px solid #ddd;
-  padding: 0.75rem 1rem;
-  border-radius: variables.$radius;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  box-shadow: variables.$shadow;
-  color: variables.$color-text;
-  width: 280px;
-  opacity: 0;
-  transform: translateY(-5px);
-  pointer-events: none;
-  transition: all 0.3s ease;
-  z-index: 10;
-  -webkit-transform: translateY(-5px);
-  -moz-transform: translateY(-5px);
-  -ms-transform: translateY(-5px);
-  -o-transform: translateY(-5px);
-}
-
-.info-box.show {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.verify-email {
-  text-align: center;
-  font-size: 0.95rem;
-  color: variables.$color-text;
-
-  p {
-    margin-top: 1rem;
-  }
-
-  .link {
-    display: inline-block;
-    margin-top: 1.2rem;
-    color: variables.$color-primary;
-    font-weight: 500;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-.verify-email {
-  text-align: center;
-
-  p {
-    margin-top: 1.2rem;
-    font-size: 1rem;
-    color: variables.$color-text;
-  }
-
-  strong {
-    font-size: 1.1rem;
-    color: variables.$color-primary;
-  }
-
-  .link,
-  button.link {
-    margin-top: 1rem;
-    display: inline-block;
-    background: none;
-    border: none;
-    font-weight: 500;
-    color: variables.$color-primary;
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: 0.95rem;
-  }
-
-  .link:hover {
-    color: darken(variables.$color-primary, 10%);
-  }
-}
-
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal-card {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-
-/* RESPONSIVE DESIGN */
-@media (min-width: 600px) {
   .auth-card {
-    padding: 3rem 3.5rem;
-    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 2rem;
+    background: variables.$color-white;
+    border-radius: variables.$radius;
+    padding: 2.5rem 3rem;
+    box-shadow: variables.$shadow;
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 0.6s ease-out;
+    transition: all 0.3s ease;
   }
 
   .auth-card h2 {
-    font-size: 1.7rem;
+    text-align: center;
+    margin-bottom: 1.8rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: variables.$color-text;
   }
-}
 
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 1.8rem 1.5rem;
+  .auth-card input {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: variables.$radius;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    background: #fff;
+    color: variables.$color-text;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-}
 
-/* ANIMATIONS */
-@keyframes fadeInUp {
-  from {
+  .auth-card input:focus {
+    outline: none;
+    border-color: variables.$color-primary;
+    box-shadow: 0 0 0 2px rgba(variables.$color-primary, 0.2);
+  }
+
+  .auth-card button {
+    width: 100%;
+    background: variables.$color-primary;
+    color: variables.$color-white ;
+    border: none;
+    padding: 0.7rem;
+    border-radius: variables.$radius;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background 0.2s ease;
+    
+  }
+
+  .noLoRecibiste{
+    color: white !important;
+  }
+
+  .auth-card button:hover {
+    background: darken(variables.$color-primary, 6%);
+  }
+
+  .auth-card .actions {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .auth-card .actions .link {
+    display: block;
+    color: variables.$color-primary;
+    margin-top: 0.6rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .auth-card .actions .link:hover {
+    text-decoration: underline;
+    color: darken(variables.$color-primary, 10%);
+  }
+
+  .google-btn {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: #fff;
+    color: #555;
+    border: 1px solid #ccc;
+    border-radius: variables.$radius;
+    padding: 0.55rem 1rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .google-btn:hover {
+    background: #f2f3f5;
+    transform: translateY(-1px);
+  }
+
+  .google-btn svg {
+    font-size: 1.2rem;
+  }
+
+  /* Ícono multicolor Google como letra G */
+  .google-icon {
+    background: conic-gradient(
+      from 45deg,
+      #ea4335 0deg 90deg,
+      #fbbc05 90deg 180deg,
+      #34a853 180deg 270deg,
+      #4285f4 270deg 360deg
+    );
+    -webkit-background-clip: text;
+    color: transparent;
+    font-weight: 900;
+    font-size: 1.8rem;
+  }
+
+  /* Info icon */
+  .info-icon {
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    font-size: 1.6rem; // Más grande
+    color: variables.$color-primary;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+  }
+
+  .info-icon:hover {
+    transform: scale(1.1);
+  }
+
+  .info-box {
+    position: absolute;
+    top: 7.8rem;
+    right: 5rem;
+    background: variables.$color-white;
+    border: 1px solid #ddd;
+    padding: 0.75rem 1rem;
+    border-radius: variables.$radius;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: variables.$shadow;
+    color: variables.$color-text;
+    width: 280px;
     opacity: 0;
-    transform: translateY(15px);
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: 10;
+    -webkit-transform: translateY(-5px);
+    -moz-transform: translateY(-5px);
+    -ms-transform: translateY(-5px);
+    -o-transform: translateY(-5px);
   }
-  to {
+
+  .info-box.show {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-
-.password-wrapper {
-  position: relative;
-
-  input {
-    padding-right: 2.2rem;
-  } 
-
-  .toggle-eye {
-    position: absolute;
-    top: 55%;
-    right: 0.75rem;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: #888;
-    font-size: 1.2rem;
-    -webkit-transform: translateY(-50%);
-    -moz-transform: translateY(-50%);
-    -ms-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-  }
-}
-.password-wrapper.register{
-  .toggle-eye {
-    position: absolute;
-    top: 40%;
-    right: 0.75rem;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: #888;
-    font-size: 1.2rem;
-    -webkit-transform: translateY(-50%);
-    -moz-transform: translateY(-50%);
-    -ms-transform: translateY(-50%);
-    -o-transform: translateY(-50%);
-  }
-}
-.password-rules {
-  font-size: 0.85rem;
-  margin-bottom: 0.7rem;
-  color: #b42121;
-
-  p {
-    margin: 0.2rem 0;
+    pointer-events: auto;
   }
 
-  .valid {
-    color: #3cb371;
-    font-weight: 500;
+  .verify-email {
+    text-align: center;
+    font-size: 0.95rem;
+    color: variables.$color-text;
+
+    p {
+      margin-top: 1rem;
+    }
+
+    .link {
+      display: inline-block;
+      margin-top: 1.2rem;
+      color: variables.$color-primary;
+      font-weight: 500;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
-}
 
-.botonReenviar{
-  color: variables.$color-text !important;
-}
-.match-status {
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
+  .verify-email {
+    text-align: center;
 
-.field-error {
-  display: block;
-  font-size: 0.8rem;
-  color: #e74c3c;
-  margin-top: -0.7rem;
-  margin-bottom: 0.7rem;
-  padding-left: 2px;
-  animation: fadeIn 0.2s ease-in-out;
-}/* main.scss */
+    p {
+      margin-top: 1.2rem;
+      font-size: 1rem;
+      color: variables.$color-text;
+    }
+
+    strong {
+      font-size: 1.1rem;
+      color: variables.$color-primary;
+    }
+
+    .link,
+    button.link {
+      margin-top: 1rem;
+      display: inline-block;
+      background: none;
+      border: none;
+      font-weight: 500;
+      color: variables.$color-primary;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 0.95rem;
+    }
+
+    .link:hover {
+      color: darken(variables.$color-primary, 10%);
+    }
+  }
+
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+
+  .modal-card {
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+
+  /* RESPONSIVE DESIGN */
+  @media (min-width: 600px) {
+    .auth-card {
+      padding: 3rem 3.5rem;
+      border-radius: 12px;
+    }
+
+    .auth-card h2 {
+      font-size: 1.7rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .auth-card {
+      padding: 1.8rem 1.5rem;
+    }
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+
+  .password-wrapper {
+    position: relative;
+
+    input {
+      padding-right: 2.2rem;
+    } 
+
+    .toggle-eye {
+      position: absolute;
+      top: 55%;
+      right: 0.75rem;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #888;
+      font-size: 1.2rem;
+      -webkit-transform: translateY(-50%);
+      -moz-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+      -o-transform: translateY(-50%);
+    }
+  }
+  .password-wrapper.register{
+    .toggle-eye {
+      position: absolute;
+      top: 40%;
+      right: 0.75rem;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #888;
+      font-size: 1.2rem;
+      -webkit-transform: translateY(-50%);
+      -moz-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+      -o-transform: translateY(-50%);
+    }
+  }
+  .password-rules {
+    font-size: 0.85rem;
+    margin-bottom: 0.7rem;
+    color: #b42121;
+
+    p {
+      margin: 0.2rem 0;
+    }
+
+    .valid {
+      color: #3cb371;
+      font-weight: 500;
+    }
+  }
+
+  .botonReenviar{
+    color: variables.$color-text !important;
+  }
+  .match-status {
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .field-error {
+    display: block;
+    font-size: 0.8rem;
+    color: #e74c3c;
+    margin-top: -0.7rem;
+    margin-bottom: 0.7rem;
+    padding-left: 2px;
+    animation: fadeIn 0.2s ease-in-out;
+  }

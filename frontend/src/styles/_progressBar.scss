@@ -1,0 +1,90 @@
+// src/styles/components/_progressbar.scss
+@use './variables' as *;
+
+.progress-container {
+  position: relative;
+  margin-bottom: 2.5rem;
+  padding-top: 2rem;
+}
+
+.progress-track {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: $color-primary;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  height: 6px;
+  background: $color-primary;
+  border-radius: 4px;
+  width: 0%;
+  z-index: 2;
+  transition: width 0.35s ease-in-out;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 3;
+}
+
+.step {
+  position: relative;
+  text-align: center;
+  flex: 1;
+
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $color-text;
+    position: absolute;
+    top: -1.6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .dot {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 2px solid lighten($color-primary, 15%);
+    background: $color-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 4;
+
+    .inner {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: transparent;
+      transform: scale(0);
+      transition: all 0.3s ease;
+    }
+  }
+
+  &.active .dot,
+  &.completed .dot {
+    border-color: $color-primary;
+
+    .inner {
+      background: $color-primary;
+      transform: scale(1);
+    }
+  }
+}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Router } from "express";
 import {
   vCrearPaciente,
@@ -11,18 +12,45 @@ const router = Router();
  * tags:
  *   name: Pacientes
  *   description: Endpoints para gestionar pacientes
+=======
+import { Router } from 'express';
+import * as pacienteCtrl from '../controllers/pacienteController.js';
+import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { vCrearPaciente, vActualizarPaciente } from '../validators/pacienteValidator.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
+
+const router = Router();
+
+router.use(requireAuth);
+
+/**
+ * @swagger
+ * tags:
+ *   - name: Pacientes
+ *     description: Gestión clínica de pacientes
+>>>>>>> origin
  */
 
 /**
  * @swagger
+<<<<<<< HEAD
  * /api/pacientes:
  *   get:
  *     summary: Listar todos los pacientes
  *     tags: [Pacientes]
+=======
+ * /clinica/pacientes:
+ *   get:
+ *     summary: Listar pacientes
+ *     tags: [Pacientes]
+ *     security:
+ *       - cookieAuth: []
+>>>>>>> origin
  *     responses:
  *       200:
  *         description: Lista de pacientes
  */
+<<<<<<< HEAD
 //listar pacientes
 router.get("/", PacienteController.listarPacientes);
 
@@ -33,17 +61,61 @@ router.get("/", PacienteController.listarPacientes);
  *   post:
  *     summary: Crear un nuevo paciente
  *     tags: [Pacientes]
+=======
+router.get(
+  '/',
+  requirePermiso('pacientes', 'listar'),
+  pacienteCtrl.listarPacientes
+);
+
+/**
+ * @swagger
+ * /clinica/pacientes/{id}:
+ *   get:
+ *     summary: Obtener paciente por ID
+ *     tags: [Pacientes]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Detalle del paciente
+ */
+router.get(
+  '/:id',
+  requirePermiso('pacientes', 'listar'),
+  pacienteCtrl.obtenerPacientePorId
+);
+
+/**
+ * @swagger
+ * /clinica/pacientes:
+ *   post:
+ *     summary: Crear paciente con datos personales y contacto
+ *     tags: [Pacientes]
+ *     security:
+ *       - cookieAuth: []
+>>>>>>> origin
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+<<<<<<< HEAD
  *             required:
  *               - nombre
  *               - apellido
  *               - dni
  *               - email
+=======
+ *             required: [nombre, apellido, dni]
+>>>>>>> origin
  *             properties:
  *               nombre:
  *                 type: string
@@ -51,6 +123,7 @@ router.get("/", PacienteController.listarPacientes);
  *                 type: string
  *               dni:
  *                 type: string
+<<<<<<< HEAD
  *               email:
  *                 type: string
  *               telefono:
@@ -100,10 +173,43 @@ router.get("/:id", PacienteController.getPaciente);
  *           type: string
  *     requestBody:
  *       required: true
+=======
+ *               contacto:
+ *                 type: object
+ *               direccion:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Paciente creado
+ */
+router.post(
+  '/',
+  requirePermiso('pacientes', 'crear'),
+  vCrearPaciente,
+  pacienteCtrl.crearPaciente
+);
+
+/**
+ * @swagger
+ * /clinica/pacientes/{id}:
+ *   put:
+ *     summary: Editar datos del paciente
+ *     tags: [Pacientes]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+>>>>>>> origin
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+<<<<<<< HEAD
  *             properties:
  *               nombre:
  *                 type: string
@@ -185,4 +291,41 @@ router.delete("/:id", PacienteController.eliminarPaciente);
  *         description: Error interno del servidor
  */
 router.get("/buscar", PacienteController.buscarPacientes);
+=======
+ *     responses:
+ *       200:
+ *         description: Paciente actualizado
+ */
+router.put(
+  '/:id',
+  requirePermiso('pacientes', 'editar'),
+  vActualizarPaciente,
+  pacienteCtrl.actualizarPaciente
+);
+
+/**
+ * @swagger
+ * /clinica/pacientes/{id}:
+ *   delete:
+ *     summary: Eliminar paciente (baja lógica)
+ *     tags: [Pacientes]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Paciente eliminado
+ */
+router.delete(
+  '/:id',
+  requirePermiso('pacientes', 'eliminar'),
+  pacienteCtrl.eliminarPaciente
+);
+
+>>>>>>> origin
 export default router;
