@@ -1,5 +1,5 @@
 import React from "react";
-import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { FaTrashAlt } from "react-icons/fa";
 
 //harcodeado para el ejemplo
@@ -36,13 +36,13 @@ const medicamentos = [
   },
 ];
 
-export default function MedicamentoFields({ index, onRemove, onChange }) {
-  const [seleccion, setSeleccion] = useState({
+export default function MedicamentoFields({ index, register,control, onRemove }) {
+  const seleccion = useWatch({control, name: `medicamentos.${index}`,}) || {
     nombreGenerico: "",
     formaFarmaceutica: "",
     dosis: "",
     presentacion: "",
-  });
+  };
   //harcodeado
   // Lista de nombres genéricos únicos (Ibuprofeno, Amoxicilina)
   const nombresUnicos = [
@@ -51,7 +51,7 @@ export default function MedicamentoFields({ index, onRemove, onChange }) {
 
   //harcodeado
   const formasFarmaceuticas = medicamentos
-    .filter((m) => m.nombre_generico === seleccion.nombreGenerico)
+    .filter((m) => m.nombre_generico === seleccion?.nombreGenerico)
     .map((m) => m.forma_farmaceutica);
   const formasUnicas = [...new Set(formasFarmaceuticas)];
 
@@ -76,29 +76,14 @@ export default function MedicamentoFields({ index, onRemove, onChange }) {
     .map((m) => m.presentacion);
   const presentacionesUnicas = [...new Set(presentaciones)];
 
-  const handleChange = (field, value) => {
-    const nuevaSeleccion = {
-      ...seleccion,
-      [field]: value,
-      ...(field === "nombreGenerico" && {
-        formaFarmaceutica: "",
-        dosis: "",
-        presentacion: "",
-      }),
-      ...(field === "formaFarmaceutica" && { dosis: "", presentacion: "" }),
-      ...(field === "dosis" && { presentacion: "" }),
-    };
-    setSeleccion(nuevaSeleccion);
-    onChange(nuevaSeleccion);
-  };
+  
   return (
     <div className="recetas-item">
       <div className=" recetas-item__row recetas-item__row--header">
         <div className="recetas-item__field">
           <label className="recetas-item__label">Nombre genérico </label>
           <select
-            value={seleccion.nombreGenerico}
-            onChange={(e) => handleChange("nombreGenerico", e.target.value)}
+            {...register(`medicamentos.${index}.nombreGenerico`,)}
             className="recetas-item__select u-w-100"
           >
             <option value="">Seleccione un medicamento</option>
@@ -123,9 +108,8 @@ export default function MedicamentoFields({ index, onRemove, onChange }) {
         <div className="recetas-item__field">
           <label className="recetas-item__label">Forma Farmacéutica</label>
           <select
-            value={seleccion.formaFarmaceutica}
-            onChange={(e) => handleChange("formaFarmaceutica", e.target.value)}
-            disabled={!seleccion.nombreGenerico}
+            {...register(`medicamentos.${index}.formaFarmaceutica`)}
+            disabled={!seleccion?.nombreGenerico}
             className="recetas-item__select recetas-item__select--md"
           >
             <option value="">Seleccione forma</option>
@@ -140,9 +124,8 @@ export default function MedicamentoFields({ index, onRemove, onChange }) {
         <div className="recetas-item__field">
           <label className="recetas-item__label">Dosis</label>
           <select
-            value={seleccion.dosis}
-            onChange={(e) => handleChange("dosis", e.target.value)}
-            disabled={!seleccion.formaFarmaceutica}
+            {...register(`medicamentos.${index}.dosis`)}
+            disabled={!seleccion?.formaFarmaceutica}
             className="recetas-item__select recetas-item__select--sm"
           >
             <option value="">Seleccione dosis</option>
@@ -156,9 +139,8 @@ export default function MedicamentoFields({ index, onRemove, onChange }) {
         <div className="recetas-item__field">
           <label className="recetas-item__label">Presentación</label>
           <select
-            value={seleccion.presentacion}
-            onChange={(e) => handleChange("presentacion", e.target.value)}
-            disabled={!seleccion.dosis}
+            {...register(`medicamentos.${index}.presentacion`)}
+            disabled={!seleccion?.dosis}
             className="recetas-item__select recetas-item__select--md"
           >
             <option value="">Seleccione presentación</option>

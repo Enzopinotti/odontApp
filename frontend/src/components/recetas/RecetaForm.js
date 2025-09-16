@@ -1,17 +1,19 @@
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller, useWatch  } from "react-hook-form";
 import AutocompletePaciente from "./AutocompletePaciente";
-import { useState } from "react";
+import { useEffect } from "react";
 import MedicamentoFields from "./MedicamentoFields";
-export default function RecetaForm() {
-  const { register, control, handleSubmit } = useForm({
-    defaultValues: {
-      paciente: "",
-      diagnostico: "",
-      indicaciones: "",
-      medicamentos: [{}],
-    },
-  });
-  const [medicamentoSeleccionado, setMedicamentoSeleccionado] = useState(null);
+export default function RecetaForm({ onChange }) {
+ const { register, control, handleSubmit } = useForm({
+   defaultValues: {
+     paciente: "",
+     diagnostico: "",
+     indicaciones: "",
+     medicamentos: [{}],
+   },
+ });
+  const receta = useWatch({control});
+
+  
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -21,17 +23,25 @@ export default function RecetaForm() {
   const onSubmit = (data) => {
     console.log("Receta enviada:", data);
   };
-  const handleMedicamentoChange = (data) => {
-    console.log("Medicamento seleccionado:", data);
-    setMedicamentoSeleccionado(data);
-  };
+  
+  useEffect(() => {
+    if (onChange) onChange(receta);
+  }, [receta, onChange]);
+
   return (
     <section className="recetas">
-      
       <form onSubmit={handleSubmit(onSubmit)} className="recetas__form">
         <div className="recetas__group recetas__group--full">
           <label className="recetas__label">Paciente</label>
-          <AutocompletePaciente name="paciente" control={control} />
+          <Controller
+            name="paciente"
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (  
+          <AutocompletePaciente value={field.value} onChange={field.onChange} />
+            )}
+          />
+
         </div>
 
         <div className="recetas__group recetas__group--full">
@@ -56,8 +66,10 @@ export default function RecetaForm() {
               key={field.id}
               index={index}
               register={register}
+              control={control}
               onRemove={() => remove(index)}
-              onChange={handleMedicamentoChange}
+             
+
             />
           ))}
         </div>

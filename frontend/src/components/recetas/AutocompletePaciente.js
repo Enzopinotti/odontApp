@@ -1,7 +1,7 @@
 import { useBuscarPacientes } from "../../hooks/useBuscarPacientes";
 import { useId, useState, useEffect, useRef } from "react";
 
-export default function AutocompletePaciente({ control, name }) {
+export default function AutocompletePaciente({ value, onChange }) {
   const { busqueda, setBusqueda, sugerencias, setSugerencias } =
     useBuscarPacientes();
 
@@ -22,13 +22,12 @@ export default function AutocompletePaciente({ control, name }) {
     setSugerencias([]);
     setOpen(false);
     setActiveIndex(-1);
+    onChange(paciente);
   };
-
-  const onChange = (e) => {
+  const onChangeInput = (e) => {
     setBusqueda(e.target.value);
-    // acá tu hook ya se encargará de actualizar sugerencias
-  };
-
+  }
+ 
   const onKeyDown = (e) => {
     if (!sugerencias?.length) return;
 
@@ -61,8 +60,8 @@ export default function AutocompletePaciente({ control, name }) {
       <input
         ref={inputRef}
         type="text"
-        value={busqueda}
-        onChange={onChange}
+        value={busqueda || value || ""}
+        onChange={onChangeInput}
         onKeyDown={onKeyDown}
         onFocus={() => setOpen(Boolean(sugerencias?.length))}
         placeholder="Buscar por nombre o DNI"
@@ -82,7 +81,7 @@ export default function AutocompletePaciente({ control, name }) {
             <li
               key={paciente.id}
               id={`opt-${paciente.id}`}
-              onMouseDown={(e) => e.preventDefault()} // evita blur antes del click
+              onMouseDown={(e) => e.preventDefault()} 
               onClick={() => manejarSeleccion(paciente)}
               className={`auto__item${i === activeIndex ? " is-active" : ""}`}
               role="option"
