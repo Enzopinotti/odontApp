@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-import { sequelize } from '../../../config/db.js';
-import { DataTypes } from 'sequelize';
-
-import pacienteModel from './Paciente.js';
-const Paciente = pacienteModel(sequelize, DataTypes);
-export { Paciente };
-=======
 /**
  * Inicializa los modelos del módulo Clínica y aplica sus asociaciones.
  * Se exporta cada modelo individualmente para ser reutilizado en controladores/servicios.
@@ -58,4 +50,3 @@ export {
   ImagenClinica,
   AntecedenteMedico,
 };
->>>>>>> origin
