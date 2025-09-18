@@ -4,13 +4,14 @@ import { useLocation } from 'react-router-dom';
 import * as authApi from '../api/auth';
 
 //mocking usuario
-const devMode = process.env.NODE_ENV === 'development';
 
 const mockUser = {
   id: 999,
   nombre: 'Dr. Simulado',
   email: 'demo@odontapp.com',
-  rol: 'odontologo'
+  rol: 'odontologo',
+  matricula: 12345,
+  especialidad: 'Odontología general'
 };
 
 export const AuthCtx = createContext();
@@ -18,6 +19,7 @@ export const AuthCtx = createContext();
 export default function AuthProvider({ children }) {
   const [state, setState] = useState({ user: null, loading: true });
   const location = useLocation();
+  const bypassAuth = process.env.REACT_APP_BYPASS_AUTH === "false";
 
   const isPublicPath = [
     '/login',
@@ -32,7 +34,7 @@ export default function AuthProvider({ children }) {
       return;
     }
 //mocking usuario 
-      if (devMode) {
+      if (bypassAuth) {
     setState({ user: mockUser, loading: false });
     return;
   }
@@ -52,7 +54,7 @@ export default function AuthProvider({ children }) {
         setState({ user: null, loading: false });
       }
     })();
-  }, [isPublicPath]);
+  }, [isPublicPath, bypassAuth]);
 
   const logout = async () => {
     await authApi.logout();

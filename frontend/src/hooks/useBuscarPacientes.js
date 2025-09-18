@@ -1,50 +1,44 @@
-import { useEffect, useState } from "react";
-
-//harcodeo
-const USAR_API = false;
-const mockPacientes = [
-  { id: 1, nombre: "Juan", apellido: "Pérez", dni: "30111222", edad: 30 , sexo: "Masculino", email:"juan@gmail.com"},
-  { id: 2, nombre: "María", apellido: "Gómez", dni: "28999111", edad: 25, sexo: "Femenino", email:"maria@gmail.com" },
-  { id: 3, nombre: "Pedro", apellido: "Martínez", dni: "32000222", edad: 40, sexo: "Masculino",email:"pedro@gmail.com" },
-  { id: 4, nombre: "Laura", apellido: "Fernández", dni: "27000333", edad: 28, sexo: "Femenino",email:"laura@gmail.com" },
-  { id: 5, nombre: "Carlos", apellido: "Sánchez", dni: "25000444", edad: 35, sexo: "Masculino",email:"carlos@gmail.com" },
-];
-
-const API_BASE = process.env.REACT_APP_API_BASE;
-
-
-export const useBuscarPacientes = () => {
+import { useState, useEffect } from "react";
+import api from "../api/axios";
+export function useBuscarPacientes() {
   const [busqueda, setBusqueda] = useState("");
   const [sugerencias, setSugerencias] = useState([]);
-  
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-
-
-    if (busqueda.trim() === "") {
-      setSugerencias([]);
-      return;
-    }
-
+    const controller = new AbortController();
     const delay = setTimeout(() => {
-        if (USAR_API){
-      fetch(
-        `${API_BASE}/pacientes/buscar?query=${encodeURIComponent(busqueda)}`
-      )
-        .then((res) => res.json())
-        .then((data) => setSugerencias(data))
-        .catch((err) => console.error("error al buscar pacientes", err));
-  }else{
-    //harcodeado
-     const filtro = mockPacientes.filter((p) => {
-          const nombreCompleto = `${p.nombre} ${p.apellido}`.toLowerCase();
-          return (
-            nombreCompleto.includes(busqueda.toLowerCase()) ||
-            p.dni.includes(busqueda)
-          );
+      const texto = busqueda.trim();
+
+      if (texto.length < 1) {
+        setSugerencias([]);
+        return;
+      }
+
+      setLoading(true);
+
+      api
+        .get("/pacientes", {
+          params: { q: texto, perPage: 10 },
+          signal: controller.signal,
+        })
+        .then((res) => {
+          setSugerencias(res.data?.data?.data || []);
+        })
+        .catch((err) => {
+          if (err.name === "CanceledError") return;
+          console.error("❌ error al buscar pacientes", err);
+          setSugerencias([]);
+        })
+        .finally(() => {
+          setLoading(false);
         });
-        setSugerencias(filtro);
-  }}, 300);
-    return () => clearTimeout(delay);
+    }, 300);
+
+    return () => {
+      clearTimeout(delay);
+      controller.abort();
+    };
   }, [busqueda]);
 
   return {
@@ -52,5 +46,6 @@ export const useBuscarPacientes = () => {
     setBusqueda,
     sugerencias,
     setSugerencias,
+    loading,
   };
-};
+}

@@ -1,5 +1,5 @@
 // backend/src/modules/Usuarios/repositories/usuarioRepository.js
-import { Usuario, Rol } from '../models/index.js';
+import { Usuario, Rol} from '../models/index.js';
 import { Op } from 'sequelize';
 
 export const findPaginated = (page = 1, perPage = 20) => {
@@ -67,6 +67,7 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
     order: [['createdAt', 'DESC']],
   });
 };
+
 
 export default {
   findPaginated,

@@ -1,101 +1,66 @@
-import MedicamentoService from '../services/MedicamentoService.js';
+// backend/src/modules/Clinica/controllers/medicamentoController.js
+import MedicamentoService from "../services/MedicamentoService.js";
 
-export const getMedicamentos = async(req,res) => {
-  try{
+// 📌 Listar todos los medicamentos
+export const getMedicamentos = async (req, res) => {
+  try {
     const data = await MedicamentoService.listarMedicamentos();
     res.json(data);
-  }
-  catch(error){
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
+// 📌 Buscar medicamento por ID
 export const getMedicamentoById = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = await MedicamentoService.buscarPorId(id); // <- este método debe existir
+    const data = await MedicamentoService.buscarPorId(id);
+    if (!data) return res.status(404).json({ error: "Medicamento no encontrado" });
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getNombresGenericos = async (req, res) => {
+// 📌 Jerarquía completa (nombre → formas → dosis → presentaciones)
+export const getJerarquia = async (req, res) => {
   try {
-    const data = await MedicamentoService.listarNombresGenericos();
+    const data = await MedicamentoService.obtenerJerarquia();
     res.json(data);
   } catch (error) {
+    console.error("❌ Error en getJerarquia:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getFormasFarmaceuticas = async (req, res) => {
-  try {
-    const { nombreGenerico } = req.params;
-    const data = await MedicamentoService.listarFormasFarmaceuticas(nombreGenerico);
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const getDosis = async (req, res) => {
-  try {
-    const { nombreGenerico, formaFarmaceutica } = req.params;
-    const data = await MedicamentoService.listarConcentraciones(nombreGenerico, formaFarmaceutica);
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const getPresentaciones = async (req, res) => {
-  try {
-    const { nombreGenerico, formaFarmaceutica, dosis } = req.params;
-    const data = await MedicamentoService.listarPresentaciones(nombreGenerico, formaFarmaceutica, dosis);
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const getMedicamentoCompleto = async (req, res) => {
-  try {
-    const { nombreGenerico, formaFarmaceutica, dosis, presentacion } = req.body;
-    const data = await MedicamentoService.obtenerMedicamento(nombreGenerico, formaFarmaceutica, dosis, presentacion);
-    if (!data) {
-      return res.status(404).json({ error: 'No se encontró el medicamento.' });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
+// 📌 Crear nuevo medicamento
 export const crearMedicamento = async (req, res) => {
   try {
     const data = await MedicamentoService.crearMedicamento(req.body);
-    res.status(201).json({ message: 'Medicamento creado con éxito.', data });
+    res.status(201).json({ message: "Medicamento creado con éxito.", data });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
+// 📌 Actualizar medicamento
 export const actualizarMedicamento = async (req, res) => {
   try {
     const { id } = req.params;
     const data = await MedicamentoService.actualizarMedicamento(id, req.body);
-    res.json({ message: 'Medicamento actualizado', data });
+    res.json({ message: "Medicamento actualizado", data });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
+// 📌 Eliminar medicamento
 export const eliminarMedicamento = async (req, res) => {
   try {
     const { id } = req.params;
     await MedicamentoService.eliminarMedicamento(id);
-    res.json({ message: 'Medicamento eliminado correctamente' });
+    res.json({ message: "Medicamento eliminado correctamente" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

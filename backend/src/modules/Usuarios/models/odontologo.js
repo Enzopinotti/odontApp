@@ -3,10 +3,8 @@ export default (sequelize, DataTypes) =>
   sequelize.define('Odontologo', {
     userId:   { type: DataTypes.INTEGER, primaryKey: true },
     matricula:{ type: DataTypes.STRING, allowNull: false },
-    nombre:   { type: DataTypes.STRING, allowNull: false },
-    apellido: { type: DataTypes.STRING, allowNull: false },
     firmaDigital: {
       type:DataTypes.STRING,
-      allowNull:false
+      allowNull:true
     }
   }, { tableName: 'odontologos', timestamps: false });

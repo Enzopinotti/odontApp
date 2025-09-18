@@ -2,6 +2,9 @@ import { useForm, useFieldArray, Controller, useWatch  } from "react-hook-form";
 import AutocompletePaciente from "./AutocompletePaciente";
 import { useEffect } from "react";
 import MedicamentoFields from "./MedicamentoFields";
+import useModal from '../../hooks/useModal'
+import { useMedicamentosJerarquia } from "../../hooks/useMedicamentosJerarquia";
+
 export default function RecetaForm({ onChange }) {
  const { register, control, handleSubmit } = useForm({
    defaultValues: {
@@ -12,8 +15,19 @@ export default function RecetaForm({ onChange }) {
    },
  });
   const receta = useWatch({control});
+ const{showModal}=useModal();
+    const { jerarquia, loading } = useMedicamentosJerarquia();
 
-  
+const handleEnviar = () => {
+    showModal({
+      type: 'enviarReceta',
+      title: 'Enviar Receta',
+      paciente: receta.paciente,
+      onSend: (tipo) => {
+        console.log("Enviar receta por:", tipo);
+      },
+    });
+  };
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -68,8 +82,8 @@ export default function RecetaForm({ onChange }) {
               register={register}
               control={control}
               onRemove={() => remove(index)}
-             
-
+              jerarquia={jerarquia}             
+              loading={loading}
             />
           ))}
         </div>
@@ -99,7 +113,7 @@ export default function RecetaForm({ onChange }) {
           <button type="submit" className="btn btn--primary">
             Imprimir receta
           </button>
-          <button type="submit" className="btn btn--secondary">
+          <button type="submit" className="btn btn--secondary" onClick={handleEnviar}>
             Enviar receta
           </button>
         </div>

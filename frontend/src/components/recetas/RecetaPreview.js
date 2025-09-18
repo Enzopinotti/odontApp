@@ -1,12 +1,16 @@
-import { useEffect } from "react";
+
+import { calcularEdad } from "../../utils/calcularEdad";
+import { useMiOdontologo } from "../../hooks/useOdontologos";
 export default function RecetaPreview({ data: receta }) {
+  const edad = receta?.paciente ? calcularEdad(receta?.paciente.fechaNacimiento) : null;
+  const{odontologo}=useMiOdontologo()
   return (
     <aside className="receta-preview">
       <div className="receta-preview__content">
         <header className="receta-preview__header">
-          <h4>Dr. Branko Iriart</h4>
-          <h4>Odontólogía General</h4>
-          <h4>Matrícula 12345</h4>
+          <h4>Dr. {odontologo?.Usuario.nombre} {odontologo?.Usuario.apellido}</h4>
+          <h4>{odontologo?.Especialidads.map((e) => e.nombre).join(", ")}</h4>
+          <h4>{odontologo?.matricula}</h4>
         </header>
         <section className="receta-preview__info">
           <div className="receta-preview__paciente info-colum">
@@ -20,7 +24,7 @@ export default function RecetaPreview({ data: receta }) {
           </div>
           <div className="receta-preview__extra info-colum">
             <p>
-              <strong>Edad:</strong> {receta?.paciente?.edad}{" "}
+              <strong>Edad:</strong> {edad}{" "}
             </p>
             <p>
               <strong>Sexo:</strong> {receta?.paciente?.sexo}{" "}
@@ -58,12 +62,12 @@ export default function RecetaPreview({ data: receta }) {
           </div>
           <div className="receta-preview__firma">
             <img
-              src="/firma.png" 
+              src={odontologo?.firmaDigital} 
               alt="Firma del odontólogo"
               className="receta-preview__firma-img"
             />
-            <p className="receta-preview__doctor">Dr. Branko Iriart</p>
-            <p className="receta-preview__matricula">MN: 12345</p>
+            <p className="receta-preview__doctor">Dr. {odontologo?.Usuario.nombre} {odontologo?.Usuario.apellido}  </p>
+            <p className="receta-preview__matricula"> {odontologo?.matricula} </p>
             <p className="receta-preview__stamp">FIRMA Y SELLO</p>
           </div>
         </section>

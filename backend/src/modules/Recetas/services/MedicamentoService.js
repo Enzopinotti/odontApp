@@ -7,31 +7,40 @@ class MedicamentoService{
     async buscarPorId(id){
         return await MedicamentoRepository.findById(id);
     }
-    async listarNombresgenericos(){
-        return await MedicamentoRepository.obtenerNombreGenericos();
-    }
-    async listarFormasFarmaceuticas(nombreGenerico){
-        if(!nombreGenerico) throw new Error('El nombre generico es obligatorio');
-        return await MedicamentoRepository.obtenerFormarFarmaceuticas(nombreGenerico);
-    }
-    async listarDosis(nombreGenerico,formaFarmaceutica){
-        if(!nombreGenerico || !formaFarmaceutica){
-            throw new Error('faltan datos para buscar dosis')
-        }
-        return await MedicamentoRepository.obtenerDosis(nombreGenerico,formaFarmaceutica);
-    }
-    async listarPresentaciones(nombreGenerico,formaFarmaceutica,dosis){
-        if(!nombreGenerico||!formaFarmaceutica||!dosis){
-            throw new Error('faltan datos para buscar presentaciones')
-        }
-        return await MedicamentoRepository.obtenerPresentaciones(nombreGenerico,formaFarmaceutica,dosis)
-    }
-    async obtenerMedicamento(nombreGenerico,formaFarmaceutica,dosis,presentacion){
-         if(!nombreGenerico||!formaFarmaceutica||!dosis||!presentacion){
-            throw new Error('faltan datos para buscar medicamento')
-        }
-        return await MedicamentoRepository.obtenerMedicamentoCompleto(nombreGenerico,formaFarmaceutica,dosis,presentacion)
-    }
+   async obtenerJerarquia() {
+    const rows = await MedicamentoRepository.findAll();
+
+    // Transformamos a estructura jerárquica
+    const mapa = {};
+
+    rows.forEach((row) => {
+      const { nombreGenerico, formaFarmaceutica, dosis, presentacion } = row;
+
+      if (!mapa[nombreGenerico]) {
+        mapa[nombreGenerico] = { nombreGenerico, formas: [] };
+      }
+
+      let forma = mapa[nombreGenerico].formas.find(
+        (f) => f.formaFarmaceutica === formaFarmaceutica
+      );
+      if (!forma) {
+        forma = { formaFarmaceutica, dosis: [] };
+        mapa[nombreGenerico].formas.push(forma);
+      }
+
+      let dosisObj = forma.dosis.find((d) => d.valor === dosis);
+      if (!dosisObj) {
+        dosisObj = { valor: dosis, presentaciones: [] };
+        forma.dosis.push(dosisObj);
+      }
+
+      if (!dosisObj.presentaciones.includes(presentacion)) {
+        dosisObj.presentaciones.push(presentacion);
+      }
+    });
+
+    return Object.values(mapa);
+  }
 
     async crearMedicamento(data) {
   const { nombreGenerico, formaFarmaceutica, concentracion, presentacion } = data;

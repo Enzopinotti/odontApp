@@ -1,5 +1,5 @@
 import RecetaRepository from "../repositories/recetaRepository.js";
-import PacienteRepository from "../../Clinica/repositories/PacienteRepository.js";
+import PacienteRepository from "../../Clinica/repositories/pacienteRepository.js";
 import ApiError from "../../../utils/ApiError.js";
 class RecetaService {
   async listarRecetas() {

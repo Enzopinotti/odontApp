@@ -25,9 +25,13 @@ export default function AutocompletePaciente({ value, onChange }) {
     onChange(paciente);
   };
   const onChangeInput = (e) => {
-    setBusqueda(e.target.value);
-  }
- 
+    const value = e.target.value;
+    setBusqueda(value);
+    if (value.trim() === "") {
+      onChange(null);
+    }
+  };
+
   const onKeyDown = (e) => {
     if (!sugerencias?.length) return;
 
@@ -60,7 +64,7 @@ export default function AutocompletePaciente({ value, onChange }) {
       <input
         ref={inputRef}
         type="text"
-        value={busqueda || value || ""}
+        value={busqueda || (value && `${value.nombre} ${value.apellido}`) || ""}
         onChange={onChangeInput}
         onKeyDown={onKeyDown}
         onFocus={() => setOpen(Boolean(sugerencias?.length))}
@@ -81,7 +85,7 @@ export default function AutocompletePaciente({ value, onChange }) {
             <li
               key={paciente.id}
               id={`opt-${paciente.id}`}
-              onMouseDown={(e) => e.preventDefault()} 
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => manejarSeleccion(paciente)}
               className={`auto__item${i === activeIndex ? " is-active" : ""}`}
               role="option"
