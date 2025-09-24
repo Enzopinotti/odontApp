@@ -44,14 +44,20 @@ export default function PacienteDetalle() {
   const { showModal } = useModal();
   const prefetchPaciente = usePrefetchPaciente();
   const { crear: crearOdonto } = useOdontoMut();
-
+// Agregar antes de la lógica de permisos:
+console.log('Permisos debug:', {
+  historia: hasPermiso('historia', 'ver'),
+  imagenes: hasPermiso('imagenes', 'ver'),
+  pacientes: hasPermiso('pacientes', 'listar')
+});
   // 🔐 Permisos por recurso/acción
   const canVerPaciente       = hasPermiso('pacientes', 'listar');
   const canEditarPaciente    = hasPermiso('pacientes', 'editar');
   const canVerOdontograma    = hasPermiso('odontograma', 'ver');
   const canEditarOdontograma = hasPermiso('odontograma', 'editar');
-  const canVerHistoria       = hasPermiso('historia', 'ver') || hasPermiso('pacientes', 'listar');
-  const canVerImagenes       = hasPermiso('historia', 'ver') || hasPermiso('pacientes', 'listar');
+  // Cambiar temporalmente estas líneas:
+  const canVerHistoria       = hasPermiso('pacientes', 'listar');
+  const canVerImagenes       = hasPermiso('pacientes', 'listar');
   const canVerTratamientos   = hasPermiso('tratamientos', 'listar');
 
   // Paciente (si no tiene permiso, NO disparamos la query)
