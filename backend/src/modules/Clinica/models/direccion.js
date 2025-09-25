@@ -1,7 +1,11 @@
 // backend/src/modules/Clinica/models/direccion.js
-
 export default (sequelize, DataTypes) => {
   return sequelize.define('Direccion', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     calle: {
       type: DataTypes.STRING,
     },
