@@ -1,4 +1,5 @@
-import { Disponibilidad, Odontologo, Usuario } from '../models/index.js';
+import { Disponibilidad } from '../models/index.js';
+import { Odontologo, Usuario } from '../../Usuarios/models/index.js';
 import { Op } from 'sequelize';
 import { TipoDisponibilidad } from '../models/enums.js';
 

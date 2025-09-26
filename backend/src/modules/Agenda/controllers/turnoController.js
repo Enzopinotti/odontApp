@@ -183,6 +183,82 @@ export const obtenerSlotsDisponibles = async (req, res) => {
   }
 };
 
+/* GET /api/agenda/turnos/pendientes-concluidos */
+export const obtenerTurnosPendientesConcluidos = async (req, res) => {
+  try {
+    const { fecha } = req.query;
+    const turnos = await turnoService.obtenerTurnosPendientesConcluidos(fecha);
+    return res.ok(turnos, 'Turnos pendientes concluidos obtenidos');
+  } catch (error) {
+    return res.error(error.message, 500);
+  }
+};
+
+/* POST /api/agenda/turnos/procesar-ausencias-automaticas */
+export const procesarAusenciasAutomaticas = async (req, res) => {
+  try {
+    const turnosProcesados = await turnoService.procesarAusenciasAutomaticas();
+    return res.ok({ 
+      procesados: turnosProcesados.length,
+      turnos: turnosProcesados 
+    }, 'Ausencias automáticas procesadas');
+  } catch (error) {
+    return res.error(error.message, 500);
+  }
+};
+
+/* GET /api/agenda/turnos/buscar-pacientes */
+export const buscarPacientes = async (req, res) => {
+  try {
+    const { termino } = req.query;
+    if (!termino || termino.length < 2) {
+      return res.error('El término de búsqueda debe tener al menos 2 caracteres', 400);
+    }
+    
+    const pacientes = await turnoService.buscarPacientes(termino);
+    return res.ok(pacientes, 'Pacientes encontrados');
+  } catch (error) {
+    return res.error(error.message, 500);
+  }
+};
+
+/* POST /api/agenda/turnos/crear-paciente-rapido */
+export const crearPacienteRapido = async (req, res) => {
+  try {
+    const paciente = await turnoService.crearPacienteRapido(req.body);
+    return res.ok(paciente, 'Paciente creado exitosamente');
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.error(error.message, 400);
+    }
+    if (error.name === 'ConflictError') {
+      return res.error(error.message, 409);
+    }
+    return res.error(error.message, 500);
+  }
+};
+
+/* GET /api/agenda/turnos/odontologos */
+export const obtenerOdontologosPorEspecialidad = async (req, res) => {
+  try {
+    const { especialidad } = req.query;
+    const odontologos = await turnoService.obtenerOdontologosPorEspecialidad(especialidad);
+    return res.ok(odontologos, 'Odontólogos obtenidos');
+  } catch (error) {
+    return res.error(error.message, 500);
+  }
+};
+
+/* GET /api/agenda/turnos/tratamientos */
+export const obtenerTratamientos = async (req, res) => {
+  try {
+    const tratamientos = await turnoService.obtenerTratamientos();
+    return res.ok(tratamientos, 'Tratamientos obtenidos');
+  } catch (error) {
+    return res.error(error.message, 500);
+  }
+};
+
 export default {
   obtenerTurnos,
   crearTurno,

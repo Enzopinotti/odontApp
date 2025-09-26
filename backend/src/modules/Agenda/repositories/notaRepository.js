@@ -1,4 +1,5 @@
-import { Nota, Turno, Usuario } from '../models/index.js';
+import { Nota, Turno } from '../models/index.js';
+import { Usuario } from '../../Usuarios/models/index.js';
 import { Op } from 'sequelize';
 
 export const findPaginated = (page = 1, perPage = 20) => {

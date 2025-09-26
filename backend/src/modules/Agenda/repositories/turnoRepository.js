@@ -1,4 +1,6 @@
-import { Turno, Paciente, Odontologo, Usuario, Nota } from '../models/index.js';
+import { Turno, Nota } from '../models/index.js';
+import { Paciente } from '../../Clinica/models/index.js';
+import { Odontologo, Usuario } from '../../Usuarios/models/index.js';
 import { Op } from 'sequelize';
 import { EstadoTurno } from '../models/enums.js';
 

@@ -1,69 +1,102 @@
 import express from 'express';
 import * as turnoController from '../controllers/turnoController.js';
-import { validarJWT } from '../../../middlewares/auth.js';
-import { validarPermisos } from '../../../middlewares/permisos.js';
+import { requireAuth } from '../../../middlewares/authMiddleware.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
 const router = express.Router();
 
 // Middleware de autenticación para todas las rutas
-router.use(validarJWT);
+router.use(requireAuth);
 
 // Rutas para gestión de turnos
 router.get('/', 
-  validarPermisos(['ver_turnos']),
+  requirePermiso('turnos', 'ver'),
   turnoController.obtenerTurnos
 );
 
 router.post('/', 
-  validarPermisos(['crear_turno']),
+  requirePermiso('turnos', 'crear'),
   turnoController.crearTurno
 );
 
 router.get('/:id', 
-  validarPermisos(['ver_turnos']),
+  requirePermiso('turnos', 'ver'),
   turnoController.obtenerTurnoPorId
 );
 
 router.put('/:id', 
-  validarPermisos(['editar_turno']),
+  requirePermiso('turnos', 'editar'),
   turnoController.actualizarTurno
 );
 
 router.delete('/:id', 
-  validarPermisos(['eliminar_turno']),
+  requirePermiso('turnos', 'eliminar'),
   turnoController.eliminarTurno
 );
 
 // Rutas para acciones específicas de turnos
 router.post('/:id/cancelar', 
-  validarPermisos(['cancelar_turno']),
+  requirePermiso('turnos', 'cancelar'),
   turnoController.cancelarTurno
 );
 
 router.post('/:id/marcar-asistencia', 
-  validarPermisos(['marcar_asistencia']),
+  requirePermiso('turnos', 'marcar_asistencia'),
   turnoController.marcarAsistencia
 );
 
 router.post('/:id/marcar-ausencia', 
-  validarPermisos(['marcar_ausencia']),
+  requirePermiso('turnos', 'marcar_ausencia'),
   turnoController.marcarAusencia
 );
 
 router.put('/:id/reprogramar', 
-  validarPermisos(['reprogramar_turno']),
+  requirePermiso('turnos', 'reprogramar'),
   turnoController.reprogramarTurno
 );
 
 // Rutas para consultas específicas
 router.get('/agenda/:fecha', 
-  validarPermisos(['ver_agenda']),
+  requirePermiso('agenda', 'ver'),
   turnoController.obtenerAgendaPorFecha
 );
 
 router.get('/slots-disponibles', 
-  validarPermisos(['ver_disponibilidad']),
+  requirePermiso('disponibilidad', 'ver'),
   turnoController.obtenerSlotsDisponibles
+);
+
+// CU-AG01.1: Ruta para obtener turnos pendientes concluidos
+router.get('/pendientes-concluidos', 
+  requirePermiso('turnos', 'ver'),
+  turnoController.obtenerTurnosPendientesConcluidos
+);
+
+// RN-AG06: Ruta para procesar ausencias automáticas
+router.post('/procesar-ausencias-automaticas', 
+  requirePermiso('turnos', 'marcar_ausencia'),
+  turnoController.procesarAusenciasAutomaticas
+);
+
+// CU-AG01.2: Rutas adicionales para crear turnos
+router.get('/buscar-pacientes', 
+  requirePermiso('turnos', 'crear'),
+  turnoController.buscarPacientes
+);
+
+router.post('/crear-paciente-rapido', 
+  requirePermiso('turnos', 'crear'),
+  turnoController.crearPacienteRapido
+);
+
+router.get('/odontologos', 
+  requirePermiso('turnos', 'crear'),
+  turnoController.obtenerOdontologosPorEspecialidad
+);
+
+router.get('/tratamientos', 
+  requirePermiso('turnos', 'crear'),
+  turnoController.obtenerTratamientos
 );
 
 export default router;

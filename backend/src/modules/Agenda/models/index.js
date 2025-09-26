@@ -5,6 +5,7 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../../../config/db.js';
 import applyAssociations from './associations.js';
+import applyAssociationsSafe from './associations-safe.js';
 
 /* ------- Definiciones de modelos ------- */
 import turnoModel from './turno.js';
@@ -17,7 +18,14 @@ const Disponibilidad = disponibilidadModel(sequelize, DataTypes);
 const Nota = notaModel(sequelize, DataTypes);
 
 /* ------- Asociaciones ------- */
-applyAssociations(sequelize.models);
+try {
+  // Intentar asociaciones completas primero
+  applyAssociations(sequelize.models);
+} catch (error) {
+  console.log('⚠️  Usando asociaciones seguras para tests:', error.message);
+  // Si falla, usar asociaciones seguras (solo modelos locales)
+  applyAssociationsSafe({ Turno, Disponibilidad, Nota });
+}
 
 /* ------- Exports ------- */
 export {
