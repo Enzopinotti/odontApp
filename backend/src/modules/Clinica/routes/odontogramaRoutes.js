@@ -6,6 +6,8 @@ import {
   vActualizarDiente,
   vAgregarCaraTratada,
   vAplicarTratamiento,
+  vActualizarCaraTratada,
+  vEliminarCaraTratada,
 } from '../validators/odontogramaValidator.js';
 import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
@@ -20,57 +22,13 @@ router.use(requireAuth);
  *     description: Odontograma digital e interacciones dentales
  */
 
-/**
- * @swagger
- * /clinica/odontograma/{pacienteId}:
- *   get:
- *     summary: Obtener odontograma completo del paciente
- *     tags: [Odontograma]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: pacienteId
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Odontograma del paciente
- */
+/* ---------- OBTENER / CREAR ODONTOGRAMA ---------- */
 router.get(
   '/:pacienteId',
   requirePermiso('odontograma', 'ver'),
   oCtrl.obtenerOdontograma
 );
 
-/**
- * @swagger
- * /clinica/odontograma/{pacienteId}:
- *   post:
- *     summary: Crear odontograma para un paciente
- *     tags: [Odontograma]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: pacienteId
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               observaciones:
- *                 type: string
- *     responses:
- *       201:
- *         description: Odontograma creado
- */
 router.post(
   '/:pacienteId',
   requirePermiso('odontograma', 'editar'),
@@ -78,34 +36,7 @@ router.post(
   oCtrl.crearOdontograma
 );
 
-/**
- * @swagger
- * /clinica/odontograma/{odontogramaId}/diente/{numero}:
- *   put:
- *     summary: Actualizar diente dentro del odontograma
- *     tags: [Odontograma]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: odontogramaId
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
- *       - name: numero
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       200:
- *         description: Diente actualizado
- */
+/* ---------- DIENTE ---------- */
 router.put(
   '/:odontogramaId/diente/:numero',
   requirePermiso('odontograma', 'editar'),
@@ -113,29 +44,7 @@ router.put(
   oCtrl.actualizarDiente
 );
 
-/**
- * @swagger
- * /clinica/odontograma/diente/{dienteId}/caras:
- *   post:
- *     summary: Registrar tratamiento en una cara dental
- *     tags: [Odontograma]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: dienteId
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *     responses:
- *       201:
- *         description: Cara tratada registrada
- */
+/* ---------- CARAS ---------- */
 router.post(
   '/diente/:dienteId/caras',
   requirePermiso('odontograma', 'editar'),
@@ -143,7 +52,22 @@ router.post(
   oCtrl.agregarCaraTratada
 );
 
+/* ✅ NUEVAS: actualizar y eliminar cara (las que te faltaban) */
+router.put(
+  '/caras/:caraId',
+  requirePermiso('odontograma', 'editar'),
+  vActualizarCaraTratada,
+  oCtrl.actualizarCaraTratada
+);
 
+router.delete(
+  '/caras/:caraId',
+  requirePermiso('odontograma', 'editar'),
+  vEliminarCaraTratada,
+  oCtrl.eliminarCaraTratada
+);
+
+/* ---------- TRATAMIENTO (catálogo → diente) ---------- */
 router.post(
   '/diente/:dienteId/aplicar-tratamiento',
   requirePermiso('odontograma', 'editar'),

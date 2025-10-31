@@ -36,6 +36,16 @@ module.exports = {
       // odontograma
       { recurso: 'odontograma', accion: 'ver' },
       { recurso: 'odontograma', accion: 'editar' },
+      // historia clínica
+      { recurso: 'historia_clinica', accion: 'ver' },
+      { recurso: 'historia_clinica', accion: 'crear' },
+      { recurso: 'historia_clinica', accion: 'editar' },
+      { recurso: 'historia_clinica', accion: 'eliminar' },
+      // imágenes
+      { recurso: 'imagenes', accion: 'ver' },
+      { recurso: 'imagenes', accion: 'subir' },
+      { recurso: 'imagenes', accion: 'editar' },
+      { recurso: 'imagenes', accion: 'eliminar' },
       // turnos
       { recurso: 'turnos', accion: 'crear' },
       { recurso: 'turnos', accion: 'ver' },
@@ -44,15 +54,19 @@ module.exports = {
       // tratamientos
       { recurso: 'tratamientos', accion: 'listar' },
       { recurso: 'tratamientos', accion: 'crearPersonalizado' },
+      { recurso: 'tratamientos', accion: 'editar' },
+      { recurso: 'tratamientos', accion: 'aplicar' },
       // presupuestos
       { recurso: 'presupuestos', accion: 'generar' },
       { recurso: 'presupuestos', accion: 'ver' },
       { recurso: 'presupuestos', accion: 'editar' },
+      { recurso: 'presupuestos', accion: 'eliminar' },
       // notificaciones
       { recurso: 'notificaciones', accion: 'enviar' },
       { recurso: 'notificaciones', accion: 'listar' },
       // reportes
       { recurso: 'reportes', accion: 'ver' },
+      { recurso: 'reportes', accion: 'generar' },
     ];
 
     await queryInterface.bulkInsert('permisos', permisos, {});
@@ -61,42 +75,54 @@ module.exports = {
     const [rows] = await queryInterface.sequelize.query(
       'SELECT id, recurso, accion FROM permisos'
     );
-    const permId = (rec, acc) =>
-      rows.find((p) => p.recurso === rec && p.accion === acc).id;
+
+    const permId = (rec, acc) => {
+      const permiso = rows.find((p) => p.recurso === rec && p.accion === acc);
+      if (!permiso) {
+        throw new Error(`Permiso no encontrado: recurso='${rec}', accion='${acc}'`);
+      }
+      return permiso.id;
+    };
 
     /* 3️⃣  RELACIONES ROL-PERMISO ------------------------------ */
     const rolPermisos = [];
 
-    // --- ADMIN: todos
+    // --- ADMIN: todos los permisos
     rows.forEach((p) => rolPermisos.push({ RolId: 1, PermisoId: p.id }));
 
     // --- ODONTÓLOGO ------------------------------------------
     [
-      // pacientes
+      ['usuarios', 'listar'],
       ['pacientes', 'crear'],
       ['pacientes', 'listar'],
       ['pacientes', 'editar'],
       ['pacientes', 'eliminar'],
-      // odontograma
       ['odontograma', 'ver'],
       ['odontograma', 'editar'],
-      // turnos
+      ['historia_clinica', 'ver'],
+      ['historia_clinica', 'crear'],
+      ['historia_clinica', 'editar'],
+      ['historia_clinica', 'eliminar'],
+      ['imagenes', 'ver'],
+      ['imagenes', 'subir'],
+      ['imagenes', 'editar'],
+      ['imagenes', 'eliminar'],
       ['turnos', 'crear'],
       ['turnos', 'ver'],
       ['turnos', 'editar'],
       ['turnos', 'cancelar'],
-      // tratamientos
       ['tratamientos', 'listar'],
       ['tratamientos', 'crearPersonalizado'],
-      // presupuestos
+      ['tratamientos', 'editar'],
+      ['tratamientos', 'aplicar'],
       ['presupuestos', 'generar'],
       ['presupuestos', 'ver'],
       ['presupuestos', 'editar'],
-      // notificaciones
+      ['presupuestos', 'eliminar'],
       ['notificaciones', 'enviar'],
       ['notificaciones', 'listar'],
-      // reportes
       ['reportes', 'ver'],
+      ['reportes', 'generar'],
     ].forEach(([r, a]) => rolPermisos.push({ RolId: 2, PermisoId: permId(r, a) }));
 
     // --- ASISTENTE -------------------------------------------
@@ -104,18 +130,20 @@ module.exports = {
       ['pacientes', 'crear'],
       ['pacientes', 'listar'],
       ['pacientes', 'editar'],
-      // turnos
+      ['odontograma', 'ver'],
+      ['historia_clinica', 'ver'],
+      ['historia_clinica', 'crear'],
+      ['historia_clinica', 'editar'],
+      ['imagenes', 'ver'],
+      ['imagenes', 'subir'],
+      ['imagenes', 'editar'],
       ['turnos', 'crear'],
       ['turnos', 'ver'],
       ['turnos', 'editar'],
       ['turnos', 'cancelar'],
-      // odontograma
-      ['odontograma', 'ver'],
-      // tratamientos
       ['tratamientos', 'listar'],
-      // presupuestos
+      ['tratamientos', 'aplicar'],
       ['presupuestos', 'ver'],
-      // notificaciones
       ['notificaciones', 'listar'],
     ].forEach(([r, a]) => rolPermisos.push({ RolId: 3, PermisoId: permId(r, a) }));
 
@@ -123,11 +151,13 @@ module.exports = {
     [
       ['pacientes', 'crear'],
       ['pacientes', 'listar'],
-      // turnos
+      ['historia_clinica', 'ver'],
+      ['imagenes', 'ver'],
       ['turnos', 'crear'],
       ['turnos', 'ver'],
       ['turnos', 'cancelar'],
-      // notificaciones
+      ['tratamientos', 'listar'],
+      ['presupuestos', 'ver'],
       ['notificaciones', 'listar'],
     ].forEach(([r, a]) => rolPermisos.push({ RolId: 4, PermisoId: permId(r, a) }));
 

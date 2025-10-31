@@ -1,48 +1,35 @@
-// backend/src/modules/Clinica/services/historiaClinicaService.js
-
-import {
-  HistoriaClinica,
-  ImagenClinica,
-  Paciente,
-} from '../models/index.js';
+import { Paciente } from '../models/index.js';
 import ApiError from '../../../utils/ApiError.js';
 import cloudinary from '../../../utils/upload/cloudinary.js';
+import * as repo from '../repositories/historiaClinicaRepository.js';
 
-/* ---------- Listar historias de un paciente ---------- */
-export const listarPorPaciente = async (pacienteId) => {
+/* ---------- Obtener historias de un paciente ---------- */
+export const obtenerPorPaciente = async (pacienteId) => {
   const paciente = await Paciente.findByPk(pacienteId);
   if (!paciente) {
     throw new ApiError('Paciente no encontrado', 404, null, 'PACIENTE_NO_EXISTE');
   }
-
-  return HistoriaClinica.findAll({
-    where: { pacienteId },
-    order: [['fecha', 'DESC']],
-    include: ImagenClinica,
-  });
+  return repo.findByPaciente(pacienteId);
 };
 
 /* ---------- Obtener historia por ID ---------- */
 export const obtenerPorId = async (id) => {
-  const historia = await HistoriaClinica.findByPk(id, {
-    include: ImagenClinica,
-  });
-
+  const historia = await repo.findById(id);
   if (!historia) {
     throw new ApiError('Historia clínica no encontrada', 404, null, 'HISTORIA_NO_EXISTE');
   }
-
   return historia;
 };
 
 /* ---------- Crear nueva historia ---------- */
 export const crear = async (pacienteId, data, imagenes = []) => {
-  const historia = await HistoriaClinica.create({
+  const historia = await repo.create({
     pacienteId,
     titulo: data.titulo,
     descripcion: data.descripcion,
     fecha: data.fecha || new Date(),
   });
+
   // ✅ Actualizamos ultimaVisita
   await Paciente.update(
     { ultimaVisita: historia.fecha },
@@ -64,7 +51,7 @@ export const crear = async (pacienteId, data, imagenes = []) => {
       tipo: data.tipoImagen || 'Fotografía',
     }));
 
-    await ImagenClinica.bulkCreate(registros);
+    await repo.bulkCreateImagenes(registros);
   }
 
   return obtenerPorId(historia.id);
@@ -72,23 +59,18 @@ export const crear = async (pacienteId, data, imagenes = []) => {
 
 /* ---------- Actualizar historia ---------- */
 export const actualizar = async (id, data) => {
-  const historia = await HistoriaClinica.findByPk(id);
-  if (!historia) return null;
-
-  await historia.update({
+  const historia = await repo.update(id, {
     titulo: data.titulo,
     descripcion: data.descripcion,
     fecha: data.fecha,
   });
+  if (!historia) return null;
 
   // ✅ Si esta historia es la más reciente, actualizamos ultimaVisita
-  const ultimaHistoria = await HistoriaClinica.findOne({
-    where: { pacienteId: historia.pacienteId },
-    order: [['fecha', 'DESC']],
-  });
-  if (ultimaHistoria) {
+  const historiasPaciente = await repo.findByPaciente(historia.pacienteId);
+  if (historiasPaciente.length > 0) {
     await Paciente.update(
-      { ultimaVisita: ultimaHistoria.fecha },
+      { ultimaVisita: historiasPaciente[0].fecha }, // [0] porque ya viene ordenado DESC
       { where: { id: historia.pacienteId } }
     );
   }
@@ -98,10 +80,10 @@ export const actualizar = async (id, data) => {
 
 /* ---------- Eliminar historia ---------- */
 export const eliminar = async (id) => {
-  const historia = await HistoriaClinica.findByPk(id);
+  const historia = await repo.findById(id);
   if (!historia) return null;
 
-  const imagenes = await ImagenClinica.findAll({ where: { historiaClinicaId: id } });
+  const imagenes = await repo.getImagenesByHistoria(id);
 
   for (const img of imagenes) {
     try {
@@ -113,24 +95,18 @@ export const eliminar = async (id) => {
     }
   }
 
-  await historia.destroy();
+  await repo.remove(id);
   return true;
 };
 
+/* ---------- Obtener imágenes por paciente ---------- */
 export const obtenerImagenesPorPaciente = async (pacienteId) => {
-  return ImagenClinica.findAll({
-    include: {
-      model: HistoriaClinica,
-      where: { pacienteId },
-      attributes: [],
-    },
-    order: [['fechaCarga', 'DESC']],
-  });
+  return repo.getImagenesByHistoria(pacienteId);
 };
 
-
+/* ---------- Eliminar imagen individual ---------- */
 export const eliminarImagen = async (imagenId) => {
-  const imagen = await ImagenClinica.findByPk(imagenId);
+  const imagen = await repo.removeImagen(imagenId);
   if (!imagen) {
     throw new ApiError('Imagen no encontrada', 404, null, 'IMAGEN_NO_EXISTE');
   }
@@ -138,12 +114,11 @@ export const eliminarImagen = async (imagenId) => {
   // Eliminar de Cloudinary
   try {
     const parts = imagen.url.split('/');
-    const publicId = parts.slice(-2).join('/').split('.')[0]; // odontapp/historias/xxxx
+    const publicId = parts.slice(-2).join('/').split('.')[0];
     await cloudinary.uploader.destroy(publicId);
   } catch (e) {
     console.warn('⚠️ Error al borrar imagen de Cloudinary:', imagen.url);
   }
 
-  await imagen.destroy();
   return true;
 };

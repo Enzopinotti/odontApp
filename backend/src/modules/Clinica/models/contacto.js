@@ -3,6 +3,11 @@ import { PREFERENCIAS_CONTACTO } from './enums/preferenciaContacto.js';
 
 export default (sequelize, DataTypes) => {
   return sequelize.define('Contacto', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     email: {
       type: DataTypes.STRING,
       validate: { isEmail: true },

@@ -19,10 +19,26 @@ export const vAgregarCaraTratada = [
   body('simbolo').notEmpty().withMessage('Símbolo requerido'),
   body('tipoTrazo').notEmpty().withMessage('Tipo de trazo requerido'),
   body('estadoCara').notEmpty().withMessage('Estado de la cara requerido'),
+  body('colorEstado').isInt().withMessage('colorEstado debe ser int RGB'),
   validate,
 ];
 
-/* --- NUEVO: aplicar tratamiento del catálogo a un diente --- */
+/* ✅ NUEVOS: PUT/DELETE para /caras/:caraId */
+export const vActualizarCaraTratada = [
+  param('caraId').isInt().withMessage('ID de cara inválido'),
+  body('simbolo').notEmpty().withMessage('Símbolo requerido'),
+  body('tipoTrazo').notEmpty().withMessage('Tipo de trazo requerido'),
+  body('estadoCara').notEmpty().withMessage('Estado de la cara requerido'),
+  body('colorEstado').isInt().withMessage('colorEstado debe ser int RGB'),
+  validate,
+];
+
+export const vEliminarCaraTratada = [
+  param('caraId').isInt().withMessage('ID de cara inválido'),
+  validate,
+];
+
+/* --- aplicar tratamiento del catálogo --- */
 export const vAplicarTratamiento = [
   param('dienteId').isInt().withMessage('ID de diente inválido'),
   body('tratamientoId').isInt().withMessage('tratamientoId requerido'),

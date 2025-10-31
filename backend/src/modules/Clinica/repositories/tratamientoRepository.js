@@ -2,15 +2,13 @@ import { Tratamiento } from '../models/index.js';
 
 /* ---------- Obtener todos los tratamientos ---------- */
 export const findAll = () =>
-  Tratamiento.findAll({
-    order: [['fechaInicio', 'DESC']],
-  });
+  Tratamiento.findAll({ order: [['createdAt', 'DESC']] });
 
 /* ---------- Obtener tratamiento por ID ---------- */
 export const findById = (id) =>
   Tratamiento.findByPk(id);
 
-/* ---------- Crear nuevo tratamiento ---------- */
+/* ---------- Crear tratamiento ---------- */
 export const create = (data) =>
   Tratamiento.create(data);
 

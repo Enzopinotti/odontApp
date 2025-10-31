@@ -16,7 +16,6 @@ Te permite usar `showModal({ ... })` desde cualquier parte y automáticamente mu
 
 ```js
 import useModal from '../hooks/useModal';
-
 ```
 
 ### 2. Llamar a `showModal` cuando lo necesites
@@ -27,7 +26,6 @@ showModal({
   title: 'Atención',
   message: 'Tu sesión expiró, iniciá sesión de nuevo.',
 });
-
 ```
 
 También podés pasar `email` u otros datos para ciertos casos:
@@ -38,8 +36,38 @@ showModal({
   message: 'Te enviamos un email. Verificalo para continuar.',
   email: 'tucorreo@ejemplo.com',
 });
-
 ```
+
+---
+
+## 📝 Modal con formularios personalizados
+
+Para mostrar un formulario completo dentro de un modal, usá el tipo `'form'`:
+
+```js
+const { showModal } = useModal();
+
+const handleSubmit = (values) => {
+  // Lógica de envío
+  showModal(null); // Cerrar el modal después de enviar
+};
+
+showModal({
+  type: 'form',
+  title: 'Nueva historia clínica',
+  component: (
+    <MiFormulario 
+      onSubmit={handleSubmit}
+      onCancel={() => showModal(null)}
+    />
+  )
+});
+```
+
+**Puntos clave:**
+- El `component` puede ser cualquier JSX (formularios, componentes complejos, etc.)
+- Para cerrar el modal, llamá `showModal(null)` desde dentro del componente
+- El título es opcional, si no lo pasás solo se renderiza el componente
 
 ---
 
@@ -51,34 +79,23 @@ Si querés que el modal tenga algo más que título y texto (por ejemplo, botone
 
 ```js
 showModal({
-  type: 'confirmLogout',
+  type: 'confirm',
   title: '¿Cerrar sesión?',
   message: 'Perderás el acceso a los datos hasta que vuelvas a entrar.',
+  onConfirm: () => console.log('Confirmado'),
+  onCancel: () => console.log('Cancelado')
 });
 ```
 
-### 2. Editar `ModalProvider.jsx`
+### 2. Editar `ModalProvider.js`
 
-Dentro de:
+Si necesitás un tipo totalmente nuevo, agregalo en `ModalProvider.js`:
 
 ```jsx
-{modal && (
-  <div className="modal-backdrop">
-    <div className="modal-card">
-      <h3>{modal.title}</h3>
-      <p>{modal.message}</p>
-
-      {modal.type === 'confirmLogout' && (
-        <div className="modal-actions">
-          <button onClick={handleLogout}>Sí, cerrar</button>
-          <button onClick={closeModal}>Cancelar</button>
-        </div>
-      )}
-
-      <div className="modal-actions">
-        <button onClick={closeModal}>Cerrar</button>
-      </div>
-    </div>
+{modal.type === 'miNuevoTipo' && (
+  <div className="modal-actions">
+    <button onClick={handleMiAccion}>Mi acción</button>
+    <button onClick={closeModal}>Cancelar</button>
   </div>
 )}
 ```
@@ -87,17 +104,19 @@ Dentro de:
 
 ---
 
-## 🎯 Casos ya cubiertos
+## 🎯 Tipos de modales disponibles
 
-- Reenviar verificación de correo → `type: 'resend'` + `email`
-- Alerta de inicio con Google → `type: 'google'`
-- Mensajes genéricos → solo `title` y `message`
+- **`info`**: Mensaje simple con botón "Cerrar"
+- **`confirm`**: Confirmación con botones Sí/No (requiere `onConfirm`, `onCancel`)
+- **`form`**: Formulario o componente personalizado (requiere `component`)
+- **`resend`**: Reenviar verificación de correo (requiere `email`)
+- **`google`**: Login con Google
 
 ---
 
 ## 🧪 ¿Dónde está definido todo esto?
 
-- `src/context/ModalProvider.jsx` → Componente que renderiza los modales
+- `src/context/ModalProvider.js` → Componente que renderiza los modales
 - `src/hooks/useModal.js` → Hook para usar el modal
 - `src/components/ResendConfirmationModal.jsx` → Modal para reenviar correo
 
@@ -107,10 +126,13 @@ Dentro de:
 
 ```js
 showModal({
-  title: 'Título del modal',
-  message: 'Mensaje a mostrar',
-  email: 'opcional@correo.com',
-  type: 'opcional-tipo',
+  title: 'Título del modal',           // Opcional para type='form'
+  message: 'Mensaje a mostrar',        // Solo para modales de texto
+  email: 'opcional@correo.com',        // Para type='resend'
+  type: 'info',                        // Tipo de modal
+  component: <MiComponente />,         // Para type='form'
+  onConfirm: () => {},                 // Para type='confirm'
+  onCancel: () => {}                   // Para type='confirm'
 });
 ```
 
@@ -119,17 +141,22 @@ showModal({
 ## ✅ Para cerrar un modal manualmente
 
 ```js
-const { closeModal } = useModal();
-closeModal();
+const { showModal } = useModal();
+
+// Cerrar el modal
+showModal(null);
 ```
 
 ---
 
 ## 🧼 Buenas prácticas
 
-- Siempre llamá `closeModal()` al finalizar una acción para cerrar el modal.
+- Siempre cerrá el modal al finalizar una acción (usá `showModal(null)`).
 - Si vas a reutilizar un mismo modal en varios lugares (por ejemplo, confirmaciones), definilo con `type` y manejalo en `ModalProvider`.
 - No uses modales para validaciones simples (usá toasts mejor).
+- Para formularios complejos, usá `type: 'form'` en lugar de crear nuevos tipos específicos.
+- Recordá pasar `onCancel={() => showModal(null)}` a tus formularios para que el usuario pueda cerrarlos.
 
 ---
+
 Con esto, cualquier persona del equipo puede mostrar modales sin necesidad de repetir componentes o manejar estados en cada archivo. 🎉
