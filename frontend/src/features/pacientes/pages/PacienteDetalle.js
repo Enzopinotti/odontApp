@@ -1,3 +1,4 @@
+// frontend/src/features/pacientes/pages/PacienteDetalle.js
 import { useContext, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import BackBar from '../../../components/BackBar';
@@ -8,6 +9,11 @@ import usePrefetchPaciente from '../hooks/usePrefetchPaciente';
 import useOdontoMut from '../../odontograma/hooks/useOdontogramaMutations';
 import useToast from '../../../hooks/useToast';
 import useModal from '../../../hooks/useModal';
+import useHistoriaClinica from '../hooks/useHistoriaClinica';
+import HistoriaClinicaForm from '../components/HistoriaClinicaForm';
+import HistoriaModal from '../components/HistoriaModal';
+import HistoriaClinicaPreview from '../components/HistoriaClinicaPreview';
+import '../../../styles/_historiaClinica.scss';
 import { handleApiError } from '../../../utils/handleApiError';
 import {
   FaEdit, FaHistory, FaImages,
@@ -19,6 +25,7 @@ function copy(text, showToast) {
   navigator.clipboard?.writeText(text);
   showToast('Copiado al portapapeles', 'success');
 }
+
 const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
 const buildWhatsApp = (tel) => {
   const t = onlyDigits(tel);
@@ -41,29 +48,24 @@ export default function PacienteDetalle() {
 
   const { hasPermiso } = useContext(AuthCtx);
   const { showToast } = useToast();
-  const { showModal } = useModal();
+  const { showModal, setModal } = useModal();
   const prefetchPaciente = usePrefetchPaciente();
   const { crear: crearOdonto } = useOdontoMut();
-// Agregar antes de la lógica de permisos:
-console.log('Permisos debug:', {
-  historia: hasPermiso('historia', 'ver'),
-  imagenes: hasPermiso('imagenes', 'ver'),
-  pacientes: hasPermiso('pacientes', 'listar')
-});
-  // 🔐 Permisos por recurso/acción
+
+  // --- Permisos ---
   const canVerPaciente       = hasPermiso('pacientes', 'listar');
   const canEditarPaciente    = hasPermiso('pacientes', 'editar');
   const canVerOdontograma    = hasPermiso('odontograma', 'ver');
   const canEditarOdontograma = hasPermiso('odontograma', 'editar');
-  // Cambiar temporalmente estas líneas:
-  const canVerHistoria       = hasPermiso('pacientes', 'listar');
-  const canVerImagenes       = hasPermiso('pacientes', 'listar');
+  const canVerHistoria       = hasPermiso('historia_clinica', 'ver');
+  const canCrearHistoria     = hasPermiso('historia_clinica', 'crear');
+  const canVerImagenes       = hasPermiso('imagenes', 'ver');
   const canVerTratamientos   = hasPermiso('tratamientos', 'listar');
 
-  // Paciente (si no tiene permiso, NO disparamos la query)
+  // --- Paciente ---
   const { data: paciente, isLoading, isError, error } = usePaciente(pacienteId, canVerPaciente);
 
-  // Extras (usa contadores enriquecidos y refetch-on-mount para el odo)
+  // --- Extras (odontograma, historia, imágenes, tratamientos) ---
   const {
     odontograma, odLoading, odoDenied,
     historia, hcLoading, historiaDenied,
@@ -75,6 +77,9 @@ console.log('Permisos debug:', {
     canVerImagenes,
     canVerTratamientos,
   });
+
+  // --- Mutación para crear historia clínica ---
+  const { crear: crearHistoria } = useHistoriaClinica(pacienteId, false);
 
   useEffect(() => {
     if (canVerPaciente && isError) {
@@ -99,8 +104,7 @@ console.log('Permisos debug:', {
     const f = odontograma?.fechaCreacion || odontograma?.createdAt;
     return f ? new Date(f).toLocaleDateString() : '—';
   })();
-  const totalDientes = odontograma?.totalDientes ?? 0; // ← ya viene del hook enriquecido
-
+  const totalDientes = odontograma?.totalDientes ?? 0;
   const ultimoTurno = paciente?.ultimaVisita ? new Date(paciente.ultimaVisita).toLocaleDateString() : '—';
 
   const goEditar      = () =>
@@ -111,8 +115,32 @@ console.log('Permisos debug:', {
   const goHistoria    = () => navigate(`/pacientes/${pacienteId}/historia`);
   const goImagenes    = () => navigate(`/pacientes/${pacienteId}/imagenes`);
 
-  const waLink   = buildWhatsApp(tel);
-  const mapsLink = buildMaps(dir);
+  // --- MODAL HISTORIA CLINICA ---
+  const handleSubmitHistoria = (values) => {
+    crearHistoria.mutate(values, {
+      onSuccess: () => {
+        showToast('Historia clínica creada con éxito', 'success');
+        showModal(null);
+      },
+      onError: (err) => handleApiError(err, showToast, null, showModal),
+    });
+  };
+
+  const handleCrearHistoria = () => {
+    showModal({
+      type: 'form',
+      title: 'Nueva historia clínica',
+      className: 'historia-modal-card', // Clase específica
+      component: (
+        <HistoriaClinicaForm
+          pacienteId={pacienteId}
+          onSubmit={handleSubmitHistoria}
+          onCancel={() => showModal(null)}
+          loading={crearHistoria.isLoading}
+        />
+      ),
+    });
+  };
 
   if (!canVerPaciente) {
     return (
@@ -128,22 +156,17 @@ console.log('Permisos debug:', {
 
   return (
     <div className="paciente-detalle-page">
-      <BackBar
-        title={title}
-        to="/pacientes"
+      <BackBar title={title} to="/pacientes"
         right={
           <div className="actions-right">
             {canEditarPaciente && (
-              <button
-                className="btn ghost"
-                onMouseEnter={() => prefetchPaciente(pacienteId)}
-                onFocus={() => prefetchPaciente(pacienteId)}
-                onClick={goEditar}
-                aria-label="Editar paciente"
-                title="Editar paciente"
-              >
-                <FaEdit />
-                <span>Editar</span>
+              <button className="btn ghost"
+                      onMouseEnter={() => prefetchPaciente(pacienteId)}
+                      onFocus={() => prefetchPaciente(pacienteId)}
+                      onClick={goEditar}
+                      aria-label="Editar paciente"
+                      title="Editar paciente">
+                <FaEdit /><span>Editar</span>
               </button>
             )}
           </div>
@@ -184,7 +207,6 @@ console.log('Permisos debug:', {
               </div>
             </div>
 
-            {/* 👇 Sacamos el botón redundante de Odontograma */}
             <div className="quick-actions">
               {canVerHistoria && (
                 <button className="qa-btn" onClick={goHistoria} title="Historia clínica">
@@ -253,7 +275,7 @@ console.log('Permisos debug:', {
           )}
         </article>
 
-        {/* Odontograma - resumen o CTA de creación */}
+        {/* Odontograma */}
         {canVerOdontograma ? (
           <article className="card">
             <h3>Odontograma</h3>
@@ -310,45 +332,16 @@ console.log('Permisos debug:', {
           </article>
         )}
 
-        {/* Historia Clínica - últimas entradas */}
-        {canVerHistoria ? (
-          <article className="card span-2">
-            <div className="card-head">
-              <h3>Historia clínica (reciente)</h3>
-              {!historiaDenied && <button className="link-btn" onClick={goHistoria}>Ver todo</button>}
-            </div>
-            {hcLoading ? (
-              <div className="skeleton-list">
-                <div className="skeleton sk-line" />
-                <div className="skeleton sk-line" />
-                <div className="skeleton sk-line" />
-              </div>
-            ) : historiaDenied ? (
-              <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-            ) : historia?.length ? (
-              <ul className="timeline">
-                {historia.slice(0, 5).map((h) => (
-                  <li key={h.id}>
-                    <div className="tl-date">{h.fecha ? new Date(h.fecha).toLocaleDateString() : '—'}</div>
-                    <div className="tl-body">
-                      {h.motivoConsulta && <p><strong>Motivo:</strong> {h.motivoConsulta}</p>}
-                      {h.diagnostico && <p><strong>Diagnóstico:</strong> {h.diagnostico}</p>}
-                      {h.evolucion && <p><strong>Evolución:</strong> {h.evolucion}</p>}
-                      {h.observaciones && <p className="muted">{h.observaciones}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">Sin entradas aún.</p>
-            )}
-          </article>
-        ) : (
-          <article className="card span-2">
-            <div className="card-head"><h3>Historia clínica (reciente)</h3></div>
-            <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-          </article>
-        )}
+        {/* Historia Clínica */}   
+        <HistoriaClinicaPreview
+          historia={historia}
+          hcLoading={hcLoading}
+          historiaDenied={historiaDenied}
+          canVerHistoria={canVerHistoria}
+          canCrearHistoria={canCrearHistoria}
+          onVerTodo={goHistoria}
+          onCrear={canCrearHistoria ? handleCrearHistoria : undefined}       
+        />
 
         {/* Imágenes recientes */}
         {canVerImagenes ? (
@@ -385,7 +378,7 @@ console.log('Permisos debug:', {
           </article>
         )}
 
-        {/* Tratamientos (historial) */}
+        {/* Tratamientos */}
         {canVerTratamientos ? (
           <article className="card">
             <h3>Tratamientos</h3>
@@ -422,9 +415,7 @@ console.log('Permisos debug:', {
         )}
       </section>
 
-      {(isLoading || odLoading || hcLoading || imgLoading || trLoading) && (
-        <div className="sr-only" aria-live="polite">Cargando información…</div>
-      )}
+      {(isLoading || odLoading || hcLoading || imgLoading || trLoading) && <p className="muted">Cargando información…</p>}
     </div>
   );
 }

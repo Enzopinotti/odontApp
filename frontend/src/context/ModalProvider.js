@@ -1,4 +1,4 @@
-// src/context/ModalProvider.jsx
+// src/context/ModalProvider.js
 import { createContext, useState, useCallback } from 'react';
 import ResendConfirmationModal from '../components/ResendConfirmationModal';
 import { googleUrl } from '../api/auth';
@@ -9,9 +9,13 @@ export const ModalCtx = createContext({});
 export default function ModalProvider({ children }) {
   const [modal, setModal] = useState(null);
 
-  const showModal = useCallback(({ title, message, email, type = 'info', onConfirm, onCancel }) => {
-    console.log('🪟 showModal ejecutado con:', { title, message, type });
-    setModal({ title, message, email, type, onConfirm, onCancel });
+  const showModal = useCallback((config) => {
+    if (config === null) {
+      setModal(null);
+      return;
+    }
+    console.log('🪟 showModal ejecutado con:', config);
+    setModal(config);
   }, []);
 
   const closeModal = () => setModal(null);
@@ -21,11 +25,13 @@ export default function ModalProvider({ children }) {
       {children}
       {modal && (
         <div className="modal-backdrop">
-          <div className="auth-card modal-card">
-            <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>{modal.title}</h3>
-            <p style={{ textAlign: 'center', fontSize: '0.95rem' }}>{modal.message}</p>
+          <div className={modal.className || ''}>
+            {modal.title && <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>{modal.title}</h3>}
 
-            {/* Modal de confirmación */}
+            {modal.type === 'form' && (
+              <div>{modal.component}</div>
+            )}
+
             {modal.type === 'confirm' && (
               <div className="modal-actions" style={{ marginTop: '1rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                 <button
@@ -51,14 +57,12 @@ export default function ModalProvider({ children }) {
               </div>
             )}
 
-            {/* Modal para reenvío de correo */}
             {modal.type === 'resend' && modal.email && (
               <div className="modal-actions">
                 <ResendConfirmationModal emailProp={modal.email} onClose={closeModal} />
               </div>
             )}
 
-            {/* Modal para login con Google */}
             {modal.type === 'google' && (
               <div className="modal-actions" style={{ marginTop: '1rem' }}>
                 <button
@@ -71,7 +75,6 @@ export default function ModalProvider({ children }) {
               </div>
             )}
 
-            {/* Modal info simple */}
             {modal.type === 'info' && (
               <div className="modal-actions" style={{ marginTop: '1rem' }}>
                 <button type="button" onClick={closeModal} className="link-btn">
