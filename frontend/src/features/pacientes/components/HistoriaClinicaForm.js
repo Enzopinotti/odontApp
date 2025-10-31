@@ -174,3 +174,7 @@ export default function HistoriaClinicaForm({ pacienteId, onSubmit, onCancel, lo
     </div>
   );
 }
+
+
+
+//prueba
