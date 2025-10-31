@@ -3,10 +3,7 @@ import useTratamientosQuery from '../hooks/useTratamientosQuery';
 import useApplyTratamiento from '../hooks/useApplyTratamiento';
 import { COLORS } from '../constants';
 
-/**
- * Aparece solo si el usuario lo abre desde el FaceMenu.
- * @param {{ pacienteId:number, dienteSeleccionado?:any, onApplied?:()=>void, onClose?:()=>void }} props
- */
+
 export default function TreatmentPicker({ pacienteId, dienteSeleccionado, onApplied, onClose }) {
   const { data: tratamientos, isLoading } = useTratamientosQuery();
   const { apply, apply: { isLoading: isApplying } } = useApplyTratamiento(pacienteId);
