@@ -8,7 +8,31 @@ const router = express.Router();
 // Middleware de autenticación para todas las rutas
 router.use(requireAuth);
 
-// Rutas para gestión de disponibilidades
+// ==========================================
+// RUTAS ESPECÍFICAS (deben ir ANTES de /:id)
+// ==========================================
+
+// Rutas para operaciones especiales
+router.post('/generar-automaticas', 
+  requirePermiso('disponibilidad', 'gestionar'),
+  disponibilidadController.generarDisponibilidadesAutomaticas
+);
+
+router.post('/validar', 
+  requirePermiso('disponibilidad', 'ver'),
+  disponibilidadController.validarDisponibilidad
+);
+
+// Rutas para consultas específicas
+router.get('/odontologo/:odontologoId', 
+  requirePermiso('disponibilidad', 'ver'),
+  disponibilidadController.obtenerDisponibilidadesPorOdontologo
+);
+
+// ==========================================
+// RUTAS GENERALES
+// ==========================================
+
 router.get('/', 
   requirePermiso('disponibilidad', 'ver'),
   disponibilidadController.obtenerDisponibilidades
@@ -18,6 +42,10 @@ router.post('/',
   requirePermiso('disponibilidad', 'gestionar'),
   disponibilidadController.crearDisponibilidad
 );
+
+// ==========================================
+// RUTAS CON PARÁMETROS DINÁMICOS (al final)
+// ==========================================
 
 router.get('/:id', 
   requirePermiso('disponibilidad', 'ver'),
@@ -32,23 +60,6 @@ router.put('/:id',
 router.delete('/:id', 
   requirePermiso('disponibilidad', 'gestionar'),
   disponibilidadController.eliminarDisponibilidad
-);
-
-// Rutas para consultas específicas
-router.get('/odontologo/:odontologoId', 
-  requirePermiso('disponibilidad', 'ver'),
-  disponibilidadController.obtenerDisponibilidadesPorOdontologo
-);
-
-// Rutas para operaciones especiales
-router.post('/generar-automaticas', 
-  requirePermiso('disponibilidad', 'gestionar'),
-  disponibilidadController.generarDisponibilidadesAutomaticas
-);
-
-router.post('/validar', 
-  requirePermiso('disponibilidad', 'ver'),
-  disponibilidadController.validarDisponibilidad
 );
 
 export default router;

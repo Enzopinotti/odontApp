@@ -18,6 +18,14 @@ export default function responseMiddleware(req, res, next) {
     });
   };
 
+  res.error = (message, status = 500, code = null) => {
+    return res.status(status).json({
+      success: false,
+      message: message || 'Error',
+      ...(code && { code }),
+    });
+  };
+
   res.fail = (error, status = 400) => {
     return res.status(status).json({
       success: false,

@@ -162,6 +162,7 @@ export const validarDisponibilidad = async (fecha, horaInicio, horaFin, odontolo
 };
 
 export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot = 30) => {
+  // 1. Obtener disponibilidades laborales
   const disponibilidades = await Disponibilidad.findAll({
     where: {
       fecha,
@@ -171,6 +172,26 @@ export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot 
     order: [['horaInicio', 'ASC']]
   });
 
+  // 2. Obtener turnos existentes para esta fecha y odontólogo
+  const { Turno } = await import('../models/index.js');
+  const fechaInicio = new Date(fecha);
+  fechaInicio.setHours(0, 0, 0, 0);
+  const fechaFin = new Date(fecha);
+  fechaFin.setHours(23, 59, 59, 999);
+
+  const turnosExistentes = await Turno.findAll({
+    where: {
+      odontologoId,
+      fechaHora: {
+        [Op.between]: [fechaInicio, fechaFin]
+      },
+      estado: {
+        [Op.ne]: 'CANCELADO' // No considerar turnos cancelados
+      }
+    }
+  });
+
+  // 3. Generar todos los slots posibles
   const slots = [];
   
   disponibilidades.forEach(disp => {
@@ -191,8 +212,29 @@ export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot 
       slotActual = new Date(slotActual.getTime() + (duracionSlot * 60000));
     }
   });
+
+  // 4. Filtrar slots que NO están ocupados por turnos
+  const slotsDisponibles = slots.filter(slot => {
+    const slotInicio = new Date(`${fecha}T${slot.inicio}`);
+    const slotFin = new Date(`${fecha}T${slot.fin}`);
+
+    // Verificar si algún turno se solapa con este slot
+    const hayConflicto = turnosExistentes.some(turno => {
+      const turnoInicio = new Date(turno.fechaHora);
+      const turnoFin = new Date(turno.fechaHora.getTime() + turno.duracion * 60000);
+
+      // Hay conflicto si se solapan
+      return (
+        (slotInicio >= turnoInicio && slotInicio < turnoFin) ||
+        (slotFin > turnoInicio && slotFin <= turnoFin) ||
+        (slotInicio <= turnoInicio && slotFin >= turnoFin)
+      );
+    });
+
+    return !hayConflicto;
+  });
   
-  return slots;
+  return slotsDisponibles;
 };
 
 export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInicio, fechaFin, horarioLaboral) => {

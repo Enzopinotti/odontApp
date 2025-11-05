@@ -126,52 +126,45 @@ export const obtenerTurnosPorFecha = (fecha, odontologoId = null) => {
   });
 };
 
-export const verificarSolapamiento = (fechaHora, duracion, odontologoId, turnoIdExcluir = null) => {
+export const verificarSolapamiento = async (fechaHora, duracion, odontologoId, turnoIdExcluir = null) => {
   const inicio = new Date(fechaHora);
   const fin = new Date(fechaHora.getTime() + duracion * 60000);
   
-  const where = {
-    odontologoId,
-    estado: {
-      [Op.ne]: EstadoTurno.CANCELADO
-    },
-    [Op.or]: [
-      {
-        fechaHora: {
-          [Op.between]: [inicio, fin]
-        }
+  // Buscar todos los turnos del odontólogo en el día (excepto cancelados)
+  const turnosDelDia = await Turno.findAll({
+    where: {
+      odontologoId,
+      estado: {
+        [Op.ne]: EstadoTurno.CANCELADO
       },
-      {
-        [Op.and]: [
-          {
-            fechaHora: {
-              [Op.lte]: inicio
-            }
-          },
-          {
-            [Op.and]: [
-              {
-                fechaHora: {
-                  [Op.lt]: fin
-                }
-              },
-              {
-                [Op.raw]: `DATE_ADD(fechaHora, INTERVAL duracion MINUTE) > '${inicio.toISOString()}'`
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  };
-
-  if (turnoIdExcluir) {
-    where.id = {
-      [Op.ne]: turnoIdExcluir
-    };
+      fechaHora: {
+        [Op.gte]: new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate())
+      },
+      ...(turnoIdExcluir && { id: { [Op.ne]: turnoIdExcluir } })
+    }
+  });
+  
+  // Verificar solapamiento manualmente
+  for (const turno of turnosDelDia) {
+    const turnoInicio = new Date(turno.fechaHora);
+    const turnoFin = new Date(turno.fechaHora.getTime() + turno.duracion * 60000);
+    
+    // Hay solapamiento si:
+    // - El nuevo turno inicia durante un turno existente
+    // - El nuevo turno termina durante un turno existente
+    // - El nuevo turno engloba completamente un turno existente
+    const haySolapamiento = (
+      (inicio >= turnoInicio && inicio < turnoFin) ||
+      (fin > turnoInicio && fin <= turnoFin) ||
+      (inicio <= turnoInicio && fin >= turnoFin)
+    );
+    
+    if (haySolapamiento) {
+      return turno;
+    }
   }
-
-  return Turno.findOne({ where });
+  
+  return null;
 };
 
 export const obtenerTurnosPendientesVencidos = () => {

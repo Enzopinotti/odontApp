@@ -187,9 +187,21 @@ export const obtenerSlotsDisponibles = async (req, res) => {
 export const obtenerTurnosPendientesConcluidos = async (req, res) => {
   try {
     const { fecha } = req.query;
+    console.log('📅 Obteniendo turnos para fecha:', fecha);
     const turnos = await turnoService.obtenerTurnosPendientesConcluidos(fecha);
+    console.log('✅ Turnos encontrados:', turnos.length);
+    if (turnos.length > 0) {
+      console.log('📋 Primer turno:', JSON.stringify({
+        id: turnos[0].id,
+        fechaHora: turnos[0].fechaHora,
+        motivo: turnos[0].motivo,
+        tienePaciente: !!turnos[0].Paciente,
+        tieneOdontologo: !!turnos[0].Odontologo
+      }));
+    }
     return res.ok(turnos, 'Turnos pendientes concluidos obtenidos');
   } catch (error) {
+    console.error('❌ Error obteniendo turnos:', error);
     return res.error(error.message, 500);
   }
 };

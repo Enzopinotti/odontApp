@@ -1,6 +1,10 @@
 import * as repo from '../repositories/turnoRepository.js';
 import * as disponibilidadRepo from '../repositories/disponibilidadRepository.js';
 import * as notaRepo from '../repositories/notaRepository.js';
+import * as pacienteRepo from '../../Clinica/repositories/pacienteRepository.js';
+import * as pacienteService from '../../Clinica/services/pacienteService.js';
+import { Odontologo, Usuario, Especialidad, OdontologoEspecialidad } from '../../Usuarios/models/index.js';
+import { Op } from 'sequelize';
 import ApiError from '../../../utils/ApiError.js';
 import { EstadoTurno } from '../models/enums.js';
 
@@ -15,13 +19,6 @@ export const obtenerTurnoPorId = async (id) => {
     throw new ApiError('Turno no encontrado', 404, null, 'TURNO_INEXISTENTE');
   }
   return turno;
-};
-
-// CU-AG01.2: Generar ID único para el turno (formato: T-AAAAMMDD-NNN)
-const generarIdUnico = (fecha) => {
-  const fechaStr = fecha.toISOString().split('T')[0].replace(/-/g, '');
-  const numeroSecuencial = Math.floor(Math.random() * 999) + 1;
-  return `T-${fechaStr}-${numeroSecuencial.toString().padStart(3, '0')}`;
 };
 
 export const crearTurno = async (data, recepcionistaId) => {
@@ -59,15 +56,11 @@ export const crearTurno = async (data, recepcionistaId) => {
     throw new ApiError('El horario no está dentro de los bloques laborales del odontólogo', 409, null, 'HORARIO_NO_DISPONIBLE');
   }
 
-  // Generar ID único para el turno
-  const idUnico = generarIdUnico(fechaHora);
-
   // Crear el turno
   const turnoData = {
     ...data,
     fechaHora,
     recepcionistaId,
-    idUnico, // Agregar ID único
     estado: EstadoTurno.PENDIENTE
   };
 
@@ -253,73 +246,80 @@ export const obtenerTurnosPendientesConcluidos = async (fecha = null) => {
   const fechaFin = new Date(fechaBusqueda);
   fechaFin.setHours(23, 59, 59, 999);
   
-  const turnos = await repo.buscarConFiltros({
-    fechaDesde: fechaBusqueda,
-    fechaHasta: fechaFin,
+  // Obtener todos los turnos pendientes del día (sin filtrar por hora)
+  const { data: turnos } = await buscarConFiltros({
+    fechaInicio: fechaBusqueda.toISOString(),
+    fechaFin: fechaFin.toISOString(),
     estado: EstadoTurno.PENDIENTE
-  });
+  }, 1, 1000);
   
-  const ahora = new Date();
-  
-  // Filtrar turnos cuya hora de fin ya transcurrió
-  return turnos.data.filter(turno => {
-    const fechaHoraTurno = new Date(turno.fechaHora);
-    const horaFinTurno = new Date(fechaHoraTurno.getTime() + (turno.duracion * 60 * 1000));
-    return horaFinTurno <= ahora;
-  });
+  // Devolver todos los turnos pendientes, no solo los concluidos
+  return turnos;
 };
 
 // CU-AG01.2: Buscar pacientes para autocompletado
 export const buscarPacientes = async (termino) => {
-  // Esta función debería interactuar con el módulo de Pacientes
-  // Por ahora simulamos la funcionalidad
   try {
-    // En una implementación real, esto haría una consulta al módulo Clinica
-    // const pacientes = await pacienteRepo.buscarPorTermino(termino);
-    
-    // Simulación de búsqueda
-    const pacientesMock = [
-      { id: 1, dni: '12345678', nombre: 'Juan', apellido: 'Pérez', telefono: '1234567890' },
-      { id: 2, dni: '87654321', nombre: 'María', apellido: 'García', telefono: '0987654321' }
-    ];
-    
-    return pacientesMock.filter(p => 
-      p.nombre.toLowerCase().includes(termino.toLowerCase()) ||
-      p.apellido.toLowerCase().includes(termino.toLowerCase()) ||
-      p.dni.includes(termino)
-    );
+    // Usar el repositorio real de pacientes
+    const { rows, count } = await pacienteRepo.search(termino, 1, 10);
+    return rows.map(p => ({
+      id: p.id,
+      nombre: p.nombre,
+      apellido: p.apellido,
+      dni: p.dni,
+      Contacto: p.Contacto ? {
+        email: p.Contacto.email,
+        telefonoMovil: p.Contacto.telefonoMovil,
+        telefonoFijo: p.Contacto.telefonoFijo,
+        Direccion: p.Contacto.Direccion
+      } : null,
+      obraSocial: p.obraSocial,
+      ultimaVisita: p.ultimaVisita
+    }));
   } catch (error) {
     console.error('Error al buscar pacientes:', error);
-    return [];
+    throw new ApiError('Error al buscar pacientes', 500);
   }
 };
 
 // CU-AG01.2: Crear paciente rápido (flujo alternativo 3a)
 export const crearPacienteRapido = async (datosMinimos) => {
-  const { dni, nombre, apellido, telefono } = datosMinimos;
+  const { dni, nombre, apellido, Contacto } = datosMinimos;
   
   // Validar datos mínimos requeridos
-  if (!dni || !nombre || !apellido || !telefono) {
-    throw new ApiError('DNI, nombre, apellido y teléfono son requeridos para crear un paciente', 400, null, 'DATOS_INCOMPLETOS');
+  if (!dni || !nombre || !apellido) {
+    throw new ApiError('DNI, nombre y apellido son requeridos para crear un paciente', 400, null, 'DATOS_INCOMPLETOS');
   }
   
   try {
-    // En una implementación real, esto interactuaría con el módulo Clinica
-    // const paciente = await pacienteRepo.create(datosMinimos);
+    // Verificar si ya existe un paciente con ese DNI
+    const pacienteExistente = await pacienteRepo.findByDNI(dni);
+    if (pacienteExistente) {
+      throw new ApiError('Ya existe un paciente con ese DNI', 409, null, 'DNI_DUPLICADO');
+    }
     
-    // Simulación de creación rápida
-    const pacienteNuevo = {
-      id: Math.floor(Math.random() * 1000) + 100,
-      dni,
+    // Preparar datos para crear paciente
+    const datosPaciente = {
       nombre,
       apellido,
-      telefono,
-      fechaCreacion: new Date()
+      dni,
+      obraSocial: datosMinimos.obraSocial || null,
+      Contacto: Contacto ? {
+        email: Contacto.email || null,
+        telefonoMovil: Contacto.telefonoMovil || null,
+        telefonoFijo: Contacto.telefonoFijo || null,
+        Direccion: Contacto.Direccion || null
+      } : null
     };
     
+    // Crear paciente usando el servicio de pacientes
+    const pacienteNuevo = await pacienteService.crearPaciente(datosPaciente);
     return pacienteNuevo;
   } catch (error) {
-    if (error.message.includes('dni')) {
+    if (error.name === 'ApiError') {
+      throw error;
+    }
+    if (error.message.includes('dni') || error.message.includes('DNI')) {
       throw new ApiError('Ya existe un paciente con ese DNI', 409, null, 'DNI_DUPLICADO');
     }
     throw new ApiError('Error al crear paciente: ' + error.message, 500);
@@ -329,39 +329,55 @@ export const crearPacienteRapido = async (datosMinimos) => {
 // CU-AG01.2: Obtener odontólogos disponibles por especialidad
 export const obtenerOdontologosPorEspecialidad = async (especialidad = null) => {
   try {
-    // En una implementación real, esto interactuaría con el módulo Usuarios
-    // const odontologos = await odontologoRepo.buscarPorEspecialidad(especialidad);
-    
-    // Simulación
-    const odontologosMock = [
-      { id: 1, nombre: 'Dr. Juan', apellido: 'Pérez', especialidad: 'Ortodoncia' },
-      { id: 2, nombre: 'Dra. María', apellido: 'García', especialidad: 'Endodoncia' },
-      { id: 3, nombre: 'Dr. Carlos', apellido: 'López', especialidad: 'Cirugía' }
+    const where = {};
+    const include = [
+      {
+        model: Usuario,
+        as: 'Usuario',
+        where: { activo: true },
+        required: true
+      }
     ];
     
-    if (especialidad) {
-      return odontologosMock.filter(o => o.especialidad.toLowerCase().includes(especialidad.toLowerCase()));
-    }
+    // Nota: Las especialidades se pueden obtener desde la relación many-to-many
+    // pero por ahora no filtramos por especialidad si no se especifica
+    // Esto se puede mejorar más adelante
     
-    return odontologosMock;
+    const odontologos = await Odontologo.findAll({
+      where,
+      include,
+      order: [[{ model: Usuario, as: 'Usuario' }, 'apellido', 'ASC']]
+    });
+    
+    return odontologos.map(odonto => ({
+      userId: odonto.userId,
+      matricula: odonto.matricula,
+      Usuario: odonto.Usuario ? {
+        id: odonto.Usuario.id,
+        nombre: odonto.Usuario.nombre,
+        apellido: odonto.Usuario.apellido,
+        email: odonto.Usuario.email,
+        telefono: odonto.Usuario.telefono
+      } : null
+    }));
   } catch (error) {
     console.error('Error al obtener odontólogos:', error);
-    return [];
+    throw new ApiError('Error al obtener odontólogos', 500);
   }
 };
 
 // CU-AG01.2: Obtener tratamientos disponibles
 export const obtenerTratamientos = async () => {
-  // Simulación de tratamientos comunes
+  // Tratamientos comunes con formato para el frontend
   return [
-    { id: 1, nombre: 'Consulta General', duracionDefault: 30 },
-    { id: 2, nombre: 'Limpieza Dental', duracionDefault: 45 },
-    { id: 3, nombre: 'Extracción Simple', duracionDefault: 30 },
-    { id: 4, nombre: 'Extracción Compleja', duracionDefault: 60 },
-    { id: 5, nombre: 'Endodoncia', duracionDefault: 90 },
-    { id: 6, nombre: 'Ortodoncia - Control', duracionDefault: 30 },
-    { id: 7, nombre: 'Cirugía Menor', duracionDefault: 60 },
-    { id: 8, nombre: 'Prótesis', duracionDefault: 45 }
+    { id: 1, nombre: 'Consulta General', duracion: 30, duracionDefault: 30 },
+    { id: 2, nombre: 'Limpieza Dental', duracion: 45, duracionDefault: 45 },
+    { id: 3, nombre: 'Extracción Simple', duracion: 30, duracionDefault: 30 },
+    { id: 4, nombre: 'Extracción Compleja', duracion: 60, duracionDefault: 60 },
+    { id: 5, nombre: 'Endodoncia', duracion: 90, duracionDefault: 90 },
+    { id: 6, nombre: 'Ortodoncia - Control', duracion: 30, duracionDefault: 30 },
+    { id: 7, nombre: 'Cirugía Menor', duracion: 60, duracionDefault: 60 },
+    { id: 8, nombre: 'Prótesis', duracion: 45, duracionDefault: 45 }
   ];
 };
 
