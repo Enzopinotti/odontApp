@@ -162,3 +162,4 @@ npm run test:coverage
 ### Errores de autenticación
 - Verificar que el JWT_SECRET esté configurado
 - Asegurar que los usuarios de prueba se creen correctamente
+

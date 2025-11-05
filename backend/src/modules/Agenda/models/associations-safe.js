@@ -19,3 +19,4 @@ export default (models) => {
   // Las asociaciones con otros módulos se manejan en el index principal de la aplicación
   console.log('✅ Asociaciones internas del módulo Agenda aplicadas correctamente');
 };
+
