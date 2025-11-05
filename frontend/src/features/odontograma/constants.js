@@ -1,25 +1,25 @@
 // src/features/odontograma/constants.js
 export const FACE_LABELS = {
   O: 'Oclusal/Incisal',
-  B: 'Bucal/vestibular',
-  L: 'Lingual/Palatino',
   M: 'Mesial',
   D: 'Distal',
+  B: 'Vestibular',
+  L: 'Palatino/Lingual',
 };
 
 export const FDI_ORDER = {
-  1: [18,17,16,15,14,13,12,11], // sup. derecha
-  2: [21,22,23,24,25,26,27,28], // sup. izquierda
-  3: [38,37,36,35,34,33,32,31], // inf. izquierda
-  4: [41,42,43,44,45,46,47,48], // inf. derecha
+  1: [18,17,16,15,14,13,12,11],
+  2: [21,22,23,24,25,26,27,28],
+  3: [48,47,46,45,44,43,42,41],
+  4: [31,32,33,34,35,36,37,38],
 };
 
 export const COLORS = {
-  realizado: '#22c55e',
-  planificado: '#f59e0b',
-  antiguo: '#ef4444',
+  realizado: '#2563eb',    // azul
+  planificado: '#ef4444',  // rojo
+  antiguo: '#9ca3af',      // gris
 };
 
 export const COLOR_SWATCHES = [
-  '#22c55e', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#94a3b8'
+  '#ef4444','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#06b6d4','#64748b'
 ];

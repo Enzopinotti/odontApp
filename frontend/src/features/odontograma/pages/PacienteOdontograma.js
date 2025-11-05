@@ -39,13 +39,17 @@ export default function PacienteOdontograma() {
     return 'Odontograma';
   }, [paciente]);
 
+  // selección + popover
   const [menu, setMenu] = useState({ open: false, x: 0, y: 0, diente: null, faceKey: null, current: null });
   const [selectedTooth, setSelectedTooth] = useState(null);
 
+  // catálogo opcional
+  const [showPicker, setShowPicker] = useState(false);
+
   const openMenu = useCallback((e, diente, faceKey, currentCara) => {
-    if (!canEditarOdontograma) return; // 👈 sin permisos no abrimos menú
+    if (!canEditarOdontograma) return;
     const vw = window.innerWidth, vh = window.innerHeight;
-    const PAD = 8, MENU_W = 280, MENU_H = 180;
+    const PAD = 8, MENU_W = 300, MENU_H = 220;
     const x = clamp(e.clientX + PAD, 8, vw - MENU_W - 8);
     const y = clamp(e.clientY + PAD, 8, vh - MENU_H - 8);
     setMenu({ open: true, x, y, diente, faceKey, current: currentCara || null });
@@ -53,6 +57,7 @@ export default function PacienteOdontograma() {
   }, [canEditarOdontograma]);
 
   const closeMenu = useCallback(() => setMenu((m) => ({ ...m, open: false })), []);
+  const onOpenCatalogFromMenu = () => { setShowPicker(true); closeMenu(); };
 
   const onMenuAction = async ({ estado, color, tipoTrazo, remove }) => {
     try {
@@ -130,7 +135,7 @@ export default function PacienteOdontograma() {
       )}
 
       {!isLoading && canVerOdontograma && !odoDenied && odo && (
-        <section className="card odo-layout">
+        <section className={`card odo-layout ${showPicker ? 'with-picker' : ''}`}>
           <div className="odo-left">
             <header className="odo-head">
               <div className="badge">Creado: {fechaBadge}</div>
@@ -148,17 +153,21 @@ export default function PacienteOdontograma() {
               faceKey={menu.faceKey}
               current={menu.current}
               onAction={onMenuAction}
+              onOpenCatalog={onOpenCatalogFromMenu}
               onClose={closeMenu}
             />
           </div>
 
-          <div className="odo-right">
-            <TreatmentPicker
-              pacienteId={pid}
-              dienteSeleccionado={selectedTooth}
-              onApplied={() => showToast('Tratamiento aplicado', 'success')}
-            />
-          </div>
+          {showPicker && (
+            <div className="odo-right">
+              <TreatmentPicker
+                pacienteId={pid}
+                dienteSeleccionado={selectedTooth}
+                onApplied={() => { setShowPicker(false); showToast('Tratamiento aplicado', 'success'); }}
+                onClose={() => setShowPicker(false)}
+              />
+            </div>
+          )}
         </section>
       )}
     </div>

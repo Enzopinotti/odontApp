@@ -1,17 +1,21 @@
 @use './variables' as *;
 
-/* ================================================
-   ODONTOGRAMA – estilos globales (sin mixins)
-   ================================================ */
+/* =========================================================
+   ODONTOGRAMA – estilos completos
+   - Desktop: 16 columnas que se ajustan al ancho del card.
+   - Tablet/Mobile: scroll horizontal suave.
+   - Popover como única UI al click; catálogo opcional a la derecha.
+   ========================================================= */
 
-/* Vars locales del módulo (CSS custom props + SCSS) */
+/* -------- Vars locales (CSS custom props + SCSS) -------- */
 :root {
-  --tooth-size: 68px;        /* tamaño de cada diente */
-  --popover-w: 280px;        /* ancho del menú de cara */
+  --popover-w: 300px;     /* ancho del menú de cara (match JS MENU_W)  */
+  --cell-max: 72px;       /* tamaño máx. de cada diente en desktop      */
+  --cell-max-sm: 56px;    /* tamaño máx. en mobile                      */
 }
 $muted: #6b7280;
 
-/* Page wrapper */
+/* ------------------ Page wrapper / card ------------------ */
 .odo-page {
   font-family: $fuente-base;
   padding: .75rem;
@@ -19,7 +23,6 @@ $muted: #6b7280;
   gap: 1rem;
 }
 
-/* Card base (cohesivo con el resto del UI) */
 .card {
   background: $color-white;
   border-radius: $radius;
@@ -28,33 +31,33 @@ $muted: #6b7280;
   border: 1px solid #e6e9f2;
 }
 
-/* Layout principal: grilla + panel lateral */
+/* ---------------------------- Layout ---------------------------- */
+/* sin catálogo → 1 columna; con catálogo (clase .with-picker) → 1fr + aside */
 .odo-layout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
+.odo-layout.with-picker {
+  grid-template-columns: 1fr 300px;
+}
 
-/* Columna izquierda: odontograma */
+/* izquierda: contenedor del grid (permite scroll-x en tablets/móviles) */
 .odo-left {
   display: grid;
   gap: .6rem;
-  /* Habilitamos scroll horizontal del odontograma */
+
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  /* Scrollbar sutil */
+
   scrollbar-color: rgba(0,0,0,.22) transparent;
   scrollbar-width: thin;
-
   &::-webkit-scrollbar { height: 8px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,.18);
-    border-radius: 999px;
-  }
+  &::-webkit-scrollbar-thumb { background: rgba(0,0,0,.18); border-radius: 999px; }
 }
 
-/* Columna derecha: picker de tratamientos */
+/* derecha: catálogo opcional */
 .odo-right {
   background: $color-light;
   border: 1px dashed #e1e5ef;
@@ -65,7 +68,7 @@ $muted: #6b7280;
   top: .75rem;
 }
 
-/* Encabezado pequeño con badges */
+/* encabezado mini con badges */
 .odo-head {
   display: flex;
   gap: .5rem;
@@ -86,28 +89,31 @@ $muted: #6b7280;
   }
 }
 
-/* =========================
-   GRILLA DE DIENTES (SVG)
-   ========================= */
+/* ---------------------- GRILLA DE DIENTES ---------------------- */
+/* Desktop: ocupa el ancho del card. Mobile/tablet: min-width → scroll-x. */
 .odo-grid {
-  /* ancho natural del contenido para permitir scroll-x */
-  width: max-content;
-
+  width: 100%;
+  min-width: 960px; /* si la viewport es menor, se permite scroll horizontal */
   display: grid;
-  grid-template-columns: repeat(16, minmax(44px, var(--tooth-size)));
-  gap: .6rem .35rem;
-  justify-content: center;
-  padding: .35rem .2rem .6rem;
+
+  /* 32 piezas en 2 filas → 16 columnas */
+  grid-template-columns: repeat(16, 1fr);
+  justify-items: center;
+
+  gap: clamp(4px, 0.6vw, 10px);
+  padding: .35rem .2rem 1.4rem; /* padding bottom para que no tape los números */
   background: $color-white;
   border-radius: $radius;
   box-shadow: inset 0 0 0 1px #eef0f6;
 }
 
-/* Célula de diente */
+/* Célula de diente: siempre cuadrada, con tamaño máximo para que
+   en PC “entre” completo sin desbordar (se achica si hace falta). */
 .tooth-cell {
   position: relative;
-  width: var(--tooth-size);
-  height: var(--tooth-size);
+  width: 100%;
+  max-width: var(--cell-max);
+  aspect-ratio: 1 / 1;      /* 👈 cuadrado perfecto */
   display: grid;
   place-items: center;
   user-select: none;
@@ -115,7 +121,7 @@ $muted: #6b7280;
 
 .tooth-svg { width: 100%; height: 100%; display: block; }
 
-/* Etiqueta del número FDI */
+/* Etiqueta FDI */
 .tooth-num {
   position: absolute;
   bottom: -1.05rem;
@@ -134,14 +140,13 @@ $muted: #6b7280;
   &:active { transform: scale(.998); }
 }
 
-/* =========================
-   MENÚ CONTEXTUAL DE CARA
-   ========================= */
+/* ------------------- MENÚ CONTEXTUAL (popover) ------------------- */
 .face-popover {
   position: fixed;
-  top: 0; left: 0; /* se posiciona por inline-style */
+  top: 0; left: 0; /* se posiciona con inline-style desde React */
   width: var(--popover-w);
   max-width: calc(100vw - 16px);
+
   background: $color-white;
   border: 1px solid #e6e9f2;
   border-radius: 12px;
@@ -190,7 +195,7 @@ $muted: #6b7280;
   }
 }
 
-/* punto de color */
+/* punto de color / leyenda */
 .dot {
   display: inline-block;
   width: .7rem; height: .7rem;
@@ -222,9 +227,7 @@ $muted: #6b7280;
   &:active { transform: translateY(0); }
 }
 
-/* =========================
-   LEYENDA
-   ========================= */
+/* --------------------------- LEYENDA --------------------------- */
 .odo-legend {
   display: flex;
   gap: 1rem;
@@ -233,41 +236,26 @@ $muted: #6b7280;
   font-size: .92rem;
   color: #4b5563;
   padding: .35rem 0 .15rem;
+
+  /* puntitos alineados mejor */
+  .dot { margin-right: .35rem; }
 }
 
-/* =========================
-   PANEL: TREATMENT PICKER
-   ========================= */
+/* -------------------- PANEL: TREATMENT PICKER -------------------- */
 .tpicker-panel {
   display: grid;
   gap: .6rem;
 }
-
 .tpicker-panel.muted { color: $muted; }
 
-.tpicker-head .title {
-  font-weight: 700;
-  color: $color-text;
-}
-.tpicker-head .sub {
-  font-size: .82rem;
-  color: $muted;
-}
+.tpicker-head .title { font-weight: 700; color: $color-text; }
+.tpicker-head .sub   { font-size: .82rem; color: $muted; }
 
 .tpicker-state {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
+  display: flex; gap: 1rem; align-items: center;
 
-  label {
-    display: inline-flex; align-items: center; gap: .4rem;
-    font-size: .92rem; color: $color-text;
-  }
-
-  input[type="radio"] {
-    accent-color: $color-primary;
-    cursor: pointer;
-  }
+  label { display: inline-flex; align-items: center; gap: .4rem; font-size: .92rem; color: $color-text; }
+  input[type="radio"] { accent-color: $color-primary; cursor: pointer; }
 }
 
 .tpicker-list {
@@ -306,58 +294,34 @@ $muted: #6b7280;
   &:active { transform: translateY(0); }
 }
 
-/* =========================
-   FOCUS visible (accesible)
-   ========================= */
+/* ---------------- Focus visible (accesible) ---------------- */
 :where(.chip, .swatch, .tp-item, .odo-grid .face):focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba($color-primary, .35);
   border-radius: 8px;
 }
 
-/* =========================
-   ESTADOS VACÍOS / LOADERS
-   ========================= */
-.odo-loader {
-  color: $muted;
-  padding: .5rem 0;
-}
-.empty-odo {
-  display: grid; gap: .6rem;
-  .muted { color: $muted; }
-}
+/* ---------------- Estados vacíos / loaders ---------------- */
+.odo-loader { color: $muted; padding: .5rem 0; }
+.empty-odo { display: grid; gap: .6rem; .muted { color: $muted; } }
 
-/* =========================
-   ANIMACIONES
-   ========================= */
+/* ----------------------- Animaciones ----------------------- */
 @keyframes odoFadeIn {
   from { opacity: 0; transform: scale(.985); }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* =========================
-   RESPONSIVE
-   ========================= */
+/* -------------------------- Responsive -------------------------- */
 @media (max-width: 1024px) {
-  .odo-layout { grid-template-columns: 1fr; }
+  /* sin cambios de columnas: la min-width del grid hace el scroll-x */
   .odo-right { position: relative; top: 0; }
-  /* menos columnas visibles en pantallas medianas */
-  .odo-grid {
-    grid-template-columns: repeat(12, minmax(42px, var(--tooth-size)));
-  }
 }
 
 @media (max-width: 640px) {
-  :root { --tooth-size: 56px; }
-  /* 8 columnas + scroll X suave */
-  .odo-grid {
-    grid-template-columns: repeat(8, minmax(38px, var(--tooth-size)));
-  }
+  :root { --cell-max: var(--cell-max-sm); }
 }
 
-/* =========================
-   IMPRESIÓN
-   ========================= */
+/* --------------------------- Impresión --------------------------- */
 @media print {
   .odo-page { padding: 0; }
   .card { box-shadow: none; border: 1px solid #e6e9f2; }

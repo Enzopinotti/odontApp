@@ -9,7 +9,7 @@ export const findAll = () =>
         include: [CaraTratada],
       },
     ],
-    order: [['fecha', 'DESC']],
+    order: [['createdAt', 'DESC']], // cambio de 'fecha' a 'createdAt' para consistencia
   });
 
 /* ---------- Obtener odontograma por ID ---------- */
@@ -23,7 +23,7 @@ export const findById = (id) =>
     ],
   });
 
-/* ---------- Obtener por paciente ---------- */
+/* ---------- Obtener odontogramas por paciente ---------- */
 export const findByPacienteId = (pacienteId) =>
   Odontograma.findAll({
     where: { pacienteId },
@@ -33,7 +33,7 @@ export const findByPacienteId = (pacienteId) =>
         include: [CaraTratada],
       },
     ],
-    order: [['fecha', 'DESC']],
+    order: [['createdAt', 'DESC']], // consistencia con findAll
   });
 
 /* ---------- Crear odontograma ---------- */

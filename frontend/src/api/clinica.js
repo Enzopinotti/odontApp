@@ -5,6 +5,7 @@ import api from './axios';
 const isEmptyStr = (v) => typeof v === 'string' && v.trim() === '';
 const toNullIfEmpty = (v) => (isEmptyStr(v) ? null : v);
 
+/** Sanitizar payload de paciente */
 export function sanitizePacientePayload(form) {
   const out = structuredClone(form);
 
@@ -32,13 +33,8 @@ export function sanitizePacientePayload(form) {
     d[k] = toNullIfEmpty(d[k]);
   });
 
-  // Si Dirección quedó toda null, la removemos
-  const allNullDir = Object.values(d).every(v => v == null);
-  if (allNullDir) c.Direccion = null;
-
-  // Si Contacto quedó todo null (sin preferencia ni Dirección), lo removemos
-  const allNullContacto = (c.email ?? c.telefonoMovil ?? c.telefonoFijo ?? c.preferenciaContacto ?? c.Direccion) == null;
-  if (allNullContacto) out.Contacto = null;
+  if (Object.values(d).every(v => v == null)) c.Direccion = null;
+  if ((c.email ?? c.telefonoMovil ?? c.telefonoFijo ?? c.preferenciaContacto ?? c.Direccion) == null) out.Contacto = null;
 
   /* 👇👇 AQUI EL TRUCO: espejamos keys para que el validador (lowercase)
          y el create(include) (CamelCase) estén felices */
@@ -62,6 +58,7 @@ export function sanitizePacientePayload(form) {
   return out;
 }
 
+/** Pacientes --------------------------------------------------- */
 export async function crearPaciente(data) {
   const payload = sanitizePacientePayload(data);
   if (process.env.NODE_ENV !== 'production') {
@@ -86,7 +83,6 @@ export async function getPacienteById(id) {
   return res.data; // SOBRE { success, message, data: paciente }
 }
 
-
 export async function actualizarPaciente(id, data) {
   const res = await api.put(`/clinica/pacientes/${id}`, sanitizePacientePayload(data));
   return res.data;
@@ -97,67 +93,24 @@ export async function eliminarPaciente(id) {
   return res.data;
 }
 
-/** Odontograma / Tratamientos / Historia clínica ----------------
- * Devolvemos SIEMPRE res.data (sobre) para contrato uniforme
- */
+/** Odontograma / Tratamientos ---------------- */
 export async function getOdontograma(pacienteId) {
   const res = await api.get(`/clinica/odontograma/${pacienteId}`);
   return res.data;
 }
+
 export async function crearOdontograma(pacienteId, data) {
   const res = await api.post(`/clinica/odontograma/${pacienteId}`, data);
   return res.data;
 }
+
 export async function actualizarDiente(odontogramaId, numero, data) {
   const res = await api.put(`/clinica/odontograma/${odontogramaId}/diente/${numero}`, data);
   return res.data;
 }
+
 export async function registrarCaraTratada(dienteId, data) {
   const res = await api.post(`/clinica/odontograma/diente/${dienteId}/caras`, data);
-  return res.data;
-}
-
-export async function getTratamientos() {
-  const res = await api.get('/clinica/tratamientos');
-  return res.data;
-}
-export async function crearTratamiento(data) {
-  const res = await api.post('/clinica/tratamientos', data);
-  return res.data;
-}
-export async function actualizarTratamiento(id, data) {
-  const res = await api.put(`/clinica/tratamientos/${id}`, data);
-  return res.data;
-}
-export async function eliminarTratamiento(id) {
-  const res = await api.delete(`/clinica/tratamientos/${id}`);
-  return res.data;
-}
-export async function getHistorialTratamientos(pacienteId) {
-  const res = await api.get(`/clinica/tratamientos/paciente/${pacienteId}/historial`);
-  return res.data;
-}
-
-export async function getHistoriaClinica(pacienteId) {
-  const res = await api.get(`/clinica/historia/${pacienteId}`);
-  return res.data;
-}
-export async function registrarEntradaClinica(pacienteId, data) {
-  const res = await api.post(`/clinica/historia/${pacienteId}`, data);
-  return res.data;
-}
-export async function subirImagenClinica(historiaClinicaId, formData) {
-  const res = await api.post(`/clinica/historia/${historiaClinicaId}/imagenes`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function getImagenesPaciente(pacienteId) {
-  const res = await api.get(`/clinica/historia/paciente/${pacienteId}/imagenes`);
-  return res.data;
-}
-export async function eliminarImagenClinica(imagenId) {
-  const res = await api.delete(`/clinica/historia/imagenes/${imagenId}`);
   return res.data;
 }
 
@@ -165,13 +118,68 @@ export async function actualizarCaraTratada(caraId, data) {
   const res = await api.put(`/clinica/odontograma/caras/${caraId}`, data);
   return res.data;
 }
+
 export async function eliminarCaraTratada(caraId) {
   const res = await api.delete(`/clinica/odontograma/caras/${caraId}`);
+  return res.data;
+}
+
+export async function getTratamientos() {
+  const res = await api.get('/clinica/tratamientos');
+  return res.data;
+}
+
+export async function crearTratamiento(data) {
+  const res = await api.post('/clinica/tratamientos', data);
+  return res.data;
+}
+
+export async function actualizarTratamiento(id, data) {
+  const res = await api.put(`/clinica/tratamientos/${id}`, data);
+  return res.data;
+}
+
+export async function eliminarTratamiento(id) {
+  const res = await api.delete(`/clinica/tratamientos/${id}`);
+  return res.data;
+}
+
+export async function getHistorialTratamientos(pacienteId) {
+  const res = await api.get(`/clinica/tratamientos/paciente/${pacienteId}/historial`);
+  return res.data;
+}
+
+/** Historia clínica ---------------- */
+export async function getHistoriaClinica(pacienteId) {
+  const res = await api.get(`/clinica/historia/${pacienteId}`);
+  return res.data;
+}
+
+// 🔹 CORREGIDO: endpoint correcto para crear historia clínica
+export async function crearHistoriaClinica(pacienteId, data) {
+  const res = await api.post(`/clinica/historia/${pacienteId}/entrada`, data);
+  return res.data;
+}
+
+export async function subirImagenClinica(historiaClinicaId, formData) {
+  const res = await api.post(`/clinica/historia/${historiaClinicaId}/imagen`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+export async function getImagenesPaciente(pacienteId) {
+  const res = await api.get(`/clinica/historia/${pacienteId}/imagenes`);
+  return res.data;
+}
+
+export async function eliminarImagenClinica(imagenId) {
+  const res = await api.delete(`/clinica/historia/imagen/${imagenId}`);
   return res.data;
 }
 
 export async function aplicarTratamientoADiente(dienteId, payload) {
   // payload: { tratamientoId, estado?, color?, trazo?, caras? }
   const res = await api.post(`/clinica/odontograma/diente/${dienteId}/aplicar-tratamiento`, payload);
-  return res.data; // { success, data: { creadas, modoDibujo, alcance } }
+  return res.data;
 }

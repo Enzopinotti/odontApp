@@ -31,16 +31,27 @@ export const createImagen = (data) =>
   ImagenClinica.create(data);
 
 /* ---------- Actualizar entrada ---------- */
-export const update = (historia, data) =>
-  historia.update(data);
+export const update = async (id, data) => {
+  const historia = await HistoriaClinica.findByPk(id);
+  if (!historia) return null;
+  return await historia.update(data);
+};
 
 /* ---------- Eliminar entrada ---------- */
-export const remove = (historia) =>
-  historia.destroy();
+export const remove = async (id) => {
+  const historia = await HistoriaClinica.findByPk(id);
+  if (!historia) return null;
+  await historia.destroy();
+  return historia;
+};
 
 /* ---------- Eliminar imagen individual ---------- */
-export const removeImagen = (imagen) =>
-  imagen.destroy();
+export const removeImagen = async (id) => {
+  const imagen = await ImagenClinica.findByPk(id);
+  if (!imagen) return null;
+  await imagen.destroy();
+  return imagen;
+};
 
 /* ---------- Buscar imágenes por historia clínica ---------- */
 export const getImagenesByHistoria = (historiaClinicaId) =>
