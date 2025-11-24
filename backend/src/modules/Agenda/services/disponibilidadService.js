@@ -111,6 +111,16 @@ export const eliminarDisponibilidad = async (id, usuarioId) => {
 
   const turnosEnBloque = turnosFuturos.rows.filter(turno => {
     // Verificar que el turno esté dentro del rango horario del bloque
+    // Normalizar fechas para comparación
+    const fechaTurno = new Date(turno.fechaHora).toISOString().split('T')[0];
+    const fechaDisponibilidad = disponibilidad.fecha instanceof Date 
+      ? disponibilidad.fecha.toISOString().split('T')[0] 
+      : disponibilidad.fecha.split('T')[0];
+    
+    // Primero verificar que las fechas coincidan
+    if (fechaTurno !== fechaDisponibilidad) return false;
+    
+    // Luego verificar el rango horario
     const turnoHora = turno.fechaHora.toTimeString().slice(0, 5);
     return turnoHora >= disponibilidad.horaInicio && turnoHora < disponibilidad.horaFin;
   });

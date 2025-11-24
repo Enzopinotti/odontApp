@@ -55,9 +55,17 @@ export function useSlotsDisponibles(fecha, odontologoId, duracion) {
     queryFn: async () => {
       const res = await agendaApi.getSlotsDisponibles(fecha, odontologoId, duracion);
       // El backend devuelve { success, message, data }
-      return res.data?.data || res.data || [];
+      const slots = res.data?.data || res.data || [];
+      console.log('[useSlotsDisponibles] Slots recibidos del backend:', { 
+        fecha, 
+        odontologoId, 
+        duracion, 
+        slots,
+        cantidad: slots.length 
+      });
+      return slots;
     },
-    enabled: !!fecha && !!odontologoId,
+    enabled: !!fecha && !!odontologoId && !!duracion,
     staleTime: 1000 * 60, // 1 minuto
     retry: false,
   });

@@ -35,9 +35,17 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
   const offset = (page - 1) * perPage;
   const where = {};
 
-  // Filtro por fecha
+  // Filtro por fecha - normalizar a formato YYYY-MM-DD
   if (filtros.fecha) {
-    where.fecha = filtros.fecha;
+    let fechaNormalizada;
+    if (filtros.fecha instanceof Date) {
+      fechaNormalizada = filtros.fecha.toISOString().split('T')[0];
+    } else if (typeof filtros.fecha === 'string') {
+      fechaNormalizada = filtros.fecha.split('T')[0]; // Eliminar cualquier parte de hora
+    } else {
+      fechaNormalizada = filtros.fecha;
+    }
+    where.fecha = fechaNormalizada;
   }
 
   // Filtro por rango de fechas
@@ -74,9 +82,21 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
 };
 
 export const obtenerDisponibilidadPorFecha = (fecha, odontologoId) => {
+  // Normalizar fecha a formato YYYY-MM-DD
+  let fechaNormalizada;
+  if (fecha instanceof Date) {
+    fechaNormalizada = fecha.toISOString().split('T')[0];
+  } else if (typeof fecha === 'string') {
+    fechaNormalizada = fecha.split('T')[0]; // Eliminar cualquier parte de hora
+  } else {
+    fechaNormalizada = fecha;
+  }
+  
+  console.log('[obtenerDisponibilidadPorFecha] Fecha recibida:', fecha, '→ Normalizada:', fechaNormalizada);
+  
   return Disponibilidad.findAll({
     where: {
-      fecha,
+      fecha: fechaNormalizada,
       odontologoId
     },
     include: [
@@ -112,8 +132,18 @@ export const obtenerDisponibilidadesPorOdontologo = (odontologoId) => {
 };
 
 export const verificarSolapamiento = (fecha, horaInicio, horaFin, odontologoId, disponibilidadIdExcluir = null) => {
+  // Normalizar fecha a formato YYYY-MM-DD
+  let fechaNormalizada;
+  if (fecha instanceof Date) {
+    fechaNormalizada = fecha.toISOString().split('T')[0];
+  } else if (typeof fecha === 'string') {
+    fechaNormalizada = fecha.split('T')[0]; // Eliminar cualquier parte de hora
+  } else {
+    fechaNormalizada = fecha;
+  }
+  
   const where = {
-    fecha,
+    fecha: fechaNormalizada,
     odontologoId,
     [Op.or]: [
       {
@@ -162,21 +192,38 @@ export const validarDisponibilidad = async (fecha, horaInicio, horaFin, odontolo
 };
 
 export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot = 30) => {
+  // Normalizar fecha a formato YYYY-MM-DD (sin zona horaria)
+  let fechaNormalizada;
+  if (fecha instanceof Date) {
+    fechaNormalizada = fecha.toISOString().split('T')[0];
+  } else if (typeof fecha === 'string') {
+    // Si viene como string, asegurarse de que esté en formato YYYY-MM-DD
+    fechaNormalizada = fecha.split('T')[0]; // Eliminar cualquier parte de hora si existe
+  } else {
+    fechaNormalizada = fecha;
+  }
+  
+  console.log('[generarSlotsDisponibles] Fecha recibida:', fecha, '→ Normalizada:', fechaNormalizada);
+  
   // 1. Obtener disponibilidades laborales
   const disponibilidades = await Disponibilidad.findAll({
     where: {
-      fecha,
+      fecha: fechaNormalizada,
       odontologoId,
       tipo: TipoDisponibilidad.LABORAL
     },
     order: [['horaInicio', 'ASC']]
   });
 
+  console.log('[generarSlotsDisponibles] Disponibilidades encontradas:', disponibilidades.length);
+
   // 2. Obtener turnos existentes para esta fecha y odontólogo
   const { Turno } = await import('../models/index.js');
-  const fechaInicio = new Date(fecha);
+  // Crear fecha en zona horaria local para evitar problemas de UTC
+  const fechaObj = new Date(fechaNormalizada + 'T00:00:00');
+  const fechaInicio = new Date(fechaObj);
   fechaInicio.setHours(0, 0, 0, 0);
-  const fechaFin = new Date(fecha);
+  const fechaFin = new Date(fechaObj);
   fechaFin.setHours(23, 59, 59, 999);
 
   const turnosExistentes = await Turno.findAll({
@@ -215,8 +262,9 @@ export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot 
 
   // 4. Filtrar slots que NO están ocupados por turnos
   const slotsDisponibles = slots.filter(slot => {
-    const slotInicio = new Date(`${fecha}T${slot.inicio}`);
-    const slotFin = new Date(`${fecha}T${slot.fin}`);
+    // Usar fecha normalizada para construir las fechas de los slots
+    const slotInicio = new Date(`${fechaNormalizada}T${slot.inicio}`);
+    const slotFin = new Date(`${fechaNormalizada}T${slot.fin}`);
 
     // Verificar si algún turno se solapa con este slot
     const hayConflicto = turnosExistentes.some(turno => {
