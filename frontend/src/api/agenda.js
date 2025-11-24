@@ -32,6 +32,12 @@ export async function cancelarTurno(id, motivo) {
   return res.data;
 }
 
+// CU-AG01.4 Flujo Alternativo 4a: Cancelación múltiple
+export async function cancelarTurnosMultiple(turnoIds, motivo) {
+  const res = await api.post('/agenda/turnos/cancelar-multiple', { turnoIds, motivo });
+  return res.data;
+}
+
 export async function marcarAsistencia(id, nota) {
   const res = await api.post(`/agenda/turnos/${id}/marcar-asistencia`, { nota });
   return res.data;
@@ -42,8 +48,8 @@ export async function marcarAusencia(id, motivo) {
   return res.data;
 }
 
-export async function reprogramarTurno(id, nuevaFechaHora) {
-  const res = await api.put(`/agenda/turnos/${id}/reprogramar`, { nuevaFechaHora });
+export async function reprogramarTurno(id, data) {
+  const res = await api.put(`/agenda/turnos/${id}/reprogramar`, data);
   return res.data;
 }
 

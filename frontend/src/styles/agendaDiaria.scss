@@ -703,3 +703,126 @@
   }
 }
 
+/* CU-AG01.5: Estilos para indicadores de tiempo */
+.turno-proximo {
+  animation: pulse-amarillo 2s infinite;
+}
+
+.turno-retraso {
+  animation: pulse-rojo 2s infinite;
+}
+
+@keyframes pulse-amarillo {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes pulse-rojo {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+.indicador-tiempo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* CU-AG01.5: Estilos para vista semanal */
+.vista-semanal-container {
+  padding: 1rem;
+}
+
+.controles-semana {
+  .btn-nav {
+    padding: 0.75rem 1.5rem;
+    background-color: v.$color-light;
+    color: v.$color-text;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: darken(v.$color-light, 5%);
+    }
+  }
+}
+
+.dia-semana-card {
+  transition: all 0.2s ease;
+
+  &.dia-hoy {
+    animation: pulse-hoy 2s infinite;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+@keyframes pulse-hoy {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.5);
+  }
+}
+
+.turno-card-semanal {
+  &:hover {
+    background-color: #f0f0f0 !important;
+  }
+
+  &.turno-proximo {
+    border-left: 4px solid #f59e0b !important;
+  }
+
+  &.turno-retraso {
+    border-left: 4px solid #ef4444 !important;
+  }
+}
+
+/* Responsive para vista semanal */
+@media (max-width: 1200px) {
+  .semana-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .semana-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .controles-semana {
+    flex-direction: column;
+    gap: 1rem;
+    
+    .btn-nav {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .semana-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

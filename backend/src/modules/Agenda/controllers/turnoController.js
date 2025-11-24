@@ -8,10 +8,24 @@ export const obtenerTurnos = async (req, res) => {
     const perPage = parseInt(req.query.perPage) || 20;
     const { fecha, odontologoId, estado, pacienteId, ...filtros } = req.query;
 
+    // CU-AG01.5: Si el usuario es odontólogo, solo puede ver su propia agenda
+    let odontologoIdFiltrado = odontologoId;
+    if (req.user.roleId === 2) { // ID 2 = Odontólogo (verificar según tu seed)
+      // Obtener el odontologoId del usuario autenticado
+      const { Odontologo } = await import('../../Usuarios/models/index.js');
+      const odontologo = await Odontologo.findOne({ where: { userId: req.user.id } });
+      if (odontologo) {
+        odontologoIdFiltrado = odontologo.userId;
+      } else {
+        // Si no es odontólogo registrado, no puede ver turnos
+        return res.paginated([], { page, perPage, total: 0 }, 'Turnos listados');
+      }
+    }
+
     const { data, total } = await turnoService.buscarConFiltros({
       ...filtros,
       fecha,
-      odontologoId,
+      odontologoId: odontologoIdFiltrado,
       estado,
       pacienteId
     }, page, perPage);
@@ -25,14 +39,16 @@ export const obtenerTurnos = async (req, res) => {
 /* POST /api/agenda/turnos */
 export const crearTurno = async (req, res) => {
   try {
-    const turno = await turnoService.crearTurno(req.body, req.user.id);
+    const ip = req.ip || req.connection.remoteAddress;
+    const turno = await turnoService.crearTurno(req.body, req.user.id, ip);
     return res.created(turno, 'Turno creado exitosamente');
   } catch (error) {
     if (error.name === 'ValidationError') {
       return res.error(error.message, 400);
     }
     if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
+      // CU-AG01.2 Flujo Alternativo 6a: Incluir información del conflicto en la respuesta
+      return res.error(error.message, 409, error.metadata || null);
     }
     return res.error(error.message, 500);
   }
@@ -87,8 +103,9 @@ export const eliminarTurno = async (req, res) => {
 export const cancelarTurno = async (req, res) => {
   try {
     const { motivo } = req.body;
-    const turno = await turnoService.cancelarTurno(req.params.id, motivo, req.user.id);
-    return res.ok(turno, 'Turno cancelado');
+    const ip = req.ip || req.connection.remoteAddress;
+    const turno = await turnoService.cancelarTurno(req.params.id, motivo, req.user.id, ip);
+    return res.ok(turno, 'Turno cancelado exitosamente');
   } catch (error) {
     if (error.name === 'NotFoundError') {
       return res.error(error.message, 404);
@@ -100,11 +117,37 @@ export const cancelarTurno = async (req, res) => {
   }
 };
 
+/* POST /api/agenda/turnos/cancelar-multiple - CU-AG01.4 Flujo Alternativo 4a */
+export const cancelarTurnosMultiple = async (req, res) => {
+  try {
+    const { turnoIds, motivo } = req.body;
+    
+    if (!Array.isArray(turnoIds) || turnoIds.length === 0) {
+      return res.error('Debe proporcionar al menos un ID de turno', 400);
+    }
+    
+    if (!motivo || !motivo.trim()) {
+      return res.error('El motivo es requerido para cancelación múltiple', 400);
+    }
+    
+    const ip = req.ip || req.connection.remoteAddress;
+    const resultado = await turnoService.cancelarTurnosMultiple(turnoIds, motivo, req.user.id, ip);
+    
+    return res.ok(resultado, `Se cancelaron ${resultado.cancelados} turno(s) exitosamente`);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.error(error.message, 400);
+    }
+    return res.error(error.message, 500);
+  }
+};
+
 /* POST /api/agenda/turnos/:id/marcar-asistencia */
 export const marcarAsistencia = async (req, res) => {
   try {
     const { nota } = req.body;
-    const turno = await turnoService.marcarAsistencia(req.params.id, nota, req.user.id);
+    const ip = req.ip || req.connection.remoteAddress;
+    const turno = await turnoService.marcarAsistencia(req.params.id, nota, req.user.id, ip);
     return res.ok(turno, 'Asistencia registrada');
   } catch (error) {
     if (error.name === 'NotFoundError') {
@@ -121,8 +164,19 @@ export const marcarAsistencia = async (req, res) => {
 export const marcarAusencia = async (req, res) => {
   try {
     const { motivo } = req.body;
-    const turno = await turnoService.marcarAusencia(req.params.id, motivo, req.user.id);
-    return res.ok(turno, 'Ausencia registrada');
+    const ip = req.ip || req.connection.remoteAddress;
+    const resultado = await turnoService.marcarAusencia(req.params.id, motivo, req.user.id, ip);
+    
+    // CU-AG01.1 Flujo Alternativo 5b: Incluir sugerencia de reprogramar en la respuesta
+    if (resultado.sugerirReprogramar) {
+      return res.ok({
+        turno: resultado.turno,
+        sugerirReprogramar: true,
+        mensaje: resultado.mensaje
+      }, resultado.mensaje);
+    }
+    
+    return res.ok(resultado.turno, resultado.mensaje);
   } catch (error) {
     if (error.name === 'NotFoundError') {
       return res.error(error.message, 404);
@@ -137,9 +191,10 @@ export const marcarAusencia = async (req, res) => {
 /* PUT /api/agenda/turnos/:id/reprogramar */
 export const reprogramarTurno = async (req, res) => {
   try {
-    const { nuevaFechaHora } = req.body;
-    const turno = await turnoService.reprogramarTurno(req.params.id, nuevaFechaHora, req.user.id);
-    return res.ok(turno, 'Turno reprogramado');
+    const { nuevaFechaHora, odontologoId } = req.body;
+    const ip = req.ip || req.connection.remoteAddress;
+    const turno = await turnoService.reprogramarTurno(req.params.id, nuevaFechaHora, req.user.id, ip, odontologoId);
+    return res.ok(turno, 'Turno reprogramado exitosamente');
   } catch (error) {
     if (error.name === 'NotFoundError') {
       return res.error(error.message, 404);
@@ -148,7 +203,8 @@ export const reprogramarTurno = async (req, res) => {
       return res.error(error.message, 400);
     }
     if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
+      // CU-AG01.3 Flujo Alternativo 4a: Incluir opciones de alternativas en la respuesta
+      return res.error(error.message, 409, error.metadata || null);
     }
     return res.error(error.message, 500);
   }
@@ -158,7 +214,18 @@ export const reprogramarTurno = async (req, res) => {
 export const obtenerAgendaPorFecha = async (req, res) => {
   try {
     const { fecha } = req.params;
-    const { odontologoId } = req.query;
+    let { odontologoId } = req.query;
+    
+    // CU-AG01.5: Si el usuario es odontólogo, solo puede ver su propia agenda
+    if (req.user.roleId === 2) { // ID 2 = Odontólogo
+      const { Odontologo } = await import('../../Usuarios/models/index.js');
+      const odontologo = await Odontologo.findOne({ where: { userId: req.user.id } });
+      if (odontologo) {
+        odontologoId = odontologo.userId;
+      } else {
+        return res.ok([], 'Agenda obtenida');
+      }
+    }
     
     const agenda = await turnoService.obtenerAgendaPorFecha(fecha, odontologoId);
     return res.ok(agenda, 'Agenda obtenida');

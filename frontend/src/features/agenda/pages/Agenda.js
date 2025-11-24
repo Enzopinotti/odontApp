@@ -50,7 +50,9 @@ export default function Agenda() {
   const handlePasarAConsulta = () => {
     const siguienteTurno = turnos.find(t => t.estado === 'PENDIENTE' && new Date(t.fechaHora) <= new Date());
     if (siguienteTurno) {
-      navigate(`/agenda/turnos/${siguienteTurno.id}/consulta`);
+      // Navegar a detalles del turno (la consulta se maneja en otro módulo)
+      navigate(`/agenda/diaria`);
+      showToast('Seleccione el turno para iniciar la consulta', 'info');
     } else {
       showToast('No hay turnos pendientes', 'info');
     }
@@ -174,34 +176,22 @@ export default function Agenda() {
                   </div>
                   <div className="paciente-acciones">
                     <button 
-                      onClick={() => navigate(`/agenda/pacientes/${paciente.id}/editar`)}
+                      onClick={() => navigate(`/pacientes/${paciente.id}/editar`)}
                       title="Editar"
                     >
                       ✏️
                     </button>
                     <button 
-                      onClick={() => navigate(`/agenda/pacientes/${paciente.id}/calendario`)}
-                      title="Ver calendario"
+                      onClick={() => navigate(`/pacientes/${paciente.id}`)}
+                      title="Ver detalles"
                     >
-                      📅
+                      👁️
                     </button>
                     <button 
-                      onClick={() => navigate(`/agenda/pacientes/${paciente.id}/mensaje`)}
-                      title="Enviar mensaje"
+                      onClick={() => navigate(`/pacientes/${paciente.id}/odontograma`)}
+                      title="Ver odontograma"
                     >
-                      💬
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/agenda/pacientes/${paciente.id}/archivar`)}
-                      title="Archivar"
-                    >
-                      📦
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/agenda/pacientes/${paciente.id}/eliminar`)}
-                      title="Eliminar"
-                    >
-                      🗑️
+                      🦷
                     </button>
                   </div>
                 </div>

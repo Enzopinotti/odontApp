@@ -1,13 +1,16 @@
 // src/features/agenda/components/DisponibilidadModal.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   useCrearDisponibilidad, 
   useActualizarDisponibilidad, 
-  useEliminarDisponibilidad 
+  useEliminarDisponibilidad,
+  useValidarDisponibilidad 
 } from '../hooks/useDisponibilidades';
+import { useTurnosPorFecha } from '../hooks/useTurnos';
+import EliminarDisponibilidadModal from './EliminarDisponibilidadModal';
 import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
-import { FaTimes, FaTrash, FaSave } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaSave, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
 const TIPOS_DISPONIBILIDAD = [
   { value: 'LABORAL', label: 'Horario Laboral', color: '#10b981' },
@@ -32,11 +35,55 @@ export default function DisponibilidadModal({
   });
 
   const [errors, setErrors] = useState({});
+  const [validacionTiempoReal, setValidacionTiempoReal] = useState(null);
+  const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  const [turnosFuturos, setTurnosFuturos] = useState([]);
   
   // Mutaciones
   const crearDisponibilidad = useCrearDisponibilidad();
   const actualizarDisponibilidad = useActualizarDisponibilidad();
   const eliminarDisponibilidad = useEliminarDisponibilidad();
+  const validarDisponibilidad = useValidarDisponibilidad();
+  
+  // CU-AG02: Cargar turnos para verificar conflictos al eliminar
+  const { data: turnosData } = useTurnosPorFecha(formData.fecha, formData.odontologoId);
+  const turnos = useMemo(() => {
+    if (!turnosData) return [];
+    return Array.isArray(turnosData) ? turnosData : (turnosData.data || []);
+  }, [turnosData]);
+  
+  // CU-AG02: Validación en tiempo real
+  const validarEnTiempoReal = useCallback(async () => {
+    if (!formData.fecha || !formData.horaInicio || !formData.horaFin || !formData.odontologoId) {
+      setValidacionTiempoReal(null);
+      return;
+    }
+    
+    try {
+      const resultado = await validarDisponibilidad.mutateAsync({
+        fecha: formData.fecha,
+        horaInicio: formData.horaInicio,
+        horaFin: formData.horaFin,
+        odontologoId: formData.odontologoId,
+        disponibilidadIdExcluir: disponibilidad?.id || null
+      });
+      
+      setValidacionTiempoReal(resultado.esValida);
+    } catch (error) {
+      setValidacionTiempoReal(false);
+    }
+  }, [formData.fecha, formData.horaInicio, formData.horaFin, formData.odontologoId, disponibilidad?.id, validarDisponibilidad]);
+  
+  // CU-AG02: Validar en tiempo real cuando cambian los campos relevantes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.fecha && formData.horaInicio && formData.horaFin && formData.odontologoId) {
+        validarEnTiempoReal();
+      }
+    }, 500); // Debounce de 500ms
+    
+    return () => clearTimeout(timeoutId);
+  }, [formData.fecha, formData.horaInicio, formData.horaFin, formData.odontologoId, validarEnTiempoReal]);
   
   // Cargar datos si es edición
   useEffect(() => {
@@ -130,13 +177,38 @@ export default function DisponibilidadModal({
       onSuccess?.();
       onClose();
     } catch (error) {
-      handleApiError(error, showToast);
+      // CU-AG02: Manejar error de solapamiento con mensaje específico
+      if (error.response?.status === 409 && error.response?.data?.code === 'SOLAPAMIENTO_DISPONIBILIDAD') {
+        showToast('El horario se solapa con otra disponibilidad existente. Por favor, ajuste el horario.', 'error');
+      } else {
+        handleApiError(error, showToast);
+      }
     }
   };
   
+  // CU-AG02: Verificar turnos futuros antes de eliminar
   const handleEliminar = async () => {
     if (!disponibilidad?.id) return;
     
+    // Verificar si hay turnos futuros en este bloque
+    const turnosEnBloque = turnos.filter(turno => {
+      if (turno.odontologoId !== disponibilidad.odontologoId) return false;
+      const fechaTurno = new Date(turno.fechaHora);
+      const fechaDisp = new Date(disponibilidad.fecha);
+      if (fechaTurno.toISOString().split('T')[0] !== fechaDisp.toISOString().split('T')[0]) return false;
+      
+      const turnoHora = fechaTurno.toTimeString().slice(0, 5);
+      return turnoHora >= disponibilidad.horaInicio && turnoHora < disponibilidad.horaFin;
+    });
+    
+    if (turnosEnBloque.length > 0) {
+      // Mostrar modal de conflicto
+      setTurnosFuturos(turnosEnBloque);
+      setMostrarModalEliminar(true);
+      return;
+    }
+    
+    // Si no hay turnos, eliminar directamente
     if (!window.confirm('¿Estás seguro de eliminar esta disponibilidad?')) {
       return;
     }
@@ -147,7 +219,13 @@ export default function DisponibilidadModal({
       onSuccess?.();
       onClose();
     } catch (error) {
-      handleApiError(error, showToast);
+      if (error.response?.status === 409) {
+        // Error de turnos futuros - mostrar modal
+        setTurnosFuturos(turnosEnBloque);
+        setMostrarModalEliminar(true);
+      } else {
+        handleApiError(error, showToast);
+      }
     }
   };
   
@@ -219,6 +297,32 @@ export default function DisponibilidadModal({
               {errors.horaFin && <span className="error-message">{errors.horaFin}</span>}
             </div>
           </div>
+          
+          {/* CU-AG02: Indicador de validación en tiempo real */}
+          {validacionTiempoReal !== null && formData.fecha && formData.horaInicio && formData.horaFin && formData.odontologoId && (
+            <div style={{
+              padding: '0.75rem',
+              borderRadius: '6px',
+              background: validacionTiempoReal ? '#d1fae5' : '#fee2e2',
+              border: `1px solid ${validacionTiempoReal ? '#10b981' : '#ef4444'}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginTop: '0.5rem'
+            }}>
+              {validacionTiempoReal ? (
+                <>
+                  <FaCheckCircle style={{ color: '#10b981' }} />
+                  <span style={{ color: '#065f46', fontWeight: '500' }}>Horario disponible (sin conflictos)</span>
+                </>
+              ) : (
+                <>
+                  <FaExclamationCircle style={{ color: '#ef4444' }} />
+                  <span style={{ color: '#991b1b', fontWeight: '500' }}>El horario se solapa con otra disponibilidad</span>
+                </>
+              )}
+            </div>
+          )}
           
           {/* Tipo */}
           <div className="form-group">
@@ -309,6 +413,22 @@ export default function DisponibilidadModal({
           </div>
         </form>
       </div>
+      
+      {/* CU-AG02: Modal para eliminar con turnos futuros */}
+      {mostrarModalEliminar && (
+        <EliminarDisponibilidadModal
+          disponibilidad={disponibilidad}
+          turnosFuturos={turnosFuturos}
+          onClose={() => {
+            setMostrarModalEliminar(false);
+            setTurnosFuturos([]);
+          }}
+          onSuccess={() => {
+            onSuccess?.();
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }

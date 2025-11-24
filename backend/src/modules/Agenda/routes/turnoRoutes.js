@@ -74,6 +74,12 @@ router.post('/',
 // RUTAS CON PARÁMETROS DINÁMICOS (al final)
 // ==========================================
 
+// CU-AG01.4 Flujo Alternativo 4a: Cancelación múltiple (debe ir antes de /:id)
+router.post('/cancelar-multiple', 
+  requirePermiso('turnos', 'cancelar'),
+  turnoController.cancelarTurnosMultiple
+);
+
 // Rutas para acciones específicas de turnos con :id
 router.post('/:id/cancelar', 
   requirePermiso('turnos', 'cancelar'),

@@ -2,6 +2,7 @@ import * as repo from '../repositories/disponibilidadRepository.js';
 import * as turnoRepo from '../repositories/turnoRepository.js';
 import ApiError from '../../../utils/ApiError.js';
 import { TipoDisponibilidad } from '../models/enums.js';
+import { registrarLog } from '../../Usuarios/services/auditService.js';
 
 export const buscarConFiltros = async (filtros, page, perPage) => {
   const { rows, count } = await repo.findFiltered(filtros, page, perPage);
@@ -48,7 +49,17 @@ export const crearDisponibilidad = async (data, usuarioId) => {
     throw new ApiError('Los días no laborables requieren un motivo', 400, null, 'MOTIVO_REQUERIDO');
   }
 
-  return await repo.create(data);
+  const nuevaDisponibilidad = await repo.create(data);
+  
+  // CU-AG02: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
+  } catch (error) {
+    console.error('Error al registrar auditoría de creación de disponibilidad:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
+  
+  return nuevaDisponibilidad;
 };
 
 export const actualizarDisponibilidad = async (id, data, usuarioId) => {
@@ -75,7 +86,17 @@ export const actualizarDisponibilidad = async (id, data, usuarioId) => {
     }
   }
 
-  return await repo.update(disponibilidad, data);
+  const disponibilidadActualizada = await repo.update(disponibilidad, data);
+  
+  // CU-AG02: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'disponibilidad', 'modificar', null);
+  } catch (error) {
+    console.error('Error al registrar auditoría de modificación de disponibilidad:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
+  
+  return disponibilidadActualizada;
 };
 
 export const eliminarDisponibilidad = async (id, usuarioId) => {
@@ -97,6 +118,14 @@ export const eliminarDisponibilidad = async (id, usuarioId) => {
   }
 
   await repo.remove(disponibilidad);
+  
+  // CU-AG02: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'disponibilidad', 'eliminar', null);
+  } catch (error) {
+    console.error('Error al registrar auditoría de eliminación de disponibilidad:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
 };
 
 export const obtenerDisponibilidadPorFecha = async (fecha, odontologoId) => {

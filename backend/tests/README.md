@@ -163,3 +163,4 @@ npm run test:coverage
 - Verificar que el JWT_SECRET esté configurado
 - Asegurar que los usuarios de prueba se creen correctamente
 
+

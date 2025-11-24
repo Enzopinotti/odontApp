@@ -20,3 +20,4 @@ export default (models) => {
   console.log('✅ Asociaciones internas del módulo Agenda aplicadas correctamente');
 };
 
+

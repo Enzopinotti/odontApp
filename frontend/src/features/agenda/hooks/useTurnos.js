@@ -131,6 +131,19 @@ export function useCancelarTurno() {
   });
 }
 
+// CU-AG01.4 Flujo Alternativo 4a: Cancelación múltiple
+export function useCancelarTurnosMultiple() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ turnoIds, motivo }) => agendaApi.cancelarTurnosMultiple(turnoIds, motivo),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['turnos']);
+      queryClient.invalidateQueries(['agenda']);
+    },
+  });
+}
+
 export function useMarcarAsistencia() {
   const queryClient = useQueryClient();
   
@@ -159,7 +172,13 @@ export function useReprogramarTurno() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, nuevaFechaHora }) => agendaApi.reprogramarTurno(id, nuevaFechaHora),
+    mutationFn: ({ id, nuevaFechaHora, odontologoId }) => {
+      const data = { nuevaFechaHora };
+      if (odontologoId) {
+        data.odontologoId = odontologoId;
+      }
+      return agendaApi.reprogramarTurno(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['turnos']);
       queryClient.invalidateQueries(['agenda']);

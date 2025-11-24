@@ -7,6 +7,7 @@ import { Odontologo, Usuario, Especialidad, OdontologoEspecialidad } from '../..
 import { Op } from 'sequelize';
 import ApiError from '../../../utils/ApiError.js';
 import { EstadoTurno } from '../models/enums.js';
+import { registrarLog } from '../../Usuarios/services/auditService.js';
 
 export const buscarConFiltros = async (filtros, page, perPage) => {
   const { rows, count } = await repo.findFiltered(filtros, page, perPage);
@@ -21,7 +22,7 @@ export const obtenerTurnoPorId = async (id) => {
   return turno;
 };
 
-export const crearTurno = async (data, recepcionistaId) => {
+export const crearTurno = async (data, recepcionistaId, ip = null) => {
   // Validar que la fecha sea futura
   const fechaHora = new Date(data.fechaHora);
   if (fechaHora <= new Date()) {
@@ -41,7 +42,47 @@ export const crearTurno = async (data, recepcionistaId) => {
   );
   
   if (solapamiento) {
-    throw new ApiError('El horario se solapa con otro turno existente', 409, null, 'SOLAPAMIENTO_TURNO');
+    // CU-AG01.2 Flujo Alternativo 6a: Mensaje más descriptivo con información del conflicto
+    const turnoConflicto = await repo.findById(solapamiento.id);
+    const odontologoNombre = turnoConflicto?.Odontologo?.Usuario 
+      ? `${turnoConflicto.Odontologo.Usuario.nombre} ${turnoConflicto.Odontologo.Usuario.apellido}`
+      : 'el odontólogo';
+    
+    // CU-AG01.2: Buscar odontólogos alternativos disponibles para la misma fecha/hora
+    const fechaStr = fechaHora.toISOString().split('T')[0];
+    const odontologosAlternativos = await obtenerOdontologosAlternativos(
+      fechaStr,
+      fechaHora.toTimeString().slice(0, 5),
+      new Date(fechaHora.getTime() + data.duracion * 60000).toTimeString().slice(0, 5),
+      data.duracion,
+      data.odontologoId
+    );
+    
+    // CU-AG01.2: Buscar slots disponibles para el mismo odontólogo en el mismo día
+    const slotsAlternativos = await disponibilidadRepo.generarSlotsDisponibles(
+      fechaStr,
+      data.odontologoId,
+      data.duracion
+    );
+    
+    throw new ApiError(
+      `Conflicto con la agenda del Dr. ${odontologoNombre}. El horario seleccionado se solapa con otro turno existente.`,
+      409, 
+      { 
+        conflicto: true,
+        turnoId: solapamiento.id,
+        odontologoId: data.odontologoId,
+        odontologoNombre,
+        // Opciones sugeridas para resolver el conflicto
+        opciones: {
+          cambiarOdontologo: odontologosAlternativos.length > 0,
+          odontologosAlternativos: odontologosAlternativos.slice(0, 5), // Máximo 5 sugerencias
+          reprogramarFecha: slotsAlternativos.length > 0,
+          slotsAlternativos: slotsAlternativos.slice(0, 10) // Máximo 10 slots sugeridos
+        }
+      }, 
+      'SOLAPAMIENTO_TURNO'
+    );
   }
 
   // RN-AG02: Verificar que el turno esté dentro de un bloque laboral
@@ -65,7 +106,23 @@ export const crearTurno = async (data, recepcionistaId) => {
   };
 
   const turno = await repo.create(turnoData);
-  return await repo.findById(turno.id); // Retornar con relaciones
+  
+  // CU-AG01.2: Registrar auditoría
+  try {
+    await registrarLog(recepcionistaId, 'turnos', 'crear', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de creación de turno:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
+
+  const turnoCreado = await repo.findById(turno.id); // Retornar con relaciones
+  
+  // CU-AG01.2: Agregar código de turno personalizado
+  if (turnoCreado) {
+    turnoCreado.dataValues.codigoTurno = turnoCreado.getCodigoTurno();
+  }
+  
+  return turnoCreado;
 };
 
 export const actualizarTurno = async (id, data, usuarioId) => {
@@ -109,15 +166,23 @@ export const eliminarTurno = async (id, usuarioId) => {
   await repo.remove(turno);
 };
 
-export const cancelarTurno = async (id, motivo, usuarioId) => {
+export const cancelarTurno = async (id, motivo, usuarioId, ip = null) => {
   const turno = await obtenerTurnoPorId(id);
   
   if (turno.estado !== EstadoTurno.PENDIENTE) {
     throw new ApiError('Solo se pueden cancelar turnos pendientes', 400, null, 'ESTADO_INVALIDO');
   }
 
-  // Cancelar el turno
+  // Cancelar el turno (libera el slot automáticamente)
   await turno.cancelar(motivo);
+
+  // CU-AG01.4: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'turnos', 'cancelar', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de cancelación:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
 
   // Agregar nota si se proporciona motivo
   if (motivo) {
@@ -128,23 +193,83 @@ export const cancelarTurno = async (id, motivo, usuarioId) => {
     });
   }
 
-  return await repo.findById(id);
+  const turnoCancelado = await repo.findById(id);
+  
+  // CU-AG01.2: Agregar código de turno personalizado
+  if (turnoCancelado) {
+    turnoCancelado.dataValues.codigoTurno = turnoCancelado.getCodigoTurno();
+  }
+  
+  return turnoCancelado;
 };
 
-export const marcarAsistencia = async (id, nota, usuarioId) => {
+// CU-AG01.4 Flujo Alternativo 4a: Cancelación múltiple
+export const cancelarTurnosMultiple = async (turnoIds, motivo, usuarioId, ip = null) => {
+  if (!Array.isArray(turnoIds) || turnoIds.length === 0) {
+    throw new ApiError('Debe proporcionar al menos un ID de turno', 400, null, 'TURNOS_INVALIDOS');
+  }
+  
+  if (!motivo || !motivo.trim()) {
+    throw new ApiError('El motivo es requerido para cancelación múltiple', 400, null, 'MOTIVO_REQUERIDO');
+  }
+  
+  const resultados = {
+    cancelados: 0,
+    fallidos: 0,
+    errores: [],
+    turnos: []
+  };
+  
+  // CU-AG01.4: Registrar auditoría de cancelación múltiple
+  try {
+    await registrarLog(usuarioId, 'turnos', 'cancelar_multiple', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de cancelación múltiple:', error);
+  }
+  
+  // Procesar cada turno
+  for (const turnoId of turnoIds) {
+    try {
+      const turno = await cancelarTurno(turnoId, motivo, usuarioId, null); // IP ya registrada arriba
+      resultados.cancelados++;
+      resultados.turnos.push(turno);
+    } catch (error) {
+      resultados.fallidos++;
+      resultados.errores.push({
+        turnoId,
+        error: error.message
+      });
+    }
+  }
+  
+  return resultados;
+};
+
+export const marcarAsistencia = async (id, nota, usuarioId, ip = null) => {
   const turno = await obtenerTurnoPorId(id);
   
   if (turno.estado !== EstadoTurno.PENDIENTE) {
     throw new ApiError('Solo se puede marcar asistencia en turnos pendientes', 400, null, 'ESTADO_INVALIDO');
   }
 
-  // Verificar que el turno ya haya pasado
-  if (turno.fechaHora > new Date()) {
-    throw new ApiError('No se puede marcar asistencia antes de la hora del turno', 400, null, 'TURNO_NO_PASADO');
+  // CU-AG01.1: Verificar que la hora de fin del turno ya haya transcurrido
+  const horaFinTurno = new Date(new Date(turno.fechaHora).getTime() + (turno.duracion * 60000));
+  const ahora = new Date();
+  
+  if (horaFinTurno > ahora) {
+    throw new ApiError('No se puede marcar asistencia antes de que concluya el turno', 400, null, 'TURNO_NO_CONCLUIDO');
   }
 
   // Marcar asistencia
   await turno.marcarAsistencia();
+
+  // CU-AG01.1: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'turnos', 'marcar_asistencia', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de asistencia:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
 
   // Agregar nota si se proporciona
   if (nota) {
@@ -158,7 +283,7 @@ export const marcarAsistencia = async (id, nota, usuarioId) => {
   return await repo.findById(id);
 };
 
-export const marcarAusencia = async (id, motivo, usuarioId) => {
+export const marcarAusencia = async (id, motivo, usuarioId, ip = null) => {
   const turno = await obtenerTurnoPorId(id);
   
   if (turno.estado !== EstadoTurno.PENDIENTE) {
@@ -168,6 +293,14 @@ export const marcarAusencia = async (id, motivo, usuarioId) => {
   // Marcar ausencia
   await turno.marcarAusencia();
 
+  // CU-AG01.1: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'turnos', 'marcar_ausencia', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de ausencia:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
+
   // Agregar nota con el motivo
   const descripcion = motivo ? `Ausente: ${motivo}` : 'Ausente';
   await notaRepo.create({
@@ -176,10 +309,21 @@ export const marcarAusencia = async (id, motivo, usuarioId) => {
     usuarioId
   });
 
-  return await repo.findById(id);
+  // CU-AG01.1 Flujo Alternativo 5b: Sugerir reprogramar si el turno era futuro
+  const ahora = new Date();
+  const fechaHoraTurno = new Date(turno.fechaHora);
+  const sugerirReprogramar = fechaHoraTurno >= ahora; // Si el turno aún no había comenzado
+
+  return {
+    turno: await repo.findById(id),
+    sugerirReprogramar,
+    mensaje: sugerirReprogramar 
+      ? 'Turno marcado como ausente. ¿Desea reprogramarlo?' 
+      : 'Ausencia registrada'
+  };
 };
 
-export const reprogramarTurno = async (id, nuevaFechaHora, usuarioId) => {
+export const reprogramarTurno = async (id, nuevaFechaHora, usuarioId, ip = null, nuevoOdontologoId = null) => {
   const turno = await obtenerTurnoPorId(id);
   
   if (turno.estado !== EstadoTurno.PENDIENTE) {
@@ -187,47 +331,138 @@ export const reprogramarTurno = async (id, nuevaFechaHora, usuarioId) => {
   }
 
   const fechaHora = new Date(nuevaFechaHora);
+  const fechaHoraAnterior = new Date(turno.fechaHora);
+  
+  // CU-AG01.3: Permitir cambiar odontólogo al reprogramar
+  const odontologoIdFinal = nuevoOdontologoId || turno.odontologoId;
   
   // Validar que la nueva fecha sea futura
   if (fechaHora <= new Date()) {
     throw new ApiError('La nueva fecha del turno debe ser futura', 400, null, 'FECHA_INVALIDA');
   }
 
-  // Verificar solapamiento con el nuevo horario
+  // Verificar solapamiento con el nuevo horario (usando el odontólogo final)
   const solapamiento = await repo.verificarSolapamiento(
     fechaHora, 
     turno.duracion, 
-    turno.odontologoId,
+    odontologoIdFinal,
     id
   );
   
   if (solapamiento) {
-    throw new ApiError('El nuevo horario se solapa con otro turno existente', 409, null, 'SOLAPAMIENTO_TURNO');
+    // CU-AG01.3 Flujo Alternativo 4a: Sin disponibilidad - sugerir alternativas
+    const fechaStr = fechaHora.toISOString().split('T')[0];
+    
+    // Buscar odontólogos alternativos
+    const odontologosAlternativos = await obtenerOdontologosAlternativos(
+      fechaStr,
+      fechaHora.toTimeString().slice(0, 5),
+      new Date(fechaHora.getTime() + turno.duracion * 60000).toTimeString().slice(0, 5),
+      turno.duracion,
+      turno.odontologoId
+    );
+    
+    // Buscar slots alternativos para el mismo odontólogo
+    const slotsAlternativos = await disponibilidadRepo.generarSlotsDisponibles(
+      fechaStr,
+      turno.odontologoId,
+      turno.duracion
+    );
+    
+    throw new ApiError(
+      'El nuevo horario se solapa con otro turno existente',
+      409,
+      {
+        conflicto: true,
+        turnoId: solapamiento.id,
+        odontologoId: turno.odontologoId,
+        opciones: {
+          cambiarOdontologo: odontologosAlternativos.length > 0,
+          odontologosAlternativos: odontologosAlternativos.slice(0, 5),
+          reprogramarFecha: slotsAlternativos.length > 0,
+          slotsAlternativos: slotsAlternativos.slice(0, 10)
+        }
+      },
+      'SOLAPAMIENTO_TURNO'
+    );
   }
 
-  // Verificar disponibilidad
+  // Verificar disponibilidad (usando el odontólogo final)
   const esDisponible = await disponibilidadRepo.validarDisponibilidad(
     fechaHora.toISOString().split('T')[0],
     fechaHora.toTimeString().slice(0, 5),
     new Date(fechaHora.getTime() + turno.duracion * 60000).toTimeString().slice(0, 5),
-    turno.odontologoId
+    odontologoIdFinal
   );
 
   if (!esDisponible) {
-    throw new ApiError('El nuevo horario no está disponible', 409, null, 'HORARIO_NO_DISPONIBLE');
+    // CU-AG01.3 Flujo Alternativo 4a: Sin disponibilidad - sugerir alternativas
+    const fechaStr = fechaHora.toISOString().split('T')[0];
+    
+    // Buscar slots alternativos para el mismo odontólogo
+    const slotsAlternativos = await disponibilidadRepo.generarSlotsDisponibles(
+      fechaStr,
+      turno.odontologoId,
+      turno.duracion
+    );
+    
+    // Buscar odontólogos alternativos
+    const odontologosAlternativos = await obtenerOdontologosAlternativos(
+      fechaStr,
+      fechaHora.toTimeString().slice(0, 5),
+      new Date(fechaHora.getTime() + turno.duracion * 60000).toTimeString().slice(0, 5),
+      turno.duracion,
+      turno.odontologoId
+    );
+    
+    throw new ApiError(
+      'El nuevo horario no está disponible',
+      409,
+      {
+        conflicto: true,
+        odontologoId: turno.odontologoId,
+        opciones: {
+          cambiarOdontologo: odontologosAlternativos.length > 0,
+          odontologosAlternativos: odontologosAlternativos.slice(0, 5),
+          reprogramarFecha: slotsAlternativos.length > 0,
+          slotsAlternativos: slotsAlternativos.slice(0, 10)
+        }
+      },
+      'HORARIO_NO_DISPONIBLE'
+    );
   }
 
-  // Reprogramar el turno
+  // CU-AG01.3: Si se cambió el odontólogo, actualizarlo antes de reprogramar
+  if (nuevoOdontologoId && nuevoOdontologoId !== turno.odontologoId) {
+    await repo.update(turno, { odontologoId: nuevoOdontologoId });
+  }
+  
+  // Reprogramar el turno (libera el slot anterior automáticamente)
   await turno.reprogramar(fechaHora);
+
+  // CU-AG01.3: Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'turnos', 'reprogramar', ip);
+  } catch (error) {
+    console.error('Error al registrar auditoría de reprogramación:', error);
+    // No fallar si la auditoría falla, solo loguear
+  }
 
   // Agregar nota de reprogramación
   await notaRepo.create({
-    descripcion: `Turno reprogramado de ${turno.fechaHora} a ${fechaHora}`,
+    descripcion: `Turno reprogramado de ${fechaHoraAnterior.toLocaleString('es-AR')} a ${fechaHora.toLocaleString('es-AR')}`,
     turnoId: id,
     usuarioId
   });
 
-  return await repo.findById(id);
+  const turnoReprogramado = await repo.findById(id);
+  
+  // CU-AG01.2: Agregar código de turno personalizado
+  if (turnoReprogramado) {
+    turnoReprogramado.dataValues.codigoTurno = turnoReprogramado.getCodigoTurno();
+  }
+  
+  return turnoReprogramado;
 };
 
 export const obtenerAgendaPorFecha = async (fecha, odontologoId = null) => {
@@ -326,6 +561,66 @@ export const crearPacienteRapido = async (datosMinimos) => {
   }
 };
 
+// CU-AG01.2: Obtener odontólogos alternativos disponibles para un horario específico
+const obtenerOdontologosAlternativos = async (fecha, horaInicio, horaFin, duracion, odontologoIdExcluir) => {
+  try {
+    // Obtener todos los odontólogos activos
+    const odontologos = await Odontologo.findAll({
+      include: [
+        {
+          model: Usuario,
+          as: 'Usuario',
+          where: { activo: true },
+          required: true
+        }
+      ],
+      order: [[{ model: Usuario, as: 'Usuario' }, 'apellido', 'ASC']]
+    });
+    
+    const alternativos = [];
+    
+    // Verificar disponibilidad para cada odontólogo
+    for (const odonto of odontologos) {
+      if (odonto.userId === odontologoIdExcluir) continue;
+      
+      // Verificar disponibilidad
+      const esDisponible = await disponibilidadRepo.validarDisponibilidad(
+        fecha,
+        horaInicio,
+        horaFin,
+        odonto.userId
+      );
+      
+      if (esDisponible) {
+        // Verificar que no haya solapamiento con otros turnos
+        const solapamiento = await repo.verificarSolapamiento(
+          new Date(`${fecha}T${horaInicio}`),
+          duracion,
+          odonto.userId
+        );
+        
+        if (!solapamiento) {
+          alternativos.push({
+            userId: odonto.userId,
+            matricula: odonto.matricula,
+            Usuario: odonto.Usuario ? {
+              id: odonto.Usuario.id,
+              nombre: odonto.Usuario.nombre,
+              apellido: odonto.Usuario.apellido,
+              email: odonto.Usuario.email
+            } : null
+          });
+        }
+      }
+    }
+    
+    return alternativos;
+  } catch (error) {
+    console.error('Error al obtener odontólogos alternativos:', error);
+    return [];
+  }
+};
+
 // CU-AG01.2: Obtener odontólogos disponibles por especialidad
 export const obtenerOdontologosPorEspecialidad = async (especialidad = null) => {
   try {
@@ -400,8 +695,8 @@ export const procesarAusenciasAutomaticas = async () => {
   
   for (const turno of turnosVencidos) {
     try {
-      await marcarAusencia(turno.id, 'Ausencia automática - sin registro de asistencia', 1); // Sistema
-      procesados.push(turno.id);
+      const resultado = await marcarAusencia(turno.id, 'Ausencia automática - sin registro de asistencia', 1, null); // Sistema (IP null)
+      procesados.push(resultado.turno.id);
     } catch (error) {
       console.error(`Error al procesar ausencia automática para turno ${turno.id}:`, error);
     }

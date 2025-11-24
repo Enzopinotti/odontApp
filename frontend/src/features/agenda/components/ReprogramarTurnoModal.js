@@ -1,19 +1,26 @@
 // src/features/agenda/components/ReprogramarTurnoModal.js
 import { useState, useEffect } from 'react';
-import { FaTimes, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import { useReprogramarTurno, useSlotsDisponibles } from '../hooks/useTurnos';
+import { FaTimes, FaCalendarAlt, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import { useReprogramarTurno, useSlotsDisponibles, useCancelarTurno } from '../hooks/useTurnos';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
+import ConflictoTurnoModal from './ConflictoTurnoModal';
 
 export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
   const { showToast } = useToast();
   const reprogramarTurno = useReprogramarTurno();
+  const cancelarTurno = useCancelarTurno();
 
   // Estado del formulario
   const [fecha, setFecha] = useState('');
   const [horaSeleccionada, setHoraSeleccionada] = useState('');
   const [odontologoId, setOdontologoId] = useState(turno?.odontologoId || '');
+  
+  // CU-AG01.3: Estado para manejar conflictos y opción "Paciente no acepta"
+  const [conflicto, setConflicto] = useState(null);
+  const [mostrarModalConflicto, setMostrarModalConflicto] = useState(false);
+  const [mostrarOpcionRechazo, setMostrarOpcionRechazo] = useState(false);
 
   // Queries
   const { data: odontologos = [], isLoading: loadingOdontologos } = useOdontologosPorEspecialidad();
@@ -54,6 +61,83 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
       });
 
       showToast('Turno reprogramado exitosamente', 'success');
+      onSuccess();
+    } catch (error) {
+      // CU-AG01.3: Manejar conflictos de horario
+      const res = error?.response;
+      if (res?.status === 409) {
+        const { code, message, metadata } = res.data || {};
+        if ((code === 'SOLAPAMIENTO_TURNO' || code === 'HORARIO_NO_DISPONIBLE') && metadata) {
+          setConflicto({
+            message: message || 'Conflicto de horario',
+            ...metadata
+          });
+          setMostrarModalConflicto(true);
+          return;
+        }
+      }
+      
+      // Otros errores se manejan normalmente
+      handleApiError(error, showToast);
+    }
+  };
+
+  // CU-AG01.3: Manejar cambio de odontólogo desde conflicto
+  const handleCambiarOdontologo = async (nuevoOdontologo) => {
+    if (!fecha || !horaSeleccionada) {
+      showToast('Por favor selecciona fecha y hora', 'error');
+      return;
+    }
+
+    try {
+      const nuevaFechaHora = `${fecha}T${horaSeleccionada}:00`;
+      
+      // Reprogramar con el nuevo odontólogo
+      await reprogramarTurno.mutateAsync({
+        id: turno.id,
+        nuevaFechaHora,
+        odontologoId: nuevoOdontologo.userId
+      });
+
+      showToast('Turno reprogramado con el odontólogo alternativo', 'success');
+      onSuccess();
+    } catch (error) {
+      handleApiError(error, showToast);
+    }
+  };
+
+  // CU-AG01.3: Manejar reprogramación con slot alternativo
+  const handleReprogramarConSlot = async (slot) => {
+    try {
+      await reprogramarTurno.mutateAsync({
+        id: turno.id,
+        nuevaFechaHora: slot.fechaHora
+      });
+
+      showToast('Turno reprogramado exitosamente', 'success');
+      onSuccess();
+    } catch (error) {
+      handleApiError(error, showToast);
+    }
+  };
+
+  // CU-AG01.3 Flujo Alternativo 5a: Paciente rechaza reprogramación
+  const handlePacienteNoAcepta = () => {
+    setMostrarOpcionRechazo(true);
+  };
+
+  const handleMantenerTurno = () => {
+    showToast('El turno se mantiene en su fecha original', 'info');
+    onClose();
+  };
+
+  const handleCancelarTurno = async () => {
+    try {
+      await cancelarTurno.mutateAsync({
+        id: turno.id,
+        motivo: 'Paciente no aceptó la reprogramación'
+      });
+      showToast('Turno cancelado', 'success');
       onSuccess();
     } catch (error) {
       handleApiError(error, showToast);
@@ -170,20 +254,78 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
 
             {/* Botones de acción */}
             <div className="modal-footer">
-              <button type="button" className="btn-cancelar" onClick={onClose}>
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn-confirmar"
-                disabled={!horaSeleccionada || reprogramarTurno.isPending}
-              >
-                {reprogramarTurno.isPending ? 'Reprogramando...' : 'Reprogramar Turno'}
-              </button>
+              {/* CU-AG01.3 Flujo Alternativo 5a: Opción "Paciente no acepta" */}
+              {!mostrarOpcionRechazo ? (
+                <>
+                  <button type="button" className="btn-cancelar" onClick={onClose}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handlePacienteNoAcepta}
+                    style={{ marginRight: 'auto' }}
+                  >
+                    <FaExclamationTriangle /> Paciente no acepta
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-confirmar"
+                    disabled={!horaSeleccionada || reprogramarTurno.isPending}
+                  >
+                    {reprogramarTurno.isPending ? 'Reprogramando...' : 'Reprogramar Turno'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="rechazo-opciones">
+                    <h4>El paciente no acepta la reprogramación. ¿Qué deseas hacer?</h4>
+                    <div className="rechazo-botones">
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleMantenerTurno}
+                      >
+                        Mantener turno original
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={handleCancelarTurno}
+                        disabled={cancelarTurno.isPending}
+                      >
+                        {cancelarTurno.isPending ? 'Cancelando...' : 'Cancelar turno'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => setMostrarOpcionRechazo(false)}
+                      style={{ marginTop: '1rem' }}
+                    >
+                      Volver
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </form>
         </div>
       </div>
+
+      {/* CU-AG01.3: Modal de conflicto con sugerencias */}
+      <ConflictoTurnoModal
+        isOpen={mostrarModalConflicto}
+        onClose={() => {
+          setMostrarModalConflicto(false);
+          setConflicto(null);
+        }}
+        conflicto={conflicto}
+        onCambiarOdontologo={handleCambiarOdontologo}
+        onReprogramar={handleReprogramarConSlot}
+        fechaHoraOriginal={turno?.fechaHora}
+        duracion={turno?.duracion || 30}
+      />
     </div>
   );
 }

@@ -91,6 +91,16 @@ export default (sequelize, DataTypes) => {
     ]
   });
 
+  // CU-AG01.2: Campo virtual para formato de ID personalizado T-YYYYMMDD-XXX
+  Turno.prototype.getCodigoTurno = function() {
+    const fecha = new Date(this.fechaHora || this.createdAt);
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const secuencia = String(this.id).padStart(3, '0');
+    return `T-${año}${mes}${dia}-${secuencia}`;
+  };
+
   // Métodos de instancia
   Turno.prototype.cancelar = function(motivo = 'Sin motivo especificado') {
     this.estado = EstadoTurno.CANCELADO;

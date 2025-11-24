@@ -919,3 +919,389 @@
   }
 }
 
+/* ====================================================
+   MODAL DE CONFLICTO DE TURNO (CU-AG01.2)
+   ==================================================== */
+
+.conflicto-turno-modal {
+  max-width: 600px;
+}
+
+.conflicto-mensaje {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 6px;
+}
+
+.conflicto-texto {
+  margin: 0;
+  color: #856404;
+  font-weight: 500;
+}
+
+.conflicto-opciones {
+  margin-top: 1.5rem;
+
+  h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.1rem;
+  }
+}
+
+.opcion-conflicto {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #3498db;
+  }
+}
+
+.opcion-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  span {
+    user-select: none;
+  }
+}
+
+.opcion-detalle {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.opcion-descripcion {
+  margin-bottom: 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.odontologos-lista,
+.slots-lista {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.odontologo-item,
+.slot-item {
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+
+  &:hover {
+    border-color: #3498db;
+    background: #f8f9fa;
+    transform: translateX(4px);
+  }
+
+  &.seleccionado {
+    border-color: #27ae60;
+    background: #e8f5e9;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+  }
+}
+
+.odontologo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  strong {
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+}
+
+.odontologo-matricula {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.slot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  strong {
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+}
+
+.slot-duracion {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.sin-opciones {
+  padding: 1.5rem;
+  text-align: center;
+  color: #7f8c8d;
+  background: #f8f9fa;
+  border-radius: 6px;
+
+  p {
+    margin: 0.5rem 0;
+  }
+}
+
+/* ====================================================
+   OPCIONES DE RECHAZO EN REPROGRAMAR (CU-AG01.3)
+   ==================================================== */
+
+.rechazo-opciones {
+  width: 100%;
+  padding: 1.5rem;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+
+  h4 {
+    margin: 0 0 1rem 0;
+    color: #856404;
+    font-size: 1rem;
+  }
+}
+
+.rechazo-botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  button {
+    flex: 1;
+    min-width: 150px;
+  }
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3498db;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+
+  &:hover {
+    color: #2980b9;
+  }
+}
+
+/* ====================================================
+   CU-AG01.4: ESTILOS PARA CANCELACIÓN MÚLTIPLE
+   ==================================================== */
+
+.turnos-lista-preview {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+
+  h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+
+  .turnos-preview-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .turno-preview-item {
+    padding: 0.75rem;
+    background-color: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .turno-preview-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+
+      strong {
+        color: #2c3e50;
+        font-size: 0.95rem;
+      }
+
+      .turno-preview-fecha {
+        color: #7f8c8d;
+        font-size: 0.85rem;
+      }
+
+      .turno-preview-motivo {
+        color: #95a5a6;
+        font-size: 0.8rem;
+        font-style: italic;
+      }
+    }
+  }
+}
+
+.resultados-cancelacion {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+  }
+
+  .resultado-item {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+
+    &.resultado-exitoso {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    &.resultado-fallido {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  }
+
+  .errores-lista {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #fff3cd;
+    border-radius: 6px;
+    border: 1px solid #ffc107;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: #856404;
+      font-size: 0.95rem;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.5rem;
+      color: #856404;
+      font-size: 0.9rem;
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+
+  .turnos-cancelados-lista {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #d1ecf1;
+    border-radius: 6px;
+    border: 1px solid #bee5eb;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: #0c5460;
+      font-size: 0.95rem;
+    }
+
+    .turnos-cancelados-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .turno-cancelado-item {
+      padding: 0.5rem;
+      background-color: white;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+
+      strong {
+        color: #0c5460;
+      }
+
+      span {
+        color: #7f8c8d;
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+/* Estilos para turnos seleccionables en agenda diaria */
+.turno-seleccionado {
+  box-shadow: 0 0 0 3px #ffc107 !important;
+  border: 2px solid #ffc107 !important;
+}
+
+.turno-seleccionable {
+  cursor: pointer !important;
+  
+  &:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    transition: all 0.2s;
+  }
+}
+

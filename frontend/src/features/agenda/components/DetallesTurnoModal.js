@@ -181,6 +181,134 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
             </div>
           </div>
 
+          {/* CU-AG01.5: Historial de turnos del paciente */}
+          {turno.Paciente?.id && (
+            <div className="info-section">
+              <h3>Historial de Turnos</h3>
+              <div style={{ 
+                maxHeight: '200px', 
+                overflowY: 'auto', 
+                padding: '0.5rem',
+                background: '#f8f9fa',
+                borderRadius: '6px',
+                fontSize: '0.9rem'
+              }}>
+                <p style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
+                  El historial completo de turnos del paciente se puede ver en su perfil.
+                </p>
+                {turno.Notas && turno.Notas.length > 0 && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <strong>Notas del turno:</strong>
+                    <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                      {turno.Notas.map((nota, idx) => (
+                        <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#2c3e50' }}>{nota.descripcion}</span>
+                          <span style={{ color: '#7f8c8d', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
+                            ({new Date(nota.createdAt).toLocaleDateString('es-AR')})
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* CU-AG01.5: Documentos */}
+          <div className="info-section">
+            <h3>Documentos</h3>
+            <div style={{ 
+              padding: '0.5rem',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              fontSize: '0.9rem'
+            }}>
+              <p style={{ color: '#7f8c8d', fontStyle: 'italic', marginBottom: '0.75rem' }}>
+                Los documentos del paciente se pueden ver en su historia clínica.
+              </p>
+              {turno.Paciente?.id && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => window.location.href = `/pacientes/${turno.Paciente.id}/historia-clinica`}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    📋 Ver Historia Clínica
+                  </button>
+                  <button
+                    onClick={() => window.location.href = `/pacientes/${turno.Paciente.id}/odontograma`}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#27ae60',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    🦷 Ver Odontograma
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notas de la visita (para agregar durante la atención) */}
+          {esPendiente && (
+            <div className="info-section">
+              <h3>Notas de la Visita</h3>
+              <div style={{ 
+                padding: '0.5rem',
+                background: '#f8f9fa',
+                borderRadius: '6px',
+                fontSize: '0.9rem'
+              }}>
+                <p style={{ color: '#7f8c8d', fontStyle: 'italic', marginBottom: '0.75rem' }}>
+                  Agregue notas durante la atención del paciente. Estas notas se guardarán en el historial del turno.
+                </p>
+                <textarea
+                  placeholder="Ingrese notas sobre la consulta, observaciones, recomendaciones, etc..."
+                  rows="4"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: '100px'
+                  }}
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                />
+                <p style={{ 
+                  fontSize: '0.8rem', 
+                  color: '#7f8c8d', 
+                  marginTop: '0.5rem',
+                  fontStyle: 'italic'
+                }}>
+                  💡 Las notas se pueden guardar al marcar asistencia o agregar como nota separada.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Formulario de confirmación si está activo */}
           {mostrandoConfirmacion === 'asistencia' && (
             <div className="confirmacion-form">

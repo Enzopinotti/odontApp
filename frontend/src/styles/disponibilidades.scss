@@ -130,13 +130,19 @@
     overflow: hidden;
     
     .calendario-header {
-      display: flex;
+      display: grid;
       background-color: v.$color-primary;
       color: v.$color-white;
+      position: sticky;
+      top: 0;
+      z-index: 4;
       
       .columna-horas {
-        width: 100px;
-        flex-shrink: 0;
+        width: 80px;
+        min-width: 80px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
         
         .header-cell {
           padding: 1rem;
@@ -147,7 +153,6 @@
       }
       
       .columna-odontologo {
-        flex: 1;
         min-width: 150px;
         border-left: 2px solid rgba(255, 255, 255, 0.3);
         
@@ -167,11 +172,16 @@
               opacity: 0.9;
             }
           }
+          
+          &.dia-actual {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+          }
         }
       }
       
       .no-odontologos {
-        flex: 1;
+        grid-column: 2 / -1;
         padding: 1rem;
         text-align: center;
         opacity: 0.8;
@@ -179,14 +189,19 @@
     }
     
     .calendario-grid {
-      display: flex;
+      display: grid;
       max-height: 600px;
       overflow-y: auto;
+      overflow-x: auto;
       
       .columna-horas {
-        width: 100px;
-        flex-shrink: 0;
+        width: 80px;
+        min-width: 80px;
         border-right: 2px solid v.$color-light;
+        position: sticky;
+        left: 0;
+        background: v.$color-white;
+        z-index: 3;
         
         .hora-cell {
           height: 60px;
@@ -201,7 +216,6 @@
       }
       
       .columna-odontologo {
-        flex: 1;
         min-width: 150px;
         border-left: 1px solid v.$color-light;
         

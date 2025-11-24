@@ -1,35 +1,59 @@
 import { Turno, Nota } from '../models/index.js';
-import { Paciente } from '../../Clinica/models/index.js';
+import { Paciente, Contacto } from '../../Clinica/models/index.js';
 import { Odontologo, Usuario } from '../../Usuarios/models/index.js';
 import { Op } from 'sequelize';
 import { EstadoTurno } from '../models/enums.js';
 
-export const findPaginated = (page = 1, perPage = 20) => {
+export const findPaginated = async (page = 1, perPage = 20) => {
   const offset = (page - 1) * perPage;
-  return Turno.findAndCountAll({
+  const { rows, count } = await Turno.findAndCountAll({
     offset,
     limit: perPage,
     include: [
-      { model: Paciente, as: 'Paciente' },
+      { 
+        model: Paciente, 
+        as: 'Paciente',
+        include: [{ model: Contacto }]
+      },
       { model: Odontologo, as: 'Odontologo', include: [{ model: Usuario, as: 'Usuario' }] },
       { model: Usuario, as: 'Recepcionista' },
       { model: Nota, as: 'Notas' }
     ],
     order: [['fechaHora', 'ASC']],
   });
+  
+  // CU-AG01.2: Agregar código de turno personalizado a cada turno
+  rows.forEach(turno => {
+    if (turno) {
+      turno.dataValues.codigoTurno = turno.getCodigoTurno();
+    }
+  });
+  
+  return { rows, count };
 };
 
-export const findById = (id, options = {}) => {
+export const findById = async (id, options = {}) => {
   const defaultOptions = {
     include: [
-      { model: Paciente, as: 'Paciente' },
+      { 
+        model: Paciente, 
+        as: 'Paciente',
+        include: [{ model: Contacto }]
+      },
       { model: Odontologo, as: 'Odontologo', include: [{ model: Usuario, as: 'Usuario' }] },
       { model: Usuario, as: 'Recepcionista' },
       { model: Nota, as: 'Notas', include: [{ model: Usuario, as: 'Usuario' }] }
     ]
   };
   
-  return Turno.findByPk(id, { ...defaultOptions, ...options });
+  const turno = await Turno.findByPk(id, { ...defaultOptions, ...options });
+  
+  // CU-AG01.2: Agregar código de turno personalizado al JSON
+  if (turno) {
+    turno.dataValues.codigoTurno = turno.getCodigoTurno();
+  }
+  
+  return turno;
 };
 
 export const create = (data) => Turno.create(data);
@@ -38,7 +62,7 @@ export const update = (instancia, data) => instancia.update(data);
 
 export const remove = (instancia) => instancia.destroy();
 
-export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
+export const findFiltered = async (filtros = {}, page = 1, perPage = 20) => {
   const offset = (page - 1) * perPage;
   const where = {};
 
@@ -85,21 +109,34 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
     where.recepcionistaId = filtros.recepcionistaId;
   }
 
-  return Turno.findAndCountAll({
+  const { rows, count } = await Turno.findAndCountAll({
     where,
     offset,
     limit: perPage,
     include: [
-      { model: Paciente, as: 'Paciente' },
+      { 
+        model: Paciente, 
+        as: 'Paciente',
+        include: [{ model: Contacto }]
+      },
       { model: Odontologo, as: 'Odontologo', include: [{ model: Usuario, as: 'Usuario' }] },
       { model: Usuario, as: 'Recepcionista' },
       { model: Nota, as: 'Notas' }
     ],
     order: [['fechaHora', 'ASC']],
   });
+  
+  // CU-AG01.2: Agregar código de turno personalizado a cada turno
+  rows.forEach(turno => {
+    if (turno) {
+      turno.dataValues.codigoTurno = turno.getCodigoTurno();
+    }
+  });
+  
+  return { rows, count };
 };
 
-export const obtenerTurnosPorFecha = (fecha, odontologoId = null) => {
+export const obtenerTurnosPorFecha = async (fecha, odontologoId = null) => {
   const fechaObj = new Date(fecha);
   const inicioDia = new Date(fechaObj.setHours(0, 0, 0, 0));
   const finDia = new Date(fechaObj.setHours(23, 59, 59, 999));
@@ -114,16 +151,29 @@ export const obtenerTurnosPorFecha = (fecha, odontologoId = null) => {
     where.odontologoId = odontologoId;
   }
 
-  return Turno.findAll({
+  const turnos = await Turno.findAll({
     where,
     include: [
-      { model: Paciente, as: 'Paciente' },
+      { 
+        model: Paciente, 
+        as: 'Paciente',
+        include: [{ model: Contacto }]
+      },
       { model: Odontologo, as: 'Odontologo', include: [{ model: Usuario, as: 'Usuario' }] },
       { model: Usuario, as: 'Recepcionista' },
       { model: Nota, as: 'Notas' }
     ],
     order: [['fechaHora', 'ASC']]
   });
+  
+  // CU-AG01.2: Agregar código de turno personalizado a cada turno
+  turnos.forEach(turno => {
+    if (turno) {
+      turno.dataValues.codigoTurno = turno.getCodigoTurno();
+    }
+  });
+  
+  return turnos;
 };
 
 export const verificarSolapamiento = async (fechaHora, duracion, odontologoId, turnoIdExcluir = null) => {

@@ -173,6 +173,14 @@ export function handleApiError(error, showToast, setFieldErrors, showModal) {
     setFieldErrors(fieldErrors);
   }
 
+  // CU-AG01.2: Manejo de conflictos de turnos (409 con código SOLAPAMIENTO_TURNO)
+  // Nota: Este error se maneja en el componente que llama a la API
+  // No mostramos toast aquí para que el componente pueda mostrar el modal
+  if (res.status === 409 && code === 'SOLAPAMIENTO_TURNO') {
+    // Retornar sin mostrar toast, el componente manejará el error
+    return;
+  }
+
   // 🧯 Fallback general
   showToast(message || 'Ocurrió un error inesperado', 'error');
 }

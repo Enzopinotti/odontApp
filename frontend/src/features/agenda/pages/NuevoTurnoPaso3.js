@@ -1,9 +1,11 @@
 // src/features/agenda/pages/NuevoTurnoPaso3.js
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCrearTurno } from '../hooks/useTurnos';
 import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
 import BackBar from '../../../components/BackBar';
+import ConflictoTurnoModal from '../components/ConflictoTurnoModal';
 import '../../../styles/agenda.scss';
 
 export default function NuevoTurnoPaso3() {
@@ -12,6 +14,9 @@ export default function NuevoTurnoPaso3() {
   const { showToast } = useToast();
   
   const { fechaHora, tratamiento, odontologoId, duracion, paciente, datosPaciente } = location.state || {};
+  
+  const [conflicto, setConflicto] = useState(null);
+  const [mostrarModalConflicto, setMostrarModalConflicto] = useState(false);
   
   const crearTurno = useCrearTurno();
 
@@ -45,6 +50,57 @@ export default function NuevoTurnoPaso3() {
       });
       
       showToast('Turno creado exitosamente', 'success');
+      navigate('/agenda');
+    } catch (error) {
+      // CU-AG01.2: Manejar conflictos de horario
+      const res = error?.response;
+      if (res?.status === 409) {
+        const { code, message, metadata } = res.data || {};
+        if (code === 'SOLAPAMIENTO_TURNO' && metadata) {
+          setConflicto({
+            message: message || 'Conflicto de horario',
+            ...metadata
+          });
+          setMostrarModalConflicto(true);
+          return;
+        }
+      }
+      
+      // Otros errores se manejan normalmente
+      handleApiError(error, showToast);
+    }
+  };
+
+  const handleCambiarOdontologo = async (nuevoOdontologo) => {
+    try {
+      await crearTurno.mutateAsync({
+        fechaHora: fechaHora,
+        duracion: duracion || 30,
+        motivo: tratamiento.nombre,
+        pacienteId: paciente.id,
+        odontologoId: nuevoOdontologo.userId,
+        generarRecordatorio: datosPaciente?.generarRecordatorio || false,
+      });
+      
+      showToast('Turno creado exitosamente con el odontólogo alternativo', 'success');
+      navigate('/agenda');
+    } catch (error) {
+      handleApiError(error, showToast);
+    }
+  };
+
+  const handleReprogramar = async (nuevoSlot) => {
+    try {
+      await crearTurno.mutateAsync({
+        fechaHora: nuevoSlot.fechaHora,
+        duracion: duracion || 30,
+        motivo: tratamiento.nombre,
+        pacienteId: paciente.id,
+        odontologoId: odontologoId,
+        generarRecordatorio: datosPaciente?.generarRecordatorio || false,
+      });
+      
+      showToast('Turno creado exitosamente en el nuevo horario', 'success');
       navigate('/agenda');
     } catch (error) {
       handleApiError(error, showToast);
@@ -157,6 +213,20 @@ export default function NuevoTurnoPaso3() {
           {crearTurno.isLoading ? 'Creando...' : 'Confirmar'}
         </button>
       </div>
+
+      {/* CU-AG01.2: Modal de conflicto de horario */}
+      <ConflictoTurnoModal
+        isOpen={mostrarModalConflicto}
+        onClose={() => {
+          setMostrarModalConflicto(false);
+          setConflicto(null);
+        }}
+        conflicto={conflicto}
+        onCambiarOdontologo={handleCambiarOdontologo}
+        onReprogramar={handleReprogramar}
+        fechaHoraOriginal={fechaHora}
+        duracion={duracion || 30}
+      />
     </div>
   );
 }
