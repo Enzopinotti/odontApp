@@ -91,9 +91,19 @@
       align-items: center;
       gap: 0.5rem;
       transition: all 0.3s ease;
+      white-space: nowrap;
       
       &:hover {
         background-color: darken(v.$color-primary, 10%);
+        transform: translateY(-2px);
+      }
+    }
+    
+    .btn-recurrente {
+      background-color: v.$color-success;
+      
+      &:hover {
+        background-color: darken(v.$color-success, 10%);
         transform: translateY(-2px);
       }
     }

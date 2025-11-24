@@ -128,6 +128,23 @@ export const generarDisponibilidadesAutomaticas = async (req, res) => {
   }
 };
 
+/* POST /api/agenda/disponibilidades/generar-recurrentes */
+export const generarDisponibilidadesRecurrentes = async (req, res) => {
+  try {
+    const resultado = await disponibilidadService.generarDisponibilidadesRecurrentes(
+      req.body,
+      req.user.id
+    );
+    
+    return res.created(resultado, `Se crearon ${resultado.creadas} disponibilidades recurrentes`);
+  } catch (error) {
+    if (error.name === 'ValidationError' || error.name === 'ApiError') {
+      return res.error(error.message, 400);
+    }
+    return res.error(error.message, 500);
+  }
+};
+
 /* POST /api/agenda/disponibilidades/validar */
 export const validarDisponibilidad = async (req, res) => {
   try {
@@ -155,5 +172,6 @@ export default {
   eliminarDisponibilidad,
   obtenerDisponibilidadesPorOdontologo,
   generarDisponibilidadesAutomaticas,
+  generarDisponibilidadesRecurrentes,
   validarDisponibilidad
 };

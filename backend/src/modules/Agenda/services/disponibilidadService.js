@@ -102,13 +102,15 @@ export const actualizarDisponibilidad = async (id, data, usuarioId) => {
 export const eliminarDisponibilidad = async (id, usuarioId) => {
   const disponibilidad = await obtenerDisponibilidadPorId(id);
 
-  // Verificar si hay turnos futuros en este bloque
+  // Verificar si hay turnos futuros PENDIENTES en este bloque (no considerar CANCELADOS)
   const turnosFuturos = await turnoRepo.findFiltered({
     odontologoId: disponibilidad.odontologoId,
-    fecha: disponibilidad.fecha
+    fecha: disponibilidad.fecha,
+    estado: 'PENDIENTE' // Solo considerar turnos pendientes
   });
 
   const turnosEnBloque = turnosFuturos.rows.filter(turno => {
+    // Verificar que el turno esté dentro del rango horario del bloque
     const turnoHora = turno.fechaHora.toTimeString().slice(0, 5);
     return turnoHora >= disponibilidad.horaInicio && turnoHora < disponibilidad.horaFin;
   });
@@ -158,10 +160,92 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
     throw new ApiError('La hora de fin debe ser posterior a la hora de inicio', 400, null, 'HORARIO_INVALIDO');
   }
 
-  return await repo.generarDisponibilidadesAutomaticas(odontologoId, fechaInicio, fechaFin, horarioLaboral);
+  const disponibilidades = await repo.generarDisponibilidadesAutomaticas(odontologoId, fechaInicio, fechaFin, horarioLaboral);
+  
+  // Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
+  } catch (error) {
+    console.error('Error al registrar auditoría de disponibilidades automáticas:', error);
+  }
+  
+  return disponibilidades;
+};
+
+export const generarDisponibilidadesRecurrentes = async (data, usuarioId) => {
+  const { odontologoId, tipoRecurrencia, diasSemana, diaSemana, posicionMes, horaInicio, horaFin, fechaInicio, fechaFin } = data;
+  
+  // Validar fechas
+  const fechaInicioObj = new Date(fechaInicio);
+  const fechaFinObj = new Date(fechaFin);
+  
+  if (fechaInicioObj >= fechaFinObj) {
+    throw new ApiError('La fecha de inicio debe ser anterior a la fecha de fin', 400, null, 'FECHAS_INVALIDAS');
+  }
+
+  // Validar horario
+  if (!horaInicio || !horaFin) {
+    throw new ApiError('Se debe especificar hora de inicio y fin', 400, null, 'HORARIO_INVALIDO');
+  }
+
+  if (horaFin <= horaInicio) {
+    throw new ApiError('La hora de fin debe ser posterior a la hora de inicio', 400, null, 'HORARIO_INVALIDO');
+  }
+
+  // Validar duración mínima
+  const inicio = new Date(`2000-01-01T${horaInicio}`);
+  const fin = new Date(`2000-01-01T${horaFin}`);
+  const duracionMinutos = (fin - inicio) / (1000 * 60);
+  if (duracionMinutos < 60) {
+    throw new ApiError('La duración mínima es de 1 hora', 400, null, 'DURACION_INSUFICIENTE');
+  }
+
+  // Validar configuración según tipo de recurrencia
+  let configuracion = {};
+  if (tipoRecurrencia === 'semanal') {
+    if (!diasSemana || !Array.isArray(diasSemana) || diasSemana.length === 0) {
+      throw new ApiError('Debe seleccionar al menos un día de la semana', 400, null, 'CONFIGURACION_INVALIDA');
+    }
+    configuracion.diasSemana = diasSemana;
+  } else if (tipoRecurrencia === 'mensual') {
+    if (diaSemana === undefined || diaSemana === null || diaSemana === '') {
+      throw new ApiError('Debe seleccionar un día de la semana', 400, null, 'CONFIGURACION_INVALIDA');
+    }
+    if (!posicionMes) {
+      throw new ApiError('Debe seleccionar la posición en el mes', 400, null, 'CONFIGURACION_INVALIDA');
+    }
+    configuracion.diaSemana = parseInt(diaSemana);
+    configuracion.posicionMes = posicionMes;
+  } else {
+    throw new ApiError('Tipo de recurrencia inválido', 400, null, 'TIPO_RECURRENCIA_INVALIDO');
+  }
+
+  const horarioLaboral = { horaInicio, horaFin };
+  const disponibilidades = await repo.generarDisponibilidadesRecurrentes(
+    odontologoId,
+    tipoRecurrencia,
+    configuracion,
+    fechaInicio,
+    fechaFin,
+    horarioLaboral
+  );
+  
+  // Registrar auditoría
+  try {
+    await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
+  } catch (error) {
+    console.error('Error al registrar auditoría de disponibilidades recurrentes:', error);
+  }
+  
+  return { creadas: disponibilidades.length, disponibilidades };
 };
 
 export const validarDisponibilidad = async (fecha, horaInicio, horaFin, odontologoId, disponibilidadIdExcluir = null) => {
+  // Validar que los parámetros estén presentes
+  if (!fecha || !horaInicio || !horaFin || !odontologoId) {
+    throw new ApiError('Faltan parámetros requeridos para la validación', 400, null, 'PARAMETROS_FALTANTES');
+  }
+
   // Verificar solapamiento con otras disponibilidades
   const solapamiento = await repo.verificarSolapamiento(
     fecha,
@@ -171,12 +255,11 @@ export const validarDisponibilidad = async (fecha, horaInicio, horaFin, odontolo
     disponibilidadIdExcluir
   );
 
+  // Si hay solapamiento, no es válido
   if (solapamiento) {
     return false;
   }
 
-  // Verificar que existe un bloque laboral que contenga el horario
-  const esDisponible = await repo.validarDisponibilidad(fecha, horaInicio, horaFin, odontologoId);
-  
-  return esDisponible;
+  // Si no hay solapamiento, es válido (no necesitamos verificar bloques laborales previos para crear disponibilidades)
+  return true;
 };

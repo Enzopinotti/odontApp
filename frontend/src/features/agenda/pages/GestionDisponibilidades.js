@@ -5,6 +5,7 @@ import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import { useTurnosPorFecha } from '../hooks/useTurnos';
 import DisponibilidadModal from '../components/DisponibilidadModal';
+import DisponibilidadRecurrenteModal from '../components/DisponibilidadRecurrenteModal';
 import { FaChevronLeft, FaChevronRight, FaPlus, FaCalendarAlt, FaSyncAlt, FaCalendarCheck } from 'react-icons/fa';
 import '../../../styles/disponibilidades.scss';
 
@@ -48,64 +49,36 @@ const HORAS_DIA = Array.from({ length: 15 }, (_, i) => {
 export default function GestionDisponibilidades() {
   const navigate = useNavigate();
   
-  // CU-AG02.4: Estado para vista (diaria, semanal, mensual)
-  const [vista, setVista] = useState('diaria'); // 'diaria' | 'semanal' | 'mensual'
-  
-  // Estado para el día actual
+  // Estado para el día actual (solo vista diaria)
   const [diaActual, setDiaActual] = useState(new Date());
   
   // Estado para modal
   const [modalAbierto, setModalAbierto] = useState(false);
   const [disponibilidadSeleccionada, setDisponibilidadSeleccionada] = useState(null);
   
-  // CU-AG02.4: Calcular rango de fechas según vista
-  const { fechaInicio, fechaFin } = useMemo(() => {
-    if (vista === 'diaria') {
-      const fecha = formatDate(diaActual);
-      return { fechaInicio: fecha, fechaFin: fecha };
-    } else if (vista === 'semanal') {
-      const inicioSemana = new Date(diaActual);
-      inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay()); // Domingo
-      const finSemana = new Date(inicioSemana);
-      finSemana.setDate(finSemana.getDate() + 6); // Sábado
-      return { fechaInicio: formatDate(inicioSemana), fechaFin: formatDate(finSemana) };
-    } else { // mensual
-      const inicioMes = new Date(diaActual.getFullYear(), diaActual.getMonth(), 1);
-      const finMes = new Date(diaActual.getFullYear(), diaActual.getMonth() + 1, 0);
-      return { fechaInicio: formatDate(inicioMes), fechaFin: formatDate(finMes) };
-    }
-  }, [vista, diaActual]);
+  // Estado para modal de disponibilidades recurrentes
+  const [modalRecurrenteAbierto, setModalRecurrenteAbierto] = useState(false);
   
-  // Calcular fechas para la query
+  // Calcular fecha actual para la query (solo diaria)
   const fechaActual = useMemo(() => formatDate(diaActual), [diaActual]);
+  const fechaInicio = fechaActual;
+  const fechaFin = fechaActual;
   
   // Cargar odontólogos
   const { data: odontologos, isLoading: loadingOdontologos } = useOdontologosPorEspecialidad();
   
-  // CU-AG02.4: Cargar disponibilidades según vista
+  // Cargar disponibilidades del día actual
   const { data: disponibilidades, isLoading: loadingDisponibilidades, refetch, isFetching } = useDisponibilidadesSemanal(fechaInicio, fechaFin);
   
-  // CU-AG02: Cargar turnos según vista (día, semana o mes)
-  // Para vista diaria: solo el día actual
-  // Para vista semanal/mensual: todo el rango
+  // Cargar turnos del día actual
   const { data: turnosData, isLoading: loadingTurnos } = useTurnosPorFecha(
-    vista === 'diaria' ? fechaActual : null, 
+    fechaActual, 
     null // odontologoId - null para todos
   );
   const turnos = useMemo(() => {
     if (!turnosData) return [];
-    let turnosList = Array.isArray(turnosData) ? turnosData : (turnosData.data || []);
-    
-    // Si es vista semanal o mensual, filtrar por rango de fechas
-    if (vista !== 'diaria') {
-      turnosList = turnosList.filter(turno => {
-        const fechaTurno = new Date(turno.fechaHora).toISOString().split('T')[0];
-        return fechaTurno >= fechaInicio && fechaTurno <= fechaFin;
-      });
-    }
-    
-    return turnosList;
-  }, [turnosData, vista, fechaInicio, fechaFin]);
+    return Array.isArray(turnosData) ? turnosData : (turnosData.data || []);
+  }, [turnosData]);
   
   // Navegar días
   const irDiaSiguiente = () => {
@@ -120,28 +93,23 @@ export default function GestionDisponibilidades() {
     setDiaActual(new Date());
   };
   
-  // Agrupar disponibilidades por odontólogo y fecha
+  // Agrupar disponibilidades por odontólogo (vista diaria)
   const disponibilidadesPorOdontologo = useMemo(() => {
     if (!disponibilidades || !Array.isArray(disponibilidades)) return {};
     
-    // Para vista diaria: agrupar solo por odontólogo (una fecha)
-    // Para vista semanal/mensual: agrupar por odontólogo y fecha
     return disponibilidades.reduce((acc, disp) => {
-      const key = vista === 'diaria' 
-        ? `${disp.odontologoId}-${fechaActual}`
-        : `${disp.odontologoId}-${disp.fecha}`;
+      const key = `${disp.odontologoId}-${fechaActual}`;
       if (!acc[key]) acc[key] = [];
       acc[key].push(disp);
       return acc;
     }, {});
-  }, [disponibilidades, vista, fechaActual]);
+  }, [disponibilidades, fechaActual]);
   
   // Handler para click en celda vacía
-  const handleClickCelda = (odontologoId, hora, fecha = null) => {
-    const fechaParaModal = fecha || (vista === 'diaria' ? fechaActual : fechaInicio);
+  const handleClickCelda = (odontologoId, hora) => {
     setDisponibilidadSeleccionada({
       odontologoId,
-      fecha: fechaParaModal,
+      fecha: fechaActual,
       horaInicio: hora,
       horaFin: `${(parseInt(hora.split(':')[0]) + 1).toString().padStart(2, '0')}:00`,
       tipo: 'LABORAL'
@@ -169,19 +137,11 @@ export default function GestionDisponibilidades() {
     return horaInt >= inicioInt && horaInt < finInt;
   };
 
-  // CU-AG02: Función para obtener turno en una hora específica y fecha
-  const obtenerTurnoEnHora = (odontologoId, hora, fecha = null) => {
+  // CU-AG02: Función para obtener turno en una hora específica (vista diaria)
+  const obtenerTurnoEnHora = (odontologoId, hora) => {
     if (!turnos || turnos.length === 0) return null;
     
-    const turnosOdontologo = turnos.filter(t => {
-      if (t.odontologoId !== odontologoId) return false;
-      if (fecha) {
-        const fechaTurno = new Date(t.fechaHora).toISOString().split('T')[0];
-        return fechaTurno === fecha;
-      }
-      return true;
-    });
-    
+    const turnosOdontologo = turnos.filter(t => t.odontologoId === odontologoId);
     const horaInt = parseInt(hora.replace(':', ''));
     
     for (const turno of turnosOdontologo) {
@@ -198,30 +158,6 @@ export default function GestionDisponibilidades() {
     return null;
   };
 
-  // CU-AG02.4: Generar array de días según vista
-  const diasParaRenderizar = useMemo(() => {
-    if (vista === 'diaria') {
-      return [diaActual];
-    } else if (vista === 'semanal') {
-      const dias = [];
-      const inicioSemana = new Date(diaActual);
-      inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay()); // Domingo
-      for (let i = 0; i < 7; i++) {
-        const dia = new Date(inicioSemana);
-        dia.setDate(dia.getDate() + i);
-        dias.push(dia);
-      }
-      return dias;
-    } else { // mensual
-      const dias = [];
-      const inicioMes = new Date(diaActual.getFullYear(), diaActual.getMonth(), 1);
-      const finMes = new Date(diaActual.getFullYear(), diaActual.getMonth() + 1, 0);
-      for (let d = new Date(inicioMes); d <= finMes; d.setDate(d.getDate() + 1)) {
-        dias.push(new Date(d));
-      }
-      return dias;
-    }
-  }, [vista, diaActual]);
 
   // CU-AG02: Función para calcular altura de turno en celdas
   const calcularAlturaTurno = (turno) => {
@@ -237,10 +173,10 @@ export default function GestionDisponibilidades() {
     return horas;
   };
 
-  // CU-AG02.4: Función para renderizar una celda (reutilizable para todas las vistas)
-  const renderizarCelda = (odontologo, hora, fecha, disponibilidadesOdontologo) => {
-    // CU-AG02: Verificar si hay un turno en esta hora y fecha
-    const turnoEnHora = obtenerTurnoEnHora(odontologo.userId, hora, fecha);
+  // Función para renderizar una celda (vista diaria)
+  const renderizarCelda = (odontologo, hora, disponibilidadesOdontologo) => {
+    // CU-AG02: Verificar si hay un turno en esta hora
+    const turnoEnHora = obtenerTurnoEnHora(odontologo.userId, hora);
     const esInicioTurno = turnoEnHora && (() => {
       const fechaTurno = new Date(turnoEnHora.fechaHora);
       const turnoHora = fechaTurno.getHours();
@@ -268,7 +204,7 @@ export default function GestionDisponibilidades() {
       
       return (
         <div 
-          key={`${odontologo.userId}-${fecha}-${hora}-turno`} 
+          key={`${odontologo.userId}-${fechaActual}-${hora}-turno`} 
           className="celda-hora celda-con-turno"
           style={{ position: 'relative' }}
         >
@@ -286,7 +222,7 @@ export default function GestionDisponibilidades() {
               borderRadius: '4px',
               color: 'white',
               padding: '4px',
-              fontSize: vista === 'mensual' ? '0.65rem' : '0.75rem',
+              fontSize: '0.75rem',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
@@ -304,10 +240,10 @@ export default function GestionDisponibilidades() {
               <FaCalendarCheck style={{ marginRight: '4px' }} />
               {horaInicioStr} - {horaFinStr}
             </div>
-            <div style={{ fontSize: vista === 'mensual' ? '0.6rem' : '0.7rem', opacity: 0.9 }}>
+            <div style={{ fontSize: '0.7rem', opacity: 0.9 }}>
               {turnoEnHora.Paciente?.nombre} {turnoEnHora.Paciente?.apellido}
             </div>
-            {turnoEnHora.motivo && vista !== 'mensual' && (
+            {turnoEnHora.motivo && (
               <div style={{ fontSize: '0.65rem', opacity: 0.8, marginTop: '2px' }}>
                 {turnoEnHora.motivo}
               </div>
@@ -324,7 +260,7 @@ export default function GestionDisponibilidades() {
       
       return (
         <div 
-          key={`${odontologo.userId}-${fecha}-${hora}`} 
+          key={`${odontologo.userId}-${fechaActual}-${hora}`} 
           className="celda-hora celda-con-bloque"
           style={{ position: 'relative' }}
         >
@@ -345,18 +281,14 @@ export default function GestionDisponibilidades() {
             title={`${normalizeTime(bloqueQueInicia.horaInicio)} - ${normalizeTime(bloqueQueInicia.horaFin)}${bloqueQueInicia.motivo ? ` - ${bloqueQueInicia.motivo}` : ''}`}
           >
             <div className="bloque-info">
-              <div className="bloque-hora" style={{ fontSize: vista === 'mensual' ? '0.7rem' : '0.85rem' }}>
+              <div className="bloque-hora" style={{ fontSize: '0.85rem' }}>
                 {normalizeTime(bloqueQueInicia.horaInicio)} - {normalizeTime(bloqueQueInicia.horaFin)}
               </div>
-              {vista !== 'mensual' && (
-                <>
-                  <div className="bloque-tipo" style={{ fontSize: '0.75rem' }}>
-                    {bloqueQueInicia.tipo === 'LABORAL' ? '✓ Disponible' : '✕ No Disponible'}
-                  </div>
-                  {bloqueQueInicia.motivo && (
-                    <div className="bloque-motivo" style={{ fontSize: '0.7rem' }}>{bloqueQueInicia.motivo}</div>
-                  )}
-                </>
+              <div className="bloque-tipo" style={{ fontSize: '0.75rem' }}>
+                {bloqueQueInicia.tipo === 'LABORAL' ? '✓ Disponible' : '✕ No Disponible'}
+              </div>
+              {bloqueQueInicia.motivo && (
+                <div className="bloque-motivo" style={{ fontSize: '0.7rem' }}>{bloqueQueInicia.motivo}</div>
               )}
             </div>
           </div>
@@ -368,7 +300,7 @@ export default function GestionDisponibilidades() {
     if (turnoEnHora && !esInicioTurno) {
       return (
         <div 
-          key={`${odontologo.userId}-${fecha}-${hora}-turno-ocupado`} 
+          key={`${odontologo.userId}-${fechaActual}-${hora}-turno-ocupado`} 
           className="celda-hora celda-ocupada-turno"
           style={{
             background: 'rgba(59, 130, 246, 0.3)',
@@ -384,7 +316,7 @@ export default function GestionDisponibilidades() {
     if (dentroDeBloqueExistente) {
       return (
         <div 
-          key={`${odontologo.userId}-${fecha}-${hora}`} 
+          key={`${odontologo.userId}-${fechaActual}-${hora}`} 
           className="celda-hora celda-ocupada"
         >
           {/* Celda ocupada por bloque que empezó antes */}
@@ -395,12 +327,9 @@ export default function GestionDisponibilidades() {
     // Celda vacía normal
     return (
       <div 
-        key={`${odontologo.userId}-${fecha}-${hora}`} 
+        key={`${odontologo.userId}-${fechaActual}-${hora}`} 
         className="celda-hora"
-        onClick={() => {
-          const fechaParaModal = vista === 'diaria' ? fechaActual : fecha;
-          handleClickCelda(odontologo.userId, hora, fechaParaModal);
-        }}
+        onClick={() => handleClickCelda(odontologo.userId, hora)}
       >
         <div className="celda-vacia">
           <FaPlus className="icon-add" />
@@ -433,205 +362,69 @@ export default function GestionDisponibilidades() {
         </div>
       </div>
       
-      {/* CU-AG02.4: Controles de vista y navegación */}
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        {/* Selector de vista */}
-        <div style={{ display: 'flex', gap: '0.5rem', background: '#f8f9fa', padding: '0.25rem', borderRadius: '6px' }}>
-          <button
-            onClick={() => setVista('diaria')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
-              background: vista === 'diaria' ? '#3498db' : 'transparent',
-              color: vista === 'diaria' ? 'white' : '#333',
-              cursor: 'pointer',
-              fontWeight: vista === 'diaria' ? 'bold' : 'normal'
-            }}
-          >
-            Diaria
-          </button>
-          <button
-            onClick={() => setVista('semanal')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
-              background: vista === 'semanal' ? '#3498db' : 'transparent',
-              color: vista === 'semanal' ? 'white' : '#333',
-              cursor: 'pointer',
-              fontWeight: vista === 'semanal' ? 'bold' : 'normal'
-            }}
-          >
-            Semanal
-          </button>
-          <button
-            onClick={() => setVista('mensual')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
-              background: vista === 'mensual' ? '#3498db' : 'transparent',
-              color: vista === 'mensual' ? 'white' : '#333',
-              cursor: 'pointer',
-              fontWeight: vista === 'mensual' ? 'bold' : 'normal'
-            }}
-          >
-            Mensual
-          </button>
+      {/* Controles de navegación diaria y botón de disponibilidades recurrentes */}
+      <div className="semana-controles">
+        <button 
+          className="btn-nav btn-recurrente"
+          onClick={() => setModalRecurrenteAbierto(true)}
+        >
+          <FaCalendarCheck />
+          Agregar Disponibilidad Recurrente
+        </button>
+        
+        <div className="semana-info">
+          <FaCalendarAlt />
+          <span>
+            {formatDateReadable(diaActual)}
+          </span>
         </div>
         
-        {/* Controles de navegación */}
-        <div className="semana-controles" style={{ marginLeft: 'auto' }}>
-          {vista === 'diaria' && (
-            <>
-              <button className="btn-nav" onClick={irDiaAnterior}>
-                <FaChevronLeft /> Día Anterior
-              </button>
-              
-              <div className="semana-info">
-                <FaCalendarAlt />
-                <span>
-                  {formatDateReadable(diaActual)}
-                </span>
-              </div>
-              
-              <button className="btn-hoy" onClick={irHoy}>
-                Hoy
-              </button>
-              
-              <button className="btn-nav" onClick={irDiaSiguiente}>
-                Día Siguiente <FaChevronRight />
-              </button>
-            </>
-          )}
-          {vista === 'semanal' && (
-            <>
-              <button className="btn-nav" onClick={() => {
-                const nuevaFecha = new Date(diaActual);
-                nuevaFecha.setDate(nuevaFecha.getDate() - 7);
-                setDiaActual(nuevaFecha);
-              }}>
-                <FaChevronLeft /> Semana Anterior
-              </button>
-              
-              <div className="semana-info">
-                <FaCalendarAlt />
-                <span>
-                  Semana del {formatDateReadable(new Date(fechaInicio))} al {formatDateReadable(new Date(fechaFin))}
-                </span>
-              </div>
-              
-              <button className="btn-hoy" onClick={irHoy}>
-                Esta Semana
-              </button>
-              
-              <button className="btn-nav" onClick={() => {
-                const nuevaFecha = new Date(diaActual);
-                nuevaFecha.setDate(nuevaFecha.getDate() + 7);
-                setDiaActual(nuevaFecha);
-              }}>
-                Semana Siguiente <FaChevronRight />
-              </button>
-            </>
-          )}
-          {vista === 'mensual' && (
-            <>
-              <button className="btn-nav" onClick={() => {
-                const nuevaFecha = new Date(diaActual);
-                nuevaFecha.setMonth(nuevaFecha.getMonth() - 1);
-                setDiaActual(nuevaFecha);
-              }}>
-                <FaChevronLeft /> Mes Anterior
-              </button>
-              
-              <div className="semana-info">
-                <FaCalendarAlt />
-                <span>
-                  {diaActual.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
-                </span>
-              </div>
-              
-              <button className="btn-hoy" onClick={irHoy}>
-                Este Mes
-              </button>
-              
-              <button className="btn-nav" onClick={() => {
-                const nuevaFecha = new Date(diaActual);
-                nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
-                setDiaActual(nuevaFecha);
-              }}>
-                Mes Siguiente <FaChevronRight />
-              </button>
-            </>
-          )}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-nav" onClick={irDiaAnterior}>
+            <FaChevronLeft /> Día Anterior
+          </button>
+          
+          <button className="btn-hoy" onClick={irHoy}>
+            Hoy
+          </button>
+          
+          <button className="btn-nav" onClick={irDiaSiguiente}>
+            Día Siguiente <FaChevronRight />
+          </button>
         </div>
       </div>
       
       {/* Calendario */}
       <div className="calendario-container">
-        {/* Encabezado con días y odontólogos */}
+        {/* Encabezado con odontólogos */}
         <div className="calendario-header" style={{ 
           display: 'grid', 
-          gridTemplateColumns: `80px repeat(${vista === 'diaria' ? odontologos?.length || 1 : diasParaRenderizar.length * (odontologos?.length || 1)}, 1fr)`,
-          overflowX: vista === 'mensual' ? 'auto' : 'visible'
+          gridTemplateColumns: `80px repeat(${odontologos?.length || 1}, 1fr)`
         }}>
           <div className="columna-horas">
             <div className="header-cell">Horario</div>
           </div>
           
-          {vista === 'diaria' ? (
-            // Vista diaria: columnas por odontólogo
-            odontologos && odontologos.length > 0 ? (
-              odontologos.map((odontologo) => (
-                <div key={odontologo.userId} className="columna-odontologo">
-                  <div className="header-cell odontologo-info">
-                    <div className="odontologo-nombre">
-                      Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
-                    </div>
-                    <div className="odontologo-matricula">Mat. {odontologo.matricula}</div>
+          {odontologos && odontologos.length > 0 ? (
+            odontologos.map((odontologo) => (
+              <div key={odontologo.userId} className="columna-odontologo">
+                <div className="header-cell odontologo-info">
+                  <div className="odontologo-nombre">
+                    Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
                   </div>
+                  <div className="odontologo-matricula">Mat. {odontologo.matricula}</div>
                 </div>
-              ))
-            ) : (
-              <div className="no-odontologos">No hay odontólogos disponibles</div>
-            )
+              </div>
+            ))
           ) : (
-            // Vista semanal/mensual: columnas por día x odontólogo
-            diasParaRenderizar.map((dia, diaIndex) => {
-              const diaStr = formatDate(dia);
-              const esHoy = diaStr === formatDate(new Date());
-              return odontologos?.map((odontologo) => (
-                <div key={`${diaStr}-${odontologo.userId}`} className="columna-odontologo">
-                  <div className={`header-cell ${esHoy ? 'dia-actual' : ''}`} style={{
-                    padding: '0.5rem',
-                    textAlign: 'center',
-                    borderLeft: vista === 'semanal' && diaIndex > 0 ? '2px solid #e0e0e0' : 'none'
-                  }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                      {dia.toLocaleDateString('es-AR', { weekday: 'short' })}
-                    </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: esHoy ? 'bold' : 'normal' }}>
-                      {dia.getDate()}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#7f8c8d', marginTop: '0.25rem' }}>
-                      {dia.toLocaleDateString('es-AR', { month: 'short' })}
-                    </div>
-                    <div style={{ fontSize: '0.65rem', color: '#95a5a6', marginTop: '0.25rem' }}>
-                      Dr. {odontologo.Usuario?.nombre?.charAt(0)}. {odontologo.Usuario?.apellido}
-                    </div>
-                  </div>
-                </div>
-              ));
-            }).flat()
+            <div className="no-odontologos">No hay odontólogos disponibles</div>
           )}
         </div>
         
         {/* Grid del calendario */}
         <div className="calendario-grid" style={{
           display: 'grid',
-          gridTemplateColumns: `80px repeat(${vista === 'diaria' ? odontologos?.length || 1 : diasParaRenderizar.length * (odontologos?.length || 1)}, 1fr)`,
-          overflowX: vista === 'mensual' ? 'auto' : 'visible'
+          gridTemplateColumns: `80px repeat(${odontologos?.length || 1}, 1fr)`
         }}>
           {/* Columna de horas */}
           <div className="columna-horas">
@@ -642,41 +435,21 @@ export default function GestionDisponibilidades() {
             ))}
           </div>
           
-          {/* CU-AG02.4: Renderizar según vista */}
-          {vista === 'diaria' ? (
-            // Vista diaria: una columna por odontólogo
-            odontologos?.map((odontologo) => {
-              const key = `${odontologo.userId}-${fechaActual}`;
-              const disponibilidadesOdontologo = disponibilidadesPorOdontologo[key] || [];
-              
-              return (
-                <div key={odontologo.userId} className="columna-odontologo">
-                  {HORAS_DIA.map((hora) => renderizarCelda(odontologo, hora, fechaActual, disponibilidadesOdontologo))}
-                </div>
-              );
-            })
-          ) : (
-            // Vista semanal/mensual: múltiples columnas (día x odontólogo)
-            diasParaRenderizar.map((dia) => {
-              const diaStr = formatDate(dia);
-              return odontologos?.map((odontologo) => {
-                const key = `${odontologo.userId}-${diaStr}`;
-                const disponibilidadesOdontologo = disponibilidadesPorOdontologo[key] || [];
-                
-                return (
-                  <div key={`${diaStr}-${odontologo.userId}`} className="columna-odontologo" style={{
-                    borderLeft: vista === 'semanal' && diasParaRenderizar.indexOf(dia) > 0 ? '2px solid #e0e0e0' : 'none'
-                  }}>
-                    {HORAS_DIA.map((hora) => renderizarCelda(odontologo, hora, diaStr, disponibilidadesOdontologo))}
-                  </div>
-                );
-              });
-            }).flat()
-          )}
+          {/* Vista diaria: una columna por odontólogo */}
+          {odontologos?.map((odontologo) => {
+            const key = `${odontologo.userId}-${fechaActual}`;
+            const disponibilidadesOdontologo = disponibilidadesPorOdontologo[key] || [];
+            
+            return (
+              <div key={odontologo.userId} className="columna-odontologo">
+                {HORAS_DIA.map((hora) => renderizarCelda(odontologo, hora, disponibilidadesOdontologo))}
+              </div>
+            );
+          })}
         </div>
       </div>
       
-      {/* Modal */}
+      {/* Modal de disponibilidad individual */}
       {modalAbierto && (
         <DisponibilidadModal
           disponibilidad={disponibilidadSeleccionada}
@@ -686,6 +459,17 @@ export default function GestionDisponibilidades() {
           }}
           onSuccess={() => {
             refetch(); // Recargar disponibilidades después de guardar
+          }}
+        />
+      )}
+      
+      {/* Modal de disponibilidades recurrentes */}
+      {modalRecurrenteAbierto && (
+        <DisponibilidadRecurrenteModal
+          onClose={() => setModalRecurrenteAbierto(false)}
+          onSuccess={() => {
+            refetch(); // Recargar disponibilidades después de guardar
+            setModalRecurrenteAbierto(false);
           }}
         />
       )}

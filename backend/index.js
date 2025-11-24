@@ -24,10 +24,13 @@ app.use(cors({
 }));
 
 /* 🔒 Límite de peticiones por IP (anti-abuso) */
+const isDevelopment = process.env.NODE_ENV === 'development';
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100,                 // Máximo 100 peticiones por IP
+  max: isDevelopment ? 1000 : 100, // Más permisivo en desarrollo
   message: 'Demasiadas solicitudes, intenta más tarde.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 }));
 
 /* 🔐 Inicialización de Passport (Google OAuth y otros) */

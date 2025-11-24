@@ -259,3 +259,96 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
   
   return await Disponibilidad.bulkCreate(disponibilidades);
 };
+
+export const generarDisponibilidadesRecurrentes = async (odontologoId, tipoRecurrencia, configuracion, fechaInicio, fechaFin, horarioLaboral) => {
+  const disponibilidades = [];
+  const fechaInicioObj = new Date(fechaInicio);
+  const fechaFinObj = new Date(fechaFin);
+  
+  if (tipoRecurrencia === 'semanal') {
+    // Recurrencia semanal: días específicos de la semana (ej: todos los martes)
+    const diasSemana = configuracion.diasSemana || [];
+    
+    for (let fecha = new Date(fechaInicioObj); fecha <= fechaFinObj; fecha.setDate(fecha.getDate() + 1)) {
+      const diaSemana = fecha.getDay();
+      if (diasSemana.includes(diaSemana)) {
+        disponibilidades.push({
+          fecha: fecha.toISOString().split('T')[0],
+          horaInicio: horarioLaboral.horaInicio,
+          horaFin: horarioLaboral.horaFin,
+          tipo: TipoDisponibilidad.LABORAL,
+          motivo: `Disponibilidad recurrente semanal`,
+          odontologoId
+        });
+      }
+    }
+  } else if (tipoRecurrencia === 'mensual') {
+    // Recurrencia mensual: día específico del mes (ej: primeros martes)
+    const diaSemana = configuracion.diaSemana; // 0-6
+    const posicionMes = configuracion.posicionMes; // 'primero', 'segundo', 'tercero', 'cuarto', 'ultimo'
+    
+    for (let fecha = new Date(fechaInicioObj); fecha <= fechaFinObj; fecha.setDate(fecha.getDate() + 1)) {
+      // Verificar si es el día de la semana correcto
+      if (fecha.getDay() !== diaSemana) continue;
+      
+      // Calcular la posición del día en el mes
+      const diaMes = fecha.getDate();
+      let posicion = 0;
+      
+      if (diaMes <= 7) posicion = 1; // Primera semana
+      else if (diaMes <= 14) posicion = 2; // Segunda semana
+      else if (diaMes <= 21) posicion = 3; // Tercera semana
+      else if (diaMes <= 28) posicion = 4; // Cuarta semana
+      else posicion = 5; // Última semana (día 29, 30 o 31)
+      
+      // Verificar si coincide con la posición solicitada
+      let coincide = false;
+      if (posicionMes === 'primero' && posicion === 1) coincide = true;
+      else if (posicionMes === 'segundo' && posicion === 2) coincide = true;
+      else if (posicionMes === 'tercero' && posicion === 3) coincide = true;
+      else if (posicionMes === 'cuarto' && posicion === 4) coincide = true;
+      else if (posicionMes === 'ultimo') {
+        // Para "último", verificar si es el último día de la semana en el mes
+        const ultimoDiaMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+        const ultimoDiaSemana = new Date(ultimoDiaMes);
+        // Ir hacia atrás hasta encontrar el día de la semana correcto
+        while (ultimoDiaSemana.getDay() !== diaSemana) {
+          ultimoDiaSemana.setDate(ultimoDiaSemana.getDate() - 1);
+        }
+        coincide = fecha.getDate() === ultimoDiaSemana.getDate();
+      }
+      
+      if (coincide) {
+        disponibilidades.push({
+          fecha: fecha.toISOString().split('T')[0],
+          horaInicio: horarioLaboral.horaInicio,
+          horaFin: horarioLaboral.horaFin,
+          tipo: TipoDisponibilidad.LABORAL,
+          motivo: `Disponibilidad recurrente mensual`,
+          odontologoId
+        });
+      }
+    }
+  }
+  
+  // Verificar solapamientos antes de crear
+  const disponibilidadesValidas = [];
+  for (const disp of disponibilidades) {
+    const solapamiento = await verificarSolapamiento(
+      disp.fecha,
+      disp.horaInicio,
+      disp.horaFin,
+      disp.odontologoId
+    );
+    
+    if (!solapamiento) {
+      disponibilidadesValidas.push(disp);
+    }
+  }
+  
+  if (disponibilidadesValidas.length === 0) {
+    return [];
+  }
+  
+  return await Disponibilidad.bulkCreate(disponibilidadesValidas);
+};

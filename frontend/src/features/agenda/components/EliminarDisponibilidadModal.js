@@ -1,5 +1,6 @@
 // src/features/agenda/components/EliminarDisponibilidadModal.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEliminarDisponibilidad } from '../hooks/useDisponibilidades';
 import { useReprogramarTurno } from '../hooks/useTurnos';
 import { useCancelarTurno } from '../hooks/useTurnos';
@@ -14,12 +15,22 @@ export default function EliminarDisponibilidadModal({
   onSuccess 
 }) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [accionSeleccionada, setAccionSeleccionada] = useState('mantener'); // 'mantener' | 'reprogramar' | 'cancelar'
   const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   
   const eliminarDisponibilidad = useEliminarDisponibilidad();
   const reprogramarTurno = useReprogramarTurno();
   const cancelarTurno = useCancelarTurno();
+  
+  // Seleccionar todos los turnos automáticamente cuando se elige "cancelar"
+  useEffect(() => {
+    if (accionSeleccionada === 'cancelar' && turnosFuturos.length > 0) {
+      setTurnosSeleccionados(turnosFuturos.map(t => t.id));
+    } else if (accionSeleccionada !== 'cancelar') {
+      setTurnosSeleccionados([]);
+    }
+  }, [accionSeleccionada, turnosFuturos]);
   
   const handleToggleTurno = (turnoId) => {
     setTurnosSeleccionados(prev => 
@@ -56,8 +67,18 @@ export default function EliminarDisponibilidadModal({
             });
           } catch (error) {
             console.error(`Error al cancelar turno ${turnoId}:`, error);
+            showToast(`Error al cancelar turno ${turnoId}`, 'error');
+            return; // No continuar si hay error
           }
         }
+        
+        // Esperar a que se actualicen las queries antes de intentar eliminar
+        await queryClient.invalidateQueries(['agenda']);
+        await queryClient.invalidateQueries(['turnos']);
+        
+        // Pequeña pausa para asegurar que el backend vea los cambios
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         showToast(`${turnosSeleccionados.length} turno(s) cancelado(s)`, 'success');
       }
       

@@ -144,6 +144,11 @@ export async function generarDisponibilidadesAutomaticas(data) {
   return res.data;
 }
 
+export async function generarDisponibilidadesRecurrentes(data) {
+  const res = await api.post('/agenda/disponibilidades/generar-recurrentes', data);
+  return res.data;
+}
+
 export async function validarDisponibilidad(data) {
   const res = await api.post('/agenda/disponibilidades/validar', data);
   return res.data;

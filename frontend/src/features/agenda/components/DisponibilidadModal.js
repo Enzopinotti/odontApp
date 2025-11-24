@@ -59,6 +59,14 @@ export default function DisponibilidadModal({
       return;
     }
     
+    // Validar primero que la hora de fin sea posterior a la de inicio
+    const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
+    const fin = new Date(`2000-01-01T${formData.horaFin}`);
+    if (fin <= inicio) {
+      setValidacionTiempoReal(null); // No mostrar validación si el horario es inválido
+      return;
+    }
+    
     try {
       const resultado = await validarDisponibilidad.mutateAsync({
         fecha: formData.fecha,
@@ -68,17 +76,38 @@ export default function DisponibilidadModal({
         disponibilidadIdExcluir: disponibilidad?.id || null
       });
       
-      setValidacionTiempoReal(resultado.esValida);
+      // La respuesta viene como { esValida: boolean }
+      const esValida = resultado?.esValida;
+      
+      // Solo establecer el estado si esValida es un boolean válido
+      if (typeof esValida === 'boolean') {
+        setValidacionTiempoReal(esValida);
+      } else {
+        // Si no es un boolean válido, no mostrar validación
+        setValidacionTiempoReal(null);
+      }
     } catch (error) {
-      setValidacionTiempoReal(false);
+      // Si hay un error en la validación, no mostrar el mensaje de error
+      // Solo mostrar si la validación fue exitosa pero retornó false
+      console.error('Error al validar disponibilidad:', error);
+      setValidacionTiempoReal(null);
     }
   }, [formData.fecha, formData.horaInicio, formData.horaFin, formData.odontologoId, disponibilidad?.id, validarDisponibilidad]);
   
   // CU-AG02: Validar en tiempo real cuando cambian los campos relevantes
   useEffect(() => {
+    // Resetear validación cuando cambian los campos
+    setValidacionTiempoReal(null);
+    
     const timeoutId = setTimeout(() => {
+      // Solo validar si todos los campos están completos
       if (formData.fecha && formData.horaInicio && formData.horaFin && formData.odontologoId) {
-        validarEnTiempoReal();
+        // Validar que la hora de fin sea posterior a la de inicio
+        const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
+        const fin = new Date(`2000-01-01T${formData.horaFin}`);
+        if (fin > inicio) {
+          validarEnTiempoReal();
+        }
       }
     }, 500); // Debounce de 500ms
     
@@ -190,8 +219,10 @@ export default function DisponibilidadModal({
   const handleEliminar = async () => {
     if (!disponibilidad?.id) return;
     
-    // Verificar si hay turnos futuros en este bloque
+    // Verificar si hay turnos futuros PENDIENTES en este bloque (no considerar CANCELADOS)
     const turnosEnBloque = turnos.filter(turno => {
+      // Solo considerar turnos PENDIENTES
+      if (turno.estado !== 'PENDIENTE') return false;
       if (turno.odontologoId !== disponibilidad.odontologoId) return false;
       const fechaTurno = new Date(turno.fechaHora);
       const fechaDisp = new Date(disponibilidad.fecha);
@@ -318,7 +349,7 @@ export default function DisponibilidadModal({
               ) : (
                 <>
                   <FaExclamationCircle style={{ color: '#ef4444' }} />
-                  <span style={{ color: '#991b1b', fontWeight: '500' }}>El horario se solapa con otra disponibilidad</span>
+                  <span style={{ color: '#991b1b', fontWeight: '500' }}>El horario se solapa con otra disponibilidad existente</span>
                 </>
               )}
             </div>

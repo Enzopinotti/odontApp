@@ -127,7 +127,30 @@ export function useValidarDisponibilidad() {
   return useMutation({
     mutationFn: async (data) => {
       const res = await agendaApi.validarDisponibilidad(data);
+      // El responseHandler envuelve la respuesta en { success, message, data }
+      // donde data contiene { esValida: boolean }
+      if (res.data?.data) {
+        return res.data.data;
+      }
+      // Fallback si la estructura es diferente
+      return res.data;
+    },
+  });
+}
+
+// Generar disponibilidades recurrentes (semanal o mensual)
+export function useGenerarDisponibilidadesRecurrentes() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data) => {
+      const res = await agendaApi.generarDisponibilidadesRecurrentes(data);
       return res.data?.data || res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['disponibilidades']);
+      queryClient.invalidateQueries(['disponibilidades-semanal']);
+      queryClient.invalidateQueries(['disponibilidades-odontologo']);
     },
   });
 }

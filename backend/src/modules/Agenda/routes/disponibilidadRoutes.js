@@ -18,6 +18,11 @@ router.post('/generar-automaticas',
   disponibilidadController.generarDisponibilidadesAutomaticas
 );
 
+router.post('/generar-recurrentes', 
+  requirePermiso('disponibilidad', 'gestionar'),
+  disponibilidadController.generarDisponibilidadesRecurrentes
+);
+
 router.post('/validar', 
   requirePermiso('disponibilidad', 'ver'),
   disponibilidadController.validarDisponibilidad
