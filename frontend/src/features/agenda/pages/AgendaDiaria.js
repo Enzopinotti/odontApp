@@ -1,7 +1,7 @@
 // src/features/agenda/pages/AgendaDiaria.js
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaArrowLeft, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaArrowLeft, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useTurnosPorFecha, useTurnos } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
@@ -51,6 +51,385 @@ const normalizarHora = (hora) => {
   if (!hora) return '';
   return hora.substring(0, 5); // '09:00:00' -> '09:00'
 };
+
+// Componente Mini Calendario Mensual
+function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [mesVista, setMesVista] = useState(new Date(fechaSeleccionada));
+  
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  // Calcular inicio y fin del mes que se está visualizando
+  const mesVistaActual = useMemo(() => {
+    const año = mesVista.getFullYear();
+    const mes = mesVista.getMonth();
+    const inicio = new Date(año, mes, 1);
+    const fin = new Date(año, mes + 1, 0);
+    return { inicio, fin, año, mes };
+  }, [mesVista]);
+  
+  // Cargar datos para el mes que se está visualizando (no solo el mes de fechaSeleccionada)
+  const fechaInicioMesVista = useMemo(() => {
+    const año = mesVistaActual.año;
+    const mes = String(mesVistaActual.mes + 1).padStart(2, '0');
+    return `${año}-${mes}-01`;
+  }, [mesVistaActual]);
+  
+  const fechaFinMesVista = useMemo(() => {
+    const año = mesVistaActual.año;
+    const mes = String(mesVistaActual.mes + 1).padStart(2, '0');
+    const ultimoDia = mesVistaActual.fin.getDate();
+    return `${año}-${mes}-${String(ultimoDia).padStart(2, '0')}`;
+  }, [mesVistaActual]);
+  
+  const { data: disponibilidadesMesVista } = useDisponibilidadesSemanal(fechaInicioMesVista, fechaFinMesVista);
+  const { data: turnosMesVistaData } = useTurnos({
+    fechaInicio: fechaInicioMesVista,
+    fechaFin: fechaFinMesVista,
+    perPage: 1000
+  });
+  
+  // Obtener días con disponibilidad y turnos para el mes visualizado
+  const diasConActividad = useMemo(() => {
+    const diasDisponibles = new Set();
+    const diasConTurnos = new Set();
+    
+    // Procesar disponibilidades
+    if (disponibilidadesMesVista) {
+      disponibilidadesMesVista.forEach(disp => {
+        if (typeof disp.fecha === 'string') {
+          const partes = disp.fecha.split('-');
+          if (partes.length === 3) {
+            const año = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const dia = parseInt(partes[2], 10);
+            // Verificar que pertenezca al mes visualizado
+            if (año === mesVistaActual.año && mes === mesVistaActual.mes) {
+              if (disp.tipo === 'LABORAL') {
+                diasDisponibles.add(dia);
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Procesar turnos
+    if (turnosMesVistaData) {
+      let turnosList = [];
+      if (Array.isArray(turnosMesVistaData)) {
+        turnosList = turnosMesVistaData;
+      } else if (turnosMesVistaData.data) {
+        turnosList = Array.isArray(turnosMesVistaData.data) ? turnosMesVistaData.data : [];
+      } else if (turnosMesVistaData.rows) {
+        turnosList = turnosMesVistaData.rows || [];
+      }
+      
+      turnosList.forEach(turno => {
+        const fechaHoraStr = turno.fechaHora;
+        let año, mes, dia;
+        
+        if (typeof fechaHoraStr === 'string') {
+          const fechaParte = fechaHoraStr.split('T')[0];
+          const partes = fechaParte.split('-');
+          if (partes.length === 3) {
+            año = parseInt(partes[0], 10);
+            mes = parseInt(partes[1], 10) - 1;
+            dia = parseInt(partes[2], 10);
+          } else {
+            return; // Skip si no podemos parsear
+          }
+        } else if (fechaHoraStr instanceof Date) {
+          año = fechaHoraStr.getFullYear();
+          mes = fechaHoraStr.getMonth();
+          dia = fechaHoraStr.getDate();
+        } else {
+          return; // Skip si no podemos parsear
+        }
+        
+        // Verificar que pertenezca al mes visualizado
+        if (año === mesVistaActual.año && mes === mesVistaActual.mes) {
+          diasConTurnos.add(dia);
+        }
+      });
+    }
+    
+    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
+  }, [disponibilidadesMesVista, turnosMesVistaData, mesVistaActual]);
+  
+  // Sincronizar mesVista cuando cambia fechaSeleccionada
+  useEffect(() => {
+    if (!mostrarCalendario) {
+      setMesVista(new Date(fechaSeleccionada));
+    }
+  }, [fechaSeleccionada, mostrarCalendario]);
+  
+  const cambiarMes = (direccion) => {
+    const nuevo = new Date(mesVista);
+    nuevo.setMonth(nuevo.getMonth() + direccion);
+    setMesVista(nuevo);
+  };
+  
+  const irMesActual = () => {
+    const hoy = new Date();
+    setMesVista(hoy);
+    setFechaSeleccionada(hoy);
+  };
+  
+  const diasDelMes = useMemo(() => {
+    const año = mesVista.getFullYear();
+    const mes = mesVista.getMonth();
+    const primerDia = new Date(año, mes, 1);
+    const ultimoDia = new Date(año, mes + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaSemanaInicio = primerDia.getDay();
+    
+    const dias = [];
+    
+    // Días vacíos al inicio
+    for (let i = 0; i < diaSemanaInicio; i++) {
+      dias.push(null);
+    }
+    
+    // Días del mes
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const fechaCompleta = new Date(año, mes, dia);
+      const añoStr = año.toString();
+      const mesStr = String(mes + 1).padStart(2, '0');
+      const diaStr = String(dia).padStart(2, '0');
+      const fechaStr = `${añoStr}-${mesStr}-${diaStr}`;
+      
+      const hoy = new Date();
+      const esPasado = fechaCompleta < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      const esHoy = fechaCompleta.getDate() === hoy.getDate() && 
+                    fechaCompleta.getMonth() === hoy.getMonth() && 
+                    fechaCompleta.getFullYear() === hoy.getFullYear();
+      const esSeleccionado = fechaCompleta.getDate() === fechaSeleccionada.getDate() &&
+                             fechaCompleta.getMonth() === fechaSeleccionada.getMonth() &&
+                             fechaCompleta.getFullYear() === fechaSeleccionada.getFullYear();
+      // Solo mostrar disponibilidad/turnos si pertenece al mes visualizado
+      const tieneDisponibilidad = diasConActividad.disponibles.has(dia);
+      const tieneTurnos = diasConActividad.conTurnos.has(dia);
+      
+      dias.push({
+        numero: dia,
+        fecha: fechaStr,
+        esPasado,
+        esHoy,
+        esSeleccionado,
+        tieneDisponibilidad,
+        tieneTurnos
+      });
+    }
+    
+    return dias;
+  }, [mesVista, fechaSeleccionada, diasConActividad]);
+  
+  const handleClickDia = (dia) => {
+    if (!dia || dia.esPasado) return;
+    const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
+    setFechaSeleccionada(nuevaFecha);
+    setMostrarCalendario(false);
+  };
+  
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setMostrarCalendario(!mostrarCalendario)}
+        style={{
+          padding: '0.5rem 1rem',
+          borderRadius: '6px',
+          border: '1px solid #ddd',
+          background: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.9rem'
+        }}
+      >
+        <FaCalendarAlt />
+        {mostrarCalendario ? <FaChevronUp /> : <FaChevronDown />}
+      </button>
+      
+      {mostrarCalendario && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          right: 0,
+          marginTop: '0.5rem',
+          background: 'white',
+          borderRadius: '12px',
+          padding: '1rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 1000,
+          minWidth: '280px'
+        }}>
+          {/* Controles */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '1rem'
+          }}>
+            <button
+              onClick={() => cambiarMes(-1)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                fontSize: '1rem',
+                color: '#145c63'
+              }}
+            >
+              <FaChevronLeft />
+            </button>
+            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+              {nombresMeses[mesVista.getMonth()]} {mesVista.getFullYear()}
+            </h4>
+            <button
+              onClick={() => cambiarMes(1)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                fontSize: '1rem',
+                color: '#145c63'
+              }}
+            >
+              <FaChevronRight />
+            </button>
+          </div>
+          
+          <button
+            onClick={irMesActual}
+            style={{
+              width: '100%',
+              padding: '0.4rem',
+              marginBottom: '0.75rem',
+              background: '#f0f0f0',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.8rem'
+            }}
+          >
+            Ir a este mes
+          </button>
+          
+          {/* Días de la semana */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(7, 1fr)', 
+            gap: '0.25rem',
+            marginBottom: '0.5rem'
+          }}>
+            {nombresDias.map(dia => (
+              <div key={dia} style={{ 
+                textAlign: 'center', 
+                fontSize: '0.75rem', 
+                fontWeight: '600',
+                color: '#666',
+                padding: '0.25rem'
+              }}>
+                {dia}
+              </div>
+            ))}
+          </div>
+          
+          {/* Días del mes */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(7, 1fr)', 
+            gap: '0.25rem'
+          }}>
+            {diasDelMes.map((dia, idx) => {
+              if (!dia) {
+                return <div key={`empty-${idx}`} style={{ aspectRatio: '1' }} />;
+              }
+              
+              return (
+                <button
+                  key={dia.numero}
+                  onClick={() => handleClickDia(dia)}
+                  disabled={dia.esPasado}
+                  style={{
+                    aspectRatio: '1',
+                    border: dia.esSeleccionado 
+                      ? '2px solid #145c63' 
+                      : dia.esHoy 
+                        ? '2px solid #f59e0b'
+                        : '1px solid #e0e0e0',
+                    borderRadius: '6px',
+                    background: dia.esSeleccionado 
+                      ? '#145c63'
+                      : dia.esHoy
+                        ? '#fef3c7'
+                        : dia.tieneTurnos
+                          ? '#dbeafe'
+                          : dia.tieneDisponibilidad
+                            ? '#d1fae5'
+                            : '#f5f5f5',
+                    color: dia.esSeleccionado 
+                      ? 'white'
+                      : dia.esPasado
+                        ? '#999'
+                        : '#333',
+                    cursor: dia.esPasado ? 'not-allowed' : 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    opacity: dia.esPasado ? 0.5 : 1
+                  }}
+                  title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : ''}
+                >
+                  {dia.numero}
+                  {(dia.tieneTurnos || dia.tieneDisponibilidad) && !dia.esSeleccionado && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '2px',
+                      width: '4px',
+                      height: '4px',
+                      borderRadius: '50%',
+                      background: dia.tieneTurnos ? '#3b82f6' : '#10b981'
+                    }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Leyenda */}
+          <div style={{ 
+            marginTop: '0.75rem', 
+            paddingTop: '0.75rem', 
+            borderTop: '1px solid #e0e0e0',
+            fontSize: '0.7rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '12px', height: '12px', background: '#d1fae5', border: '1px solid #10b981', borderRadius: '4px' }} />
+              <span>Disponible</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '12px', height: '12px', background: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '4px' }} />
+              <span>Con turnos</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AgendaDiaria() {
   const navigate = useNavigate();
@@ -165,6 +544,102 @@ export default function AgendaDiaria() {
   }, [vista, semanaActual, turnosSemanaData, filtroEstado, filtroPaciente]);
 
   const fechaStr = useMemo(() => formatDate(fechaSeleccionada), [fechaSeleccionada]);
+
+  // Calcular inicio y fin del mes actual para cargar disponibilidades
+  const mesActual = useMemo(() => {
+    const año = fechaSeleccionada.getFullYear();
+    const mes = fechaSeleccionada.getMonth();
+    const inicio = new Date(año, mes, 1);
+    const fin = new Date(año, mes + 1, 0);
+    return { inicio, fin };
+  }, [fechaSeleccionada]);
+
+  // Cargar disponibilidades del mes para el mini calendario
+  const fechaInicioMes = useMemo(() => formatDate(mesActual.inicio), [mesActual]);
+  const fechaFinMes = useMemo(() => formatDate(mesActual.fin), [mesActual]);
+  const { data: disponibilidadesMes } = useDisponibilidadesSemanal(fechaInicioMes, fechaFinMes);
+
+  // Cargar turnos del mes completo para el mini calendario
+  const { data: turnosMesData } = useTurnos({
+    fechaInicio: fechaInicioMes,
+    fechaFin: fechaFinMes,
+    odontologoId: odontologoIdParaConsulta,
+    perPage: 1000
+  });
+
+  // Obtener días con disponibilidad y turnos en el mes
+  const diasConActividad = useMemo(() => {
+    const diasDisponibles = new Set();
+    const diasConTurnos = new Set();
+    
+    // Procesar disponibilidades - parsear fecha manualmente para evitar problemas de zona horaria
+    if (disponibilidadesMes) {
+      disponibilidadesMes.forEach(disp => {
+        if (typeof disp.fecha === 'string') {
+          const partes = disp.fecha.split('-');
+          if (partes.length === 3) {
+            const año = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const dia = parseInt(partes[2], 10);
+            // Verificar que pertenezca al mes actual
+            if (año === mesActual.inicio.getFullYear() && mes === mesActual.inicio.getMonth()) {
+              if (disp.tipo === 'LABORAL') {
+                diasDisponibles.add(dia);
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Procesar turnos del mes - parsear fecha manualmente para evitar problemas de zona horaria
+    if (turnosMesData) {
+      let turnosList = [];
+      if (Array.isArray(turnosMesData)) {
+        turnosList = turnosMesData;
+      } else if (turnosMesData.data) {
+        turnosList = Array.isArray(turnosMesData.data) ? turnosMesData.data : [];
+      } else if (turnosMesData.rows) {
+        turnosList = turnosMesData.rows || [];
+      }
+      
+      turnosList.forEach(turno => {
+        // Parsear fechaHora manualmente para evitar problemas de zona horaria
+        const fechaHoraStr = turno.fechaHora;
+        let año, mes, dia;
+        
+        if (typeof fechaHoraStr === 'string') {
+          // Formato ISO: "2025-11-24T10:00:00.000Z" o "2025-11-24T10:00:00"
+          const fechaParte = fechaHoraStr.split('T')[0];
+          const partes = fechaParte.split('-');
+          if (partes.length === 3) {
+            año = parseInt(partes[0], 10);
+            mes = parseInt(partes[1], 10) - 1;
+            dia = parseInt(partes[2], 10);
+          } else {
+            // Fallback: usar Date pero con mediodía para evitar problemas
+            const fechaTurno = new Date(fechaHoraStr + 'T12:00:00');
+            año = fechaTurno.getFullYear();
+            mes = fechaTurno.getMonth();
+            dia = fechaTurno.getDate();
+          }
+        } else if (fechaHoraStr instanceof Date) {
+          año = fechaHoraStr.getFullYear();
+          mes = fechaHoraStr.getMonth();
+          dia = fechaHoraStr.getDate();
+        } else {
+          return; // Skip si no podemos parsear
+        }
+        
+        // Verificar que pertenezca al mes actual
+        if (año === mesActual.inicio.getFullYear() && mes === mesActual.inicio.getMonth()) {
+          diasConTurnos.add(dia);
+        }
+      });
+    }
+    
+    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
+  }, [disponibilidadesMes, turnosMesData, mesActual]);
 
   // Verificar si la fecha seleccionada es HOY
   const esHoy = useMemo(() => {
@@ -495,13 +970,6 @@ export default function AgendaDiaria() {
         </button>
         
         <div className="fecha-selector">
-          <FaCalendarAlt />
-          <input 
-            type="date" 
-            value={fechaStr} 
-            onChange={handleCambioFecha}
-            className="input-fecha"
-          />
           <span className="fecha-legible">{formatDateReadable(fechaSeleccionada)}</span>
         </div>
         
@@ -548,6 +1016,17 @@ export default function AgendaDiaria() {
           >
             <FaFilter /> Filtros
           </button>
+        </div>
+
+        {/* Mini Calendario Mensual */}
+        <div style={{ 
+          marginLeft: '1rem',
+          position: 'relative'
+        }}>
+          <MiniCalendarioMensual
+            fechaSeleccionada={fechaSeleccionada}
+            setFechaSeleccionada={setFechaSeleccionada}
+          />
         </div>
 
         {/* CU-AG01.4: Controles de cancelación múltiple */}
