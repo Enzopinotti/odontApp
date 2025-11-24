@@ -52,6 +52,10 @@ export default function GestionDisponibilidades() {
   // Estado para el día actual (solo vista diaria)
   const [diaActual, setDiaActual] = useState(new Date());
   
+  // Estado para filtros
+  const [odontologoFiltro, setOdontologoFiltro] = useState([]); // [] = todos, array de IDs para múltiple
+  const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'disponibles' | 'seleccionados'
+  
   // Estado para modal
   const [modalAbierto, setModalAbierto] = useState(false);
   const [disponibilidadSeleccionada, setDisponibilidadSeleccionada] = useState(null);
@@ -70,10 +74,10 @@ export default function GestionDisponibilidades() {
   // Cargar disponibilidades del día actual
   const { data: disponibilidades, isLoading: loadingDisponibilidades, refetch, isFetching } = useDisponibilidadesSemanal(fechaInicio, fechaFin);
   
-  // Cargar turnos del día actual
+  // Cargar turnos del día actual (filtrado por odontólogo si está seleccionado)
   const { data: turnosData, isLoading: loadingTurnos } = useTurnosPorFecha(
     fechaActual, 
-    null // odontologoId - null para todos
+    odontologoFiltro.length === 1 ? odontologoFiltro[0] : null // Si hay solo uno, filtrar; si hay varios o ninguno, todos
   );
   const turnos = useMemo(() => {
     if (!turnosData) return [];
@@ -93,6 +97,39 @@ export default function GestionDisponibilidades() {
     setDiaActual(new Date());
   };
   
+  // Calcular odontólogos disponibles en la fecha seleccionada
+  const odontologosDisponibles = useMemo(() => {
+    if (!odontologos || !disponibilidades) return [];
+    
+    const odontologosConDisponibilidad = new Set();
+    disponibilidades.forEach(disp => {
+      if (disp.fecha === fechaActual && disp.tipo === 'LABORAL') {
+        odontologosConDisponibilidad.add(disp.odontologoId);
+      }
+    });
+    
+    return Array.from(odontologosConDisponibilidad);
+  }, [odontologos, disponibilidades, fechaActual]);
+  
+  // Filtrar odontólogos según el filtro seleccionado
+  const odontologosFiltrados = useMemo(() => {
+    if (!odontologos) return [];
+    
+    if (filtroTipo === 'todos') {
+      return odontologos;
+    }
+    
+    if (filtroTipo === 'disponibles') {
+      return odontologos.filter(o => odontologosDisponibles.includes(o.userId));
+    }
+    
+    if (filtroTipo === 'seleccionados' && odontologoFiltro.length > 0) {
+      return odontologos.filter(o => odontologoFiltro.includes(o.userId));
+    }
+    
+    return odontologos;
+  }, [odontologos, filtroTipo, odontologoFiltro, odontologosDisponibles]);
+  
   // Agrupar disponibilidades por odontólogo (vista diaria)
   const disponibilidadesPorOdontologo = useMemo(() => {
     if (!disponibilidades || !Array.isArray(disponibilidades)) return {};
@@ -104,6 +141,14 @@ export default function GestionDisponibilidades() {
       return acc;
     }, {});
   }, [disponibilidades, fechaActual]);
+  
+  // Handler para cambiar fecha desde selector
+  const handleCambiarFecha = (e) => {
+    const nuevaFecha = new Date(e.target.value);
+    if (!isNaN(nuevaFecha.getTime())) {
+      setDiaActual(nuevaFecha);
+    }
+  };
   
   // Handler para click en celda vacía
   const handleClickCelda = (odontologoId, hora) => {
@@ -372,11 +417,123 @@ export default function GestionDisponibilidades() {
           Agregar Disponibilidad Recurrente
         </button>
         
-        <div className="semana-info">
-          <FaCalendarAlt />
+        {/* Filtro por odontólogo */}
+        <select
+          value={filtroTipo === 'seleccionados' && odontologoFiltro.length === 1
+            ? `odontologo-${odontologoFiltro[0]}`
+            : filtroTipo}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === 'todos') {
+              setFiltroTipo('todos');
+              setOdontologoFiltro([]);
+            } else if (value === 'disponibles') {
+              setFiltroTipo('disponibles');
+              setOdontologoFiltro([]);
+            } else if (value.startsWith('odontologo-')) {
+              const odontologoId = parseInt(value.replace('odontologo-', ''));
+              setOdontologoFiltro([odontologoId]);
+              setFiltroTipo('seleccionados');
+            }
+          }}
+          className="btn-nav"
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: filtroTipo === 'disponibles' 
+              ? '#10b981' 
+              : filtroTipo === 'seleccionados' 
+                ? '#3b82f6' 
+                : '#145c63',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.875rem',
+            minWidth: '220px',
+            appearance: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 0.75rem center',
+            paddingRight: '2.5rem',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (filtroTipo === 'todos') {
+              e.target.style.backgroundColor = '#1a7a82';
+            } else if (filtroTipo === 'disponibles') {
+              e.target.style.backgroundColor = '#059669';
+            } else {
+              e.target.style.backgroundColor = '#2563eb';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (filtroTipo === 'todos') {
+              e.target.style.backgroundColor = '#145c63';
+            } else if (filtroTipo === 'disponibles') {
+              e.target.style.backgroundColor = '#10b981';
+            } else {
+              e.target.style.backgroundColor = '#3b82f6';
+            }
+          }}
+        >
+          <option value="todos" style={{ background: 'white', color: '#374151' }}>
+            Todos los odontólogos
+          </option>
+          <option value="disponibles" style={{ background: 'white', color: '#374151' }}>
+            Disponibles ({odontologosDisponibles.length})
+          </option>
+          {odontologos?.map((odontologo) => {
+            const estaDisponible = odontologosDisponibles.includes(odontologo.userId);
+            return (
+              <option 
+                key={odontologo.userId} 
+                value={`odontologo-${odontologo.userId}`}
+                style={{ background: 'white', color: '#374151' }}
+              >
+                Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                {estaDisponible ? ' ✓ Disponible' : ''}
+              </option>
+            );
+          })}
+        </select>
+        
+        <div 
+          className="semana-info" 
+          style={{ position: 'relative', cursor: 'pointer' }}
+          onClick={() => {
+            const input = document.getElementById('fecha-selector-hidden');
+            if (input) {
+              // Intentar usar showPicker si está disponible (Chrome/Edge)
+              if (input.showPicker) {
+                input.showPicker();
+              } else {
+                // Fallback: hacer click en el input
+                input.click();
+              }
+            }
+          }}
+        >
+          <FaCalendarAlt style={{ cursor: 'pointer' }} />
           <span>
             {formatDateReadable(diaActual)}
           </span>
+          <input
+            id="fecha-selector-hidden"
+            type="date"
+            value={fechaActual}
+            onChange={handleCambiarFecha}
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              left: 0,
+              top: 0,
+              zIndex: 1
+            }}
+          />
         </div>
         
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -399,14 +556,14 @@ export default function GestionDisponibilidades() {
         {/* Encabezado con odontólogos */}
         <div className="calendario-header" style={{ 
           display: 'grid', 
-          gridTemplateColumns: `80px repeat(${odontologos?.length || 1}, 1fr)`
+          gridTemplateColumns: `80px repeat(${odontologosFiltrados?.length || 1}, 1fr)`
         }}>
           <div className="columna-horas">
             <div className="header-cell">Horario</div>
           </div>
           
-          {odontologos && odontologos.length > 0 ? (
-            odontologos.map((odontologo) => (
+          {odontologosFiltrados && odontologosFiltrados.length > 0 ? (
+            odontologosFiltrados.map((odontologo) => (
               <div key={odontologo.userId} className="columna-odontologo">
                 <div className="header-cell odontologo-info">
                   <div className="odontologo-nombre">
@@ -424,7 +581,7 @@ export default function GestionDisponibilidades() {
         {/* Grid del calendario */}
         <div className="calendario-grid" style={{
           display: 'grid',
-          gridTemplateColumns: `80px repeat(${odontologos?.length || 1}, 1fr)`
+          gridTemplateColumns: `80px repeat(${odontologosFiltrados?.length || 1}, 1fr)`
         }}>
           {/* Columna de horas */}
           <div className="columna-horas">
@@ -436,7 +593,7 @@ export default function GestionDisponibilidades() {
           </div>
           
           {/* Vista diaria: una columna por odontólogo */}
-          {odontologos?.map((odontologo) => {
+          {odontologosFiltrados?.map((odontologo) => {
             const key = `${odontologo.userId}-${fechaActual}`;
             const disponibilidadesOdontologo = disponibilidadesPorOdontologo[key] || [];
             

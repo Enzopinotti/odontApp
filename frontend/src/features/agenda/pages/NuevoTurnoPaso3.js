@@ -13,8 +13,10 @@ export default function NuevoTurnoPaso3() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   
-  const { fechaHora, tratamiento, odontologoId, duracion, paciente, datosPaciente } = location.state || {};
+  const { fechaHora, tratamiento, odontologoId, duracion: duracionInicial, paciente, datosPaciente } = location.state || {};
   
+  const [motivo, setMotivo] = useState(tratamiento?.nombre || '');
+  const [duracion, setDuracion] = useState(duracionInicial || 30);
   const [conflicto, setConflicto] = useState(null);
   const [mostrarModalConflicto, setMostrarModalConflicto] = useState(false);
   
@@ -39,11 +41,23 @@ export default function NuevoTurnoPaso3() {
   });
 
   const handleConfirmar = async () => {
+    // Validar duración (15-120 minutos)
+    if (duracion < 15 || duracion > 120) {
+      showToast('La duración debe estar entre 15 y 120 minutos', 'error');
+      return;
+    }
+    
+    // Validar motivo (1-255 caracteres)
+    if (!motivo || motivo.trim().length === 0 || motivo.length > 255) {
+      showToast('El motivo es requerido y debe tener entre 1 y 255 caracteres', 'error');
+      return;
+    }
+    
     try {
       await crearTurno.mutateAsync({
         fechaHora: fechaHora,
-        duracion: duracion || 30,
-        motivo: tratamiento.nombre,
+        duracion: duracion,
+        motivo: motivo.trim(),
         pacienteId: paciente.id,
         odontologoId: odontologoId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
@@ -75,8 +89,8 @@ export default function NuevoTurnoPaso3() {
     try {
       await crearTurno.mutateAsync({
         fechaHora: fechaHora,
-        duracion: duracion || 30,
-        motivo: tratamiento.nombre,
+        duracion: duracion,
+        motivo: motivo.trim(),
         pacienteId: paciente.id,
         odontologoId: nuevoOdontologo.userId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
@@ -93,8 +107,8 @@ export default function NuevoTurnoPaso3() {
     try {
       await crearTurno.mutateAsync({
         fechaHora: nuevoSlot.fechaHora,
-        duracion: duracion || 30,
-        motivo: tratamiento.nombre,
+        duracion: duracion,
+        motivo: motivo.trim(),
         pacienteId: paciente.id,
         odontologoId: odontologoId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
@@ -131,18 +145,65 @@ export default function NuevoTurnoPaso3() {
       </div>
 
       <div className="nuevo-turno-form">
-        <h2>Resumen del turno</h2>
+        <h2>Confirmar turno</h2>
+        
+        {/* CU-AG01.2: Campos editables para motivo y duración */}
+        <div className="form-section" style={{ marginBottom: '2rem' }}>
+          <label className="form-label">
+            Motivo de la consulta <span style={{ color: 'red' }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Ingrese el motivo de la consulta"
+            className="form-input"
+            maxLength={255}
+            style={{ width: '100%' }}
+          />
+          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
+            {motivo.length}/255 caracteres
+          </div>
+        </div>
+        
+        <div className="form-section" style={{ marginBottom: '2rem' }}>
+          <label className="form-label">
+            Duración (minutos) <span style={{ color: 'red' }}>*</span>
+          </label>
+          <input
+            type="number"
+            value={duracion}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 30;
+              if (value >= 15 && value <= 120) {
+                setDuracion(value);
+              }
+            }}
+            min={15}
+            max={120}
+            step={15}
+            className="form-input"
+            style={{ width: '200px' }}
+          />
+          <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
+            Duración entre 15 y 120 minutos (múltiplos de 15 recomendados)
+          </div>
+        </div>
         
         <div className="resumen-turno">
           <div className="resumen-card">
             <div className="resumen-title">Datos de la atención</div>
             <div className="resumen-item">
               <div className="resumen-label">Tratamiento</div>
-              <div className="resumen-value">{tratamiento.nombre}</div>
+              <div className="resumen-value">{tratamiento?.nombre || 'No especificado'}</div>
             </div>
             <div className="resumen-item">
               <div className="resumen-label">Duración</div>
-              <div className="resumen-value">{duracion || 30} minutos</div>
+              <div className="resumen-value">{duracion} minutos</div>
+            </div>
+            <div className="resumen-item">
+              <div className="resumen-label">Motivo</div>
+              <div className="resumen-value">{motivo || 'No especificado'}</div>
             </div>
           </div>
 
