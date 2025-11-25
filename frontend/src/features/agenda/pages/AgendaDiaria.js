@@ -24,19 +24,32 @@ const formatDateReadable = (date) => {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
-// Generar array de horarios cada 1 hora
+// Generar array de horarios (slot base)
 const INICIO_JORNADA = 8; // 8:00 AM
 const FIN_JORNADA = 20; // 8:00 PM
+const SLOT_MINUTOS = 15; // granularidad fina, permite turnos como 09:45
 
-const generarHorarios = () => {
+const horaStringToMinutes = (hora) => {
+  if (!hora) return 0;
+  const [h, m] = hora.split(':');
+  return parseInt(h || '0', 10) * 60 + parseInt(m || '0', 10);
+};
+
+const minutesToHoraString = (minutosTotales) => {
+  const horas = Math.floor(minutosTotales / 60)
+    .toString()
+    .padStart(2, '0');
+  const minutos = (minutosTotales % 60).toString().padStart(2, '0');
+  return `${horas}:${minutos}`;
+};
+
+const generarHorarios = (minInicio = INICIO_JORNADA * 60, minFin = FIN_JORNADA * 60) => {
   const horarios = [];
-  for (let hora = INICIO_JORNADA; hora < FIN_JORNADA; hora++) {
-    horarios.push(`${hora.toString().padStart(2, '0')}:00`);
+  for (let min = minInicio; min < minFin; min += SLOT_MINUTOS) {
+    horarios.push(minutesToHoraString(min));
   }
   return horarios;
 };
-
-const HORARIOS = generarHorarios();
 
 // Colores por odontólogo (ciclando)
 const COLORES_ODONTOLOGO = [
@@ -750,6 +763,50 @@ export default function AgendaDiaria() {
     return turnosList;
   }, [turnosData, filtroEstado, filtroPaciente, filtroTratamiento, filtroOdontologos]);
 
+  // Determinar el rango horario dinámico según disponibilidades/turnos
+  const { horarioMinimo, horarioMaximo } = useMemo(() => {
+    let min = INICIO_JORNADA * 60;
+    let max = FIN_JORNADA * 60;
+
+    turnos.forEach((turno) => {
+      const inicioFecha = new Date(turno.fechaHora);
+      const inicioStr = `${inicioFecha.getHours().toString().padStart(2, '0')}:${inicioFecha
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}`;
+      const inicioMin = horaStringToMinutes(inicioStr);
+      const finMin = inicioMin + (turno.duracion || 30);
+      min = Math.min(min, inicioMin);
+      max = Math.max(max, finMin);
+    });
+
+    disponibilidades
+      ?.filter((disp) => disp.fecha === fechaStr)
+      ?.forEach((disp) => {
+        const inicioMin = horaStringToMinutes(normalizarHora(disp.horaInicio));
+        const finMin = horaStringToMinutes(normalizarHora(disp.horaFin));
+        min = Math.min(min, inicioMin);
+        max = Math.max(max, finMin);
+      });
+
+    // Añadir margen mínimo de 60 minutos para evitar vistas vacías
+    const minAjustado = Math.max(INICIO_JORNADA * 60, Math.floor(min / SLOT_MINUTOS) * SLOT_MINUTOS);
+    const maxAjustado = Math.min(
+      FIN_JORNADA * 60,
+      Math.max(minAjustado + 60, Math.ceil(max / SLOT_MINUTOS) * SLOT_MINUTOS)
+    );
+
+    return {
+      horarioMinimo: minAjustado,
+      horarioMaximo: maxAjustado
+    };
+  }, [turnos, disponibilidades, fechaStr]);
+
+  const HORARIOS = useMemo(
+    () => generarHorarios(horarioMinimo, horarioMaximo),
+    [horarioMinimo, horarioMaximo]
+  );
+
   // Asignar colores a odontólogos
   const coloresPorOdontologo = useMemo(() => {
     if (!odontologos) return {};
@@ -784,7 +841,7 @@ export default function AgendaDiaria() {
     setFechaSeleccionada(nuevaFecha);
   };
 
-  // Verificar si un horario está dentro de la disponibilidad laboral (intervalos de 1 hora)
+  // Verificar si un horario está dentro de la disponibilidad laboral (intervalos dinámicos)
   const estaDisponible = (odontologoId, hora) => {
     if (!disponibilidades) return false;
     
@@ -792,20 +849,13 @@ export default function AgendaDiaria() {
       d => d.odontologoId === odontologoId && d.fecha === fechaStr && d.tipo === 'LABORAL'
     );
     
-    const slotHora = parseInt(hora.split(':')[0]);
+    const slotMin = horaStringToMinutes(hora);
     
     for (const disp of dispOdontologo) {
-      const horaInicio = normalizarHora(disp.horaInicio);
-      const horaFin = normalizarHora(disp.horaFin);
+      const inicioMin = horaStringToMinutes(normalizarHora(disp.horaInicio));
+      const finMin = horaStringToMinutes(normalizarHora(disp.horaFin));
       
-      const inicioHora = parseInt(horaInicio.split(':')[0]);
-      const finHora = parseInt(horaFin.split(':')[0]);
-      const finMinutos = parseInt(horaFin.split(':')[1]);
-      
-      // Si la hora de fin tiene minutos, se considera que abarca esa hora completa
-      const finHoraAjustada = finMinutos > 0 ? finHora + 1 : finHora;
-      
-      if (slotHora >= inicioHora && slotHora < finHoraAjustada) {
+      if (slotMin >= inicioMin && slotMin < finMin) {
         return true;
       }
     }
@@ -821,19 +871,15 @@ export default function AgendaDiaria() {
       d => d.odontologoId === odontologoId && d.fecha === fechaStr && d.tipo === 'NOLABORAL'
     );
     
-    const slotHora = parseInt(hora.split(':')[0]);
+    const slotMin = horaStringToMinutes(hora);
     
     for (const bloqueo of bloqueos) {
       const horaInicio = normalizarHora(bloqueo.horaInicio);
       const horaFin = normalizarHora(bloqueo.horaFin);
+      const inicioMin = horaStringToMinutes(horaInicio);
+      const finMin = horaStringToMinutes(horaFin);
       
-      const inicioHora = parseInt(horaInicio.split(':')[0]);
-      const finHora = parseInt(horaFin.split(':')[0]);
-      const finMinutos = parseInt(horaFin.split(':')[1]);
-      
-      const finHoraAjustada = finMinutos > 0 ? finHora + 1 : finHora;
-      
-      if (slotHora >= inicioHora && slotHora < finHoraAjustada) {
+      if (slotMin >= inicioMin && slotMin < finMin) {
         return bloqueo;
       }
     }
@@ -841,30 +887,27 @@ export default function AgendaDiaria() {
     return null;
   };
 
-  // Obtener turno en un horario específico (intervalos de 1 hora)
+  // Obtener turno en un horario específico (intervalos de 30 minutos)
   const obtenerTurno = (odontologoId, hora) => {
     if (!turnos) return null;
+    
+    const horaSlotMin = horaStringToMinutes(hora);
     
     for (const turno of turnos) {
       if (turno.odontologoId !== odontologoId) continue;
       
       const turnoFecha = new Date(turno.fechaHora);
-      const turnoHoraInicio = turnoFecha.getHours();
-      const turnoFin = new Date(turnoFecha.getTime() + turno.duracion * 60000);
-      const turnoHoraFin = turnoFin.getHours() + (turnoFin.getMinutes() > 0 ? 1 : 0); // Redondear hacia arriba
+      const horaInicioStr = `${turnoFecha.getHours().toString().padStart(2, '0')}:${turnoFecha.getMinutes().toString().padStart(2, '0')}`;
+      const horaFin = new Date(turnoFecha.getTime() + (turno.duracion || 30) * 60000);
+      const horaFinStr = `${horaFin.getHours().toString().padStart(2, '0')}:${horaFin.getMinutes().toString().padStart(2, '0')}`;
       
-      // Extraer la hora del slot actual
-      const slotHora = parseInt(hora.split(':')[0]);
+      const inicioMin = horaStringToMinutes(horaInicioStr);
+      const finMin = horaStringToMinutes(horaFinStr);
       
-      // El turno ocupa este slot si el slot está entre inicio y fin
-      if (slotHora >= turnoHoraInicio && slotHora < turnoHoraFin) {
-        // Formato de hora completa para mostrar
-        const horaInicioStr = `${turnoFecha.getHours().toString().padStart(2, '0')}:${turnoFecha.getMinutes().toString().padStart(2, '0')}`;
-        const horaFinStr = `${turnoFin.getHours().toString().padStart(2, '0')}:${turnoFin.getMinutes().toString().padStart(2, '0')}`;
-        
+      if (horaSlotMin >= inicioMin && horaSlotMin < finMin) {
         return { 
           ...turno, 
-          esInicio: slotHora === turnoHoraInicio,
+          esInicio: horaSlotMin === inicioMin,
           horaInicioStr,
           horaFinStr
         };
@@ -1491,7 +1534,7 @@ export default function AgendaDiaria() {
 
                   // Si hay turno y es el inicio
                   if (turno && turno.esInicio) {
-                    const duracionSlots = Math.ceil(turno.duracion / 60); // Ahora cada slot es 1 hora
+                    const duracionSlots = Math.max(1, Math.ceil((turno.duracion || 30) / SLOT_MINUTOS));
                     const estaSeleccionado = turnosSeleccionados.some(t => t.id === turno.id);
                     const puedeSeleccionar = modoSeleccionMultiple && turno.estado === 'PENDIENTE';
                     

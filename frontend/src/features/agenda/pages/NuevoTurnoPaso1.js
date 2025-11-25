@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTratamientos, useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
-import { useSlotsDisponibles } from '../hooks/useTurnos';
+import { useSlotsDisponibles, useTurnosPorFecha } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import BackBar from '../../../components/BackBar';
 import { FaChevronLeft, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
@@ -40,6 +40,12 @@ export default function NuevoTurnoPaso1() {
   const { data: disponibilidadesDia } = useDisponibilidadesSemanal(
     fecha || fechaInicioMes,
     fecha || fechaInicioMes
+  );
+
+  // Obtener turnos del día seleccionado para marcar horarios ocupados
+  const { data: turnosDiaData, isLoading: turnosDiaLoading } = useTurnosPorFecha(
+    fecha && odontologoId ? fecha : null,
+    fecha && odontologoId ? odontologoId : null
   );
   
   // Obtener días con disponibilidad y días no laborales en el mes
@@ -103,6 +109,7 @@ export default function NuevoTurnoPaso1() {
     odontologoId,
     tratamientoSeleccionado?.duracion || 30
   );
+  const estaCargandoHorarios = slotsLoading || turnosDiaLoading;
   
   // Obtener franjas de disponibilidad del odontólogo seleccionado para validación
   const franjasDisponibilidad = useMemo(() => {
@@ -148,6 +155,65 @@ export default function NuevoTurnoPaso1() {
     console.log('[NuevoTurnoPaso1] Slots formateados:', slotsFormateados);
     return slotsFormateados;
   }, [slots, fecha, odontologoId, tratamientoSeleccionado]);
+
+  // Turnos existentes para marcar horarios ocupados
+  const turnosDelDia = useMemo(() => {
+    if (!turnosDiaData) return [];
+    if (Array.isArray(turnosDiaData)) return turnosDiaData;
+    if (turnosDiaData.data) {
+      return Array.isArray(turnosDiaData.data) ? turnosDiaData.data : [];
+    }
+    if (turnosDiaData.rows) {
+      return turnosDiaData.rows;
+    }
+    return [];
+  }, [turnosDiaData]);
+
+  const horariosOcupados = useMemo(() => {
+    if (!turnosDelDia || turnosDelDia.length === 0) return [];
+    return turnosDelDia
+      .filter(turno => turno.estado !== 'CANCELADO')
+      .map(turno => {
+        const fechaInicio = new Date(turno.fechaHora);
+        const inicio = fechaInicio.toTimeString().slice(0, 5);
+        const fechaFin = new Date(fechaInicio.getTime() + (turno.duracion || 30) * 60000);
+        const fin = fechaFin.toTimeString().slice(0, 5);
+        return {
+          tipo: 'ocupado',
+          inicio,
+          fin,
+          id: turno.id,
+          motivo: turno.motivo || 'Horario ocupado',
+          estado: turno.estado
+        };
+      });
+  }, [turnosDelDia]);
+
+  const horariosParaMostrar = useMemo(() => {
+    const horariosOcupadosConRango = horariosOcupados.map(h => ({
+      ...h,
+      inicioMinutos: horaStringToMinutes(h.inicio),
+      finMinutos: horaStringToMinutes(h.fin || h.inicio) || horaStringToMinutes(h.inicio) + (tratamientoSeleccionado?.duracion || 30)
+    }));
+
+    const disponibles = (slotsFiltrados || [])
+      .filter(slot => {
+        const inicioSlot = horaStringToMinutes(slot.inicio);
+        return !horariosOcupadosConRango.some(h => inicioSlot >= h.inicioMinutos && inicioSlot < h.finMinutos);
+      })
+      .map(slot => ({
+        tipo: 'libre',
+        inicio: slot.inicio,
+        fin: slot.fin,
+      }));
+
+    const todos = [
+      ...disponibles,
+      ...horariosOcupados
+    ];
+
+    return todos.sort((a, b) => horaStringToMinutes(a.inicio) - horaStringToMinutes(b.inicio));
+  }, [slotsFiltrados, horariosOcupados, tratamientoSeleccionado]);
 
   // Reset fecha y horario cuando cambia el odontólogo
   useEffect(() => {
@@ -239,6 +305,12 @@ export default function NuevoTurnoPaso1() {
   ];
   
   const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+  function horaStringToMinutes(hora) {
+    if (!hora) return 0;
+    const [h, m] = hora.split(':');
+    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  }
 
   return (
     <div className="nuevo-turno-container">
@@ -594,7 +666,7 @@ export default function NuevoTurnoPaso1() {
         {odontologoId && fecha && tratamientoSeleccionado && (
           <div className="form-section">
             <label className="form-label">Horarios disponibles <span style={{ color: 'red' }}>*</span></label>
-            {slotsLoading ? (
+            {estaCargandoHorarios ? (
               <div>Cargando horarios disponibles...</div>
             ) : (
               <div className="horarios-disponibles" style={{
@@ -603,65 +675,75 @@ export default function NuevoTurnoPaso1() {
                 gap: '0.75rem',
                 marginTop: '0.5rem'
               }}>
-                {slotsFiltrados && slotsFiltrados.length > 0 ? (
-                  slotsFiltrados.map((slot, idx) => {
-                    // Manejar diferentes formatos de slot
-                    let slotInicio, slotFin;
-                    if (typeof slot === 'string') {
-                      // Formato simple: "09:00"
-                      slotInicio = slot;
-                      slotFin = null;
-                    } else if (slot.inicio) {
-                      // Formato objeto: { inicio: "09:00", fin: "09:30" }
-                      slotInicio = slot.inicio;
-                      slotFin = slot.fin;
-                    } else {
-                      return null;
-                    }
-                    
-                    const slotHora = slotInicio;
-                    const displayText = slotFin ? `${slotInicio} - ${slotFin}` : slotInicio;
+                {horariosParaMostrar && horariosParaMostrar.length > 0 ? (
+                  horariosParaMostrar.map((slot, idx) => {
+                    const isOcupado = slot.tipo === 'ocupado';
+                    const isSelected = !isOcupado && horarioSeleccionado === slot.inicio;
+                    const displayText = slot.fin ? `${slot.inicio} - ${slot.fin}` : slot.inicio;
+                    const slotKey = `${slot.tipo}-${slot.inicio}-${slot.fin || ''}-${slot.id || idx}`;
                     
                     return (
                       <div
-                        key={idx}
-                        className={`horario-slot ${
-                          horarioSeleccionado === slotHora ? 'selected' : ''
-                        }`}
-                        onClick={() => setHorarioSeleccionado(slotHora)}
-                        title={slotFin ? `De ${slotInicio} a ${slotFin}` : `A las ${slotInicio}`}
+                        key={slotKey}
+                        className={`horario-slot ${isSelected ? 'selected' : ''} ${isOcupado ? 'ocupado' : ''}`}
+                        onClick={isOcupado ? undefined : () => setHorarioSeleccionado(slot.inicio)}
+                        title={
+                          isOcupado
+                            ? `${displayText} ocupado${slot.motivo ? ` - ${slot.motivo}` : ''}`
+                            : slot.fin
+                              ? `De ${slot.inicio} a ${slot.fin}`
+                              : `A las ${slot.inicio}`
+                        }
                         style={{
                           padding: '0.75rem 1rem',
-                          border: horarioSeleccionado === slotHora 
-                            ? '2px solid #145c63' 
-                            : '1px solid #e0e0e0',
+                          border: isSelected
+                            ? '2px solid #145c63'
+                            : isOcupado
+                              ? '1px solid #fca5a5'
+                              : '1px solid #e0e0e0',
                           borderRadius: '8px',
-                          cursor: 'pointer',
-                          background: horarioSeleccionado === slotHora 
-                            ? '#145c63' 
-                            : 'white',
-                          color: horarioSeleccionado === slotHora 
-                            ? 'white' 
-                            : '#374151',
-                          fontWeight: horarioSeleccionado === slotHora ? '600' : '400',
+                          cursor: isOcupado ? 'not-allowed' : 'pointer',
+                          pointerEvents: isOcupado ? 'none' : 'auto',
+                          background: isSelected
+                            ? '#145c63'
+                            : isOcupado
+                              ? '#fee2e2'
+                              : 'white',
+                          color: isSelected
+                            ? 'white'
+                            : isOcupado
+                              ? '#b91c1c'
+                              : '#374151',
+                          fontWeight: isSelected ? '600' : '400',
                           textAlign: 'center',
                           transition: 'all 0.2s ease',
-                          fontSize: '0.9rem'
+                          fontSize: '0.9rem',
+                          minHeight: '68px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.25rem'
                         }}
                         onMouseEnter={(e) => {
-                          if (horarioSeleccionado !== slotHora) {
-                            e.target.style.background = '#e0f2f7';
-                            e.target.style.borderColor = '#145c63';
+                          if (!isOcupado && !isSelected) {
+                            e.currentTarget.style.background = '#e0f2f7';
+                            e.currentTarget.style.borderColor = '#145c63';
                           }
                         }}
                         onMouseLeave={(e) => {
-                          if (horarioSeleccionado !== slotHora) {
-                            e.target.style.background = 'white';
-                            e.target.style.borderColor = '#e0e0e0';
+                          if (!isOcupado && !isSelected) {
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.borderColor = '#e0e0e0';
                           }
                         }}
                       >
                         {displayText}
+                        {isOcupado && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#b91c1c' }}>
+                            Ocupado
+                          </span>
+                        )}
                       </div>
                     );
                   })
@@ -672,14 +754,12 @@ export default function NuevoTurnoPaso1() {
                     textAlign: 'center',
                     color: '#666'
                   }}>
-                    {slotsLoading 
-                      ? 'Cargando horarios...' 
-                      : slots && slots.length > 0
-                        ? 'No hay horarios disponibles que coincidan con las franjas de disponibilidad'
-                        : `No hay horarios disponibles para este odontólogo en la fecha seleccionada.
-                        ${!fecha ? 'Por favor, seleccione una fecha.' : ''}
-                        ${!tratamientoSeleccionado ? 'Por favor, seleccione un tratamiento.' : ''}
-                        Verifique que haya disponibilidades LABORAL configuradas para este odontólogo en la fecha ${fecha || 'seleccionada'}.`}
+                    {horariosOcupados.length > 0 && (!slotsFiltrados || slotsFiltrados.length === 0)
+                      ? 'Todos los horarios del día ya tienen un turno asignado.'
+                      : `No hay horarios disponibles para este odontólogo en la fecha seleccionada.
+                      ${!fecha ? 'Por favor, seleccione una fecha.' : ''}
+                      ${!tratamientoSeleccionado ? 'Por favor, seleccione un tratamiento.' : ''}
+                      Verifique que haya disponibilidades LABORAL configuradas para este odontólogo en la fecha ${fecha || 'seleccionada'}.`}
                   </div>
                 )}
               </div>
