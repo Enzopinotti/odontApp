@@ -6,6 +6,8 @@ import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
 import { FaClock, FaUser, FaCalendarPlus, FaUserMd, FaArrowRight, FaCalendarAlt, FaCalendarDay, FaSearch } from 'react-icons/fa';
 import BuscarTurnosModal from '../components/BuscarTurnosModal';
+import DetallesTurnoModal from '../components/DetallesTurnoModal';
+import { useTurnos } from '../hooks/useTurnos';
 import '../../../styles/agenda.scss';
 
 export default function Agenda() {
@@ -13,6 +15,8 @@ export default function Agenda() {
   const { showToast } = useToast();
   const [fecha] = useState(new Date().toISOString().split('T')[0]);
   const [modalBusquedaAbierto, setModalBusquedaAbierto] = useState(false);
+  const [turnoSeleccionado, setTurnoSeleccionado] = useState(null);
+  const [modalDetallesAbierto, setModalDetallesAbierto] = useState(false);
   
   const { data: turnosData, isLoading } = useTurnosPendientesConcluidos(fecha);
   const turnos = useMemo(() => turnosData || [], [turnosData]);
@@ -233,12 +237,28 @@ export default function Agenda() {
         isOpen={modalBusquedaAbierto}
         onClose={() => setModalBusquedaAbierto(false)}
         onTurnoClick={(turno) => {
+          setTurnoSeleccionado(turno);
           setModalBusquedaAbierto(false);
-          navigate(`/agenda/diaria`);
-          // Opcional: podrías pasar el turno como estado para abrirlo directamente
-          showToast('Navegando a la agenda del día', 'info');
+          setModalDetallesAbierto(true);
         }}
       />
+      
+      {/* Modal de detalles del turno */}
+      {modalDetallesAbierto && turnoSeleccionado && (
+        <DetallesTurnoModal
+          turno={turnoSeleccionado}
+          onClose={() => {
+            setModalDetallesAbierto(false);
+            setTurnoSeleccionado(null);
+          }}
+          onSuccess={() => {
+            setModalDetallesAbierto(false);
+            setTurnoSeleccionado(null);
+            // Refrescar datos si es necesario
+            showToast('Turno actualizado', 'success');
+          }}
+        />
+      )}
     </div>
   );
 }

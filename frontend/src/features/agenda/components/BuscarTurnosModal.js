@@ -1,8 +1,10 @@
 // src/features/agenda/components/BuscarTurnosModal.js
-import { useState } from 'react';
-import { FaSearch, FaTimes, FaCalendarAlt, FaUserMd, FaFileMedical, FaCheckCircle, FaClock, FaBan } from 'react-icons/fa';
+import { useState, useEffect, useMemo } from 'react';
+import { FaSearch, FaTimes, FaCalendarAlt, FaUserMd, FaFileMedical, FaCheckCircle, FaClock, FaBan, FaUser } from 'react-icons/fa';
 import { useTurnos } from '../hooks/useTurnos';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
+import * as agendaApi from '../../../api/agenda';
+import { useQuery } from '@tanstack/react-query';
 import useToast from '../../../hooks/useToast';
 import '../../../styles/agenda.scss';
 
@@ -15,9 +17,24 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const [filtroFechaFin, setFiltroFechaFin] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroTratamiento, setFiltroTratamiento] = useState('');
+  const [filtroPacienteTexto, setFiltroPacienteTexto] = useState('');
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
+  const [mostrarSugerenciasPacientes, setMostrarSugerenciasPacientes] = useState(false);
   
   // Cargar odontólogos
   const { data: odontologosData = [] } = useOdontologosPorEspecialidad();
+  
+  // Búsqueda de pacientes
+  const { data: pacientesSugeridos = [] } = useQuery({
+    queryKey: ['buscar-pacientes', filtroPacienteTexto],
+    queryFn: async () => {
+      if (!filtroPacienteTexto || filtroPacienteTexto.length < 2) return [];
+      const res = await agendaApi.buscarPacientes(filtroPacienteTexto);
+      return res.data?.data || res.data || [];
+    },
+    enabled: filtroPacienteTexto.length >= 2,
+    staleTime: 1000 * 60,
+  });
   
   // Construir parámetros de búsqueda
   const paramsBusqueda = {};
@@ -29,21 +46,44 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
     paramsBusqueda.fechaFin = fechaFin.toISOString();
   }
   if (filtroEstado) paramsBusqueda.estado = filtroEstado;
+  if (pacienteSeleccionado?.id) paramsBusqueda.pacienteId = pacienteSeleccionado.id;
   
-  // Query de búsqueda (solo se ejecuta si hay al menos un filtro)
-  const tieneFiltros = !!(filtroOdontologo || filtroFechaInicio || filtroFechaFin || filtroEstado);
+  // Query de búsqueda (se ejecuta si hay filtros del backend o texto de paciente)
+  // Si hay texto de paciente sin seleccionar, se ejecuta la query sin filtro de pacienteId y se filtra en el frontend
+  const tieneFiltrosBackend = !!(filtroOdontologo || filtroFechaInicio || filtroFechaFin || filtroEstado || pacienteSeleccionado?.id);
+  const tieneFiltros = tieneFiltrosBackend || !!filtroPacienteTexto;
   const queryParams = tieneFiltros ? paramsBusqueda : {};
   const { data: turnosData, isLoading: loadingTurnos } = useTurnos(queryParams, { enabled: tieneFiltros });
   
   // Procesar turnos
   const turnos = turnosData?.data || turnosData || [];
   
-  // Filtrar por tratamiento/motivo en el frontend (ya que el backend no tiene ese filtro)
-  const turnosFiltrados = filtroTratamiento
-    ? turnos.filter(t => 
+  // Filtrar por tratamiento/motivo y texto de paciente en el frontend
+  const turnosFiltrados = useMemo(() => {
+    let filtrados = turnos;
+    
+    // Filtrar por tratamiento/motivo
+    if (filtroTratamiento) {
+      filtrados = filtrados.filter(t => 
         t.motivo?.toLowerCase().includes(filtroTratamiento.toLowerCase())
-      )
-    : turnos;
+      );
+    }
+    
+    // Si hay texto de paciente pero no se seleccionó un paciente, filtrar por texto
+    if (filtroPacienteTexto && !pacienteSeleccionado) {
+      const textoBusqueda = filtroPacienteTexto.toLowerCase();
+      filtrados = filtrados.filter(t => {
+        const nombre = t.Paciente?.nombre?.toLowerCase() || '';
+        const apellido = t.Paciente?.apellido?.toLowerCase() || '';
+        const dni = t.Paciente?.dni || '';
+        return nombre.includes(textoBusqueda) || 
+               apellido.includes(textoBusqueda) || 
+               dni.includes(textoBusqueda);
+      });
+    }
+    
+    return filtrados;
+  }, [turnos, filtroTratamiento, filtroPacienteTexto, pacienteSeleccionado]);
   
   const handleLimpiarFiltros = () => {
     setFiltroOdontologo('');
@@ -51,7 +91,35 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
     setFiltroFechaFin('');
     setFiltroEstado('');
     setFiltroTratamiento('');
+    setFiltroPacienteTexto('');
+    setPacienteSeleccionado(null);
   };
+  
+  const handleSeleccionarPaciente = (paciente) => {
+    setPacienteSeleccionado(paciente);
+    setFiltroPacienteTexto(`${paciente.nombre} ${paciente.apellido}${paciente.dni ? ` (DNI: ${paciente.dni})` : ''}`);
+    setMostrarSugerenciasPacientes(false);
+  };
+  
+  const handleCambiarTextoPaciente = (texto) => {
+    setFiltroPacienteTexto(texto);
+    setPacienteSeleccionado(null);
+    setMostrarSugerenciasPacientes(texto.length >= 2);
+  };
+  
+  // Cerrar sugerencias al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mostrarSugerenciasPacientes && !event.target.closest('.form-group')) {
+        setMostrarSugerenciasPacientes(false);
+      }
+    };
+    
+    if (mostrarSugerenciasPacientes) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [mostrarSugerenciasPacientes]);
   
   const formatearFechaHora = (fechaHora) => {
     if (!fechaHora) return '';
@@ -143,6 +211,102 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                   </option>
                 ))}
               </select>
+            </div>
+            
+            {/* Filtro Paciente */}
+            <div className="form-group" style={{ position: 'relative' }}>
+              <label htmlFor="filtro-paciente" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
+                <FaUser /> Paciente
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  id="filtro-paciente"
+                  value={filtroPacienteTexto}
+                  onChange={(e) => handleCambiarTextoPaciente(e.target.value)}
+                  onFocus={() => {
+                    if (filtroPacienteTexto.length >= 2) {
+                      setMostrarSugerenciasPacientes(true);
+                    }
+                  }}
+                  placeholder="Buscar por nombre, apellido o DNI..."
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd'
+                  }}
+                />
+                {pacienteSeleccionado && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPacienteSeleccionado(null);
+                      setFiltroPacienteTexto('');
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '5px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#e74c3c',
+                      fontSize: '1.2rem',
+                      padding: '0.25rem'
+                    }}
+                    title="Limpiar selección"
+                  >
+                    ×
+                  </button>
+                )}
+                {mostrarSugerenciasPacientes && pacientesSugeridos.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    marginTop: '0.25rem',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                  }}>
+                    {pacientesSugeridos.map(paciente => (
+                      <div
+                        key={paciente.id}
+                        onClick={() => handleSeleccionarPaciente(paciente)}
+                        style={{
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f0f0f0',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                      >
+                        <div style={{ fontWeight: '600' }}>
+                          {paciente.nombre} {paciente.apellido}
+                        </div>
+                        {paciente.dni && (
+                          <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>
+                            DNI: {paciente.dni}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {pacienteSeleccionado && (
+                <small style={{ display: 'block', marginTop: '0.25rem', color: '#27ae60', fontWeight: '500' }}>
+                  ✓ Paciente seleccionado: {pacienteSeleccionado.nombre} {pacienteSeleccionado.apellido}
+                </small>
+              )}
             </div>
             
             {/* Filtro Fecha Inicio */}
