@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as agendaApi from '../../../api/agenda';
 
-export function useTurnos(params = {}) {
+export function useTurnos(params = {}, options = {}) {
   return useQuery({
     queryKey: ['turnos', params],
     queryFn: async () => {
@@ -14,6 +14,7 @@ export function useTurnos(params = {}) {
     staleTime: 1000 * 60 * 2,
     retry: false,
     refetchOnWindowFocus: false,
+    ...options,
   });
 }
 
@@ -98,6 +99,7 @@ export function useCrearTurno() {
       queryClient.invalidateQueries(['turnos']);
       queryClient.invalidateQueries(['agenda']);
       queryClient.invalidateQueries(['turnos-pendientes-concluidos']);
+      queryClient.invalidateQueries(['slots-disponibles']); // Invalidar slots para que se actualicen
     },
   });
 }
@@ -135,6 +137,7 @@ export function useCancelarTurno() {
     onSuccess: () => {
       queryClient.invalidateQueries(['turnos']);
       queryClient.invalidateQueries(['agenda']);
+      queryClient.invalidateQueries(['slots-disponibles']); // Invalidar slots para que se actualicen
     },
   });
 }
@@ -144,10 +147,15 @@ export function useCancelarTurnosMultiple() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ turnoIds, motivo }) => agendaApi.cancelarTurnosMultiple(turnoIds, motivo),
+    mutationFn: async ({ turnoIds, motivo }) => {
+      const res = await agendaApi.cancelarTurnosMultiple(turnoIds, motivo);
+      // El backend devuelve { success, message, data }
+      return res.data?.data || res.data || { cancelados: 0, fallidos: 0, errores: [], turnos: [] };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['turnos']);
       queryClient.invalidateQueries(['agenda']);
+      queryClient.invalidateQueries(['slots-disponibles']); // Invalidar slots para que se actualicen
     },
   });
 }
@@ -190,6 +198,7 @@ export function useReprogramarTurno() {
     onSuccess: () => {
       queryClient.invalidateQueries(['turnos']);
       queryClient.invalidateQueries(['agenda']);
+      queryClient.invalidateQueries(['slots-disponibles']); // Invalidar slots para que se actualicen
     },
   });
 }

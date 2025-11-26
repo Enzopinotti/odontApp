@@ -182,6 +182,10 @@ export const obtenerTurnosPorFecha = async (fecha, odontologoId = null) => {
   const where = {
     fechaHora: {
       [Op.between]: [inicioDia, finDia]
+    },
+    // Excluir turnos cancelados de la agenda del día
+    estado: {
+      [Op.ne]: EstadoTurno.CANCELADO
     }
   };
 

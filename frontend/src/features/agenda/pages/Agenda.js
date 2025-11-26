@@ -4,13 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTurnosPendientesConcluidos, useMarcarAsistencia } from '../hooks/useTurnos';
 import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
-import { FaClock, FaUser, FaCalendarPlus, FaUserMd, FaArrowRight, FaCalendarAlt, FaCalendarDay } from 'react-icons/fa';
+import { FaClock, FaUser, FaCalendarPlus, FaUserMd, FaArrowRight, FaCalendarAlt, FaCalendarDay, FaSearch } from 'react-icons/fa';
+import BuscarTurnosModal from '../components/BuscarTurnosModal';
 import '../../../styles/agenda.scss';
 
 export default function Agenda() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [fecha] = useState(new Date().toISOString().split('T')[0]);
+  const [modalBusquedaAbierto, setModalBusquedaAbierto] = useState(false);
   
   const { data: turnosData, isLoading } = useTurnosPendientesConcluidos(fecha);
   const turnos = useMemo(() => turnosData || [], [turnosData]);
@@ -149,6 +151,12 @@ export default function Agenda() {
         >
           <FaArrowRight /> Atender siguiente
         </button>
+        <button 
+          className="accion-btn secondary"
+          onClick={() => setModalBusquedaAbierto(true)}
+        >
+          <FaSearch /> Buscar turno
+        </button>
       </div>
 
       {/* Contenido principal */}
@@ -219,6 +227,18 @@ export default function Agenda() {
           </div>
         </div>
       </div>
+      
+      {/* Modal de búsqueda de turnos */}
+      <BuscarTurnosModal
+        isOpen={modalBusquedaAbierto}
+        onClose={() => setModalBusquedaAbierto(false)}
+        onTurnoClick={(turno) => {
+          setModalBusquedaAbierto(false);
+          navigate(`/agenda/diaria`);
+          // Opcional: podrías pasar el turno como estado para abrirlo directamente
+          showToast('Navegando a la agenda del día', 'info');
+        }}
+      />
     </div>
   );
 }

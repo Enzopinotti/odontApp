@@ -1,12 +1,13 @@
 // src/features/agenda/pages/AgendaDiaria.js
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaArrowLeft, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek, FaChevronUp, FaChevronDown } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaArrowLeft, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek, FaChevronUp, FaChevronDown, FaSearch } from 'react-icons/fa';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useTurnosPorFecha, useTurnos } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import DetallesTurnoModal from '../components/DetallesTurnoModal';
 import CancelarTurnosMultipleModal from '../components/CancelarTurnosMultipleModal';
+import BuscarTurnosModal from '../components/BuscarTurnosModal';
 import useToast from '../../../hooks/useToast';
 import useAuth from '../../../features/auth/hooks/useAuth';
 import '../../../styles/agendaDiaria.scss';
@@ -744,6 +745,9 @@ export default function AgendaDiaria() {
   const [turnosSeleccionados, setTurnosSeleccionados] = useState([]);
   const [modalCancelacionMultiple, setModalCancelacionMultiple] = useState(false);
   
+  // Estado para modal de búsqueda
+  const [modalBusquedaAbierto, setModalBusquedaAbierto] = useState(false);
+  
   // CU-AG01.5: Estado para vista semanal y filtros
   const [vista, setVista] = useState('diaria'); // 'diaria' | 'semanal'
   const [filtroEstado, setFiltroEstado] = useState(''); // '' | 'PENDIENTE' | 'ASISTIO' | 'AUSENTE' | 'CANCELADO'
@@ -1047,8 +1051,12 @@ export default function AgendaDiaria() {
     });
     
     // CU-AG01.5 y CU-AG01.6: Aplicar filtros
+    // Por defecto, excluir turnos cancelados (a menos que se seleccione explícitamente el filtro CANCELADO)
     if (filtroEstado) {
       turnosList = turnosList.filter(t => t.estado === filtroEstado);
+    } else {
+      // Si no hay filtro de estado, excluir cancelados por defecto
+      turnosList = turnosList.filter(t => t.estado !== 'CANCELADO');
     }
     if (filtroPaciente) {
       const busqueda = filtroPaciente.toLowerCase();
@@ -1404,6 +1412,23 @@ export default function AgendaDiaria() {
             }}
           >
             <FaFilter /> Filtros
+          </button>
+          
+          <button
+            onClick={() => setModalBusquedaAbierto(true)}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              background: '#3498db',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <FaSearch /> Buscar Turnos
           </button>
         </div>
 
@@ -2156,6 +2181,17 @@ export default function AgendaDiaria() {
           setModalCancelacionMultiple(false);
           setTurnosSeleccionados([]);
           setModoSeleccionMultiple(false);
+        }}
+      />
+      
+      {/* Modal de búsqueda de turnos */}
+      <BuscarTurnosModal
+        isOpen={modalBusquedaAbierto}
+        onClose={() => setModalBusquedaAbierto(false)}
+        onTurnoClick={(turno) => {
+          setTurnoSeleccionado(turno);
+          setModalBusquedaAbierto(false);
+          setModalAbierto(true);
         }}
       />
     </div>
