@@ -199,7 +199,7 @@ function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, dispon
   }, [mesVista, fechaSeleccionada, diasConActividad]);
   
   const handleClickDia = (dia) => {
-    if (!dia || dia.esPasado) return;
+    if (!dia) return;
     const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
     setFechaSeleccionada(nuevaFecha);
   };
@@ -298,7 +298,6 @@ function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, dispon
             <button
               key={dia.numero}
               onClick={() => handleClickDia(dia)}
-              disabled={dia.esPasado}
               style={{
                 aspectRatio: '1',
                 border: dia.esSeleccionado 
@@ -319,9 +318,9 @@ function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, dispon
                 color: dia.esSeleccionado 
                   ? 'white'
                   : dia.esPasado
-                    ? '#999'
+                    ? '#666'
                     : '#333',
-                cursor: dia.esPasado ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 fontSize: '0.75rem',
                 fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
                 display: 'flex',
@@ -329,9 +328,9 @@ function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, dispon
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                opacity: dia.esPasado ? 0.5 : 1
+                opacity: dia.esPasado ? 0.7 : 1
               }}
-              title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : ''}
+              title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : dia.esPasado ? 'Día pasado' : ''}
             >
               {dia.numero}
               {(dia.tieneTurnos || dia.tieneDisponibilidad) && !dia.esSeleccionado && (
@@ -527,7 +526,7 @@ function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
   }, [mesVista, fechaSeleccionada, diasConActividad]);
   
   const handleClickDia = (dia) => {
-    if (!dia || dia.esPasado) return;
+    if (!dia) return;
     const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
     setFechaSeleccionada(nuevaFecha);
     setMostrarCalendario(false);
@@ -655,7 +654,6 @@ function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
                 <button
                   key={dia.numero}
                   onClick={() => handleClickDia(dia)}
-                  disabled={dia.esPasado}
                   style={{
                     aspectRatio: '1',
                     border: dia.esSeleccionado 
@@ -676,9 +674,9 @@ function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
                     color: dia.esSeleccionado 
                       ? 'white'
                       : dia.esPasado
-                        ? '#999'
+                        ? '#666'
                         : '#333',
-                    cursor: dia.esPasado ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     fontSize: '0.85rem',
                     fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
                     display: 'flex',
@@ -686,9 +684,9 @@ function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    opacity: dia.esPasado ? 0.5 : 1
+                    opacity: dia.esPasado ? 0.7 : 1
                   }}
-                  title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : ''}
+                  title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : dia.esPasado ? 'Día pasado' : ''}
                 >
                   {dia.numero}
                   {(dia.tieneTurnos || dia.tieneDisponibilidad) && !dia.esSeleccionado && (
