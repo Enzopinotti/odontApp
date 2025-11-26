@@ -3,6 +3,9 @@ import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Configurar zona horaria de Argentina
+process.env.TZ = 'America/Argentina/Buenos_Aires';
+
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -11,6 +14,12 @@ export const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     dialect: 'mysql',
     logging: false,
+    timezone: '-03:00', // Zona horaria de Argentina (UTC-3)
+    dialectOptions: {
+      timezone: '-03:00', // Forzar zona horaria de Argentina en MySQL
+      dateStrings: false,
+      typeCast: true
+    },
   }
 );
 

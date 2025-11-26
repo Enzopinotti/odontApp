@@ -7,8 +7,10 @@ services:
     environment:
       MYSQL_DATABASE: odontapp_db
       MYSQL_ROOT_PASSWORD: odont123
+      TZ: America/Argentina/Buenos_Aires
     ports: ["3307:3306"]
     volumes: [mysql_data:/var/lib/mysql]
+    command: --default-time-zone='-03:00'
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -30,6 +32,7 @@ services:
       - "4000:4000"
     environment:
       NODE_ENV: development
+      TZ: America/Argentina/Buenos_Aires
     depends_on:
       mysql:
         condition: service_healthy

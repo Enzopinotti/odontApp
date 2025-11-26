@@ -68,9 +68,26 @@ export const findFiltered = async (filtros = {}, page = 1, perPage = 20) => {
 
   // Filtro por fecha
   if (filtros.fecha) {
-    const fecha = new Date(filtros.fecha);
-    const inicioDia = new Date(fecha.setHours(0, 0, 0, 0));
-    const finDia = new Date(fecha.setHours(23, 59, 59, 999));
+    // Parsear fecha sin zona horaria para evitar problemas de UTC
+    let fechaObj;
+    if (typeof filtros.fecha === 'string') {
+      const partes = filtros.fecha.split('-');
+      if (partes.length === 3) {
+        const año = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1; // Mes es 0-indexado
+        const dia = parseInt(partes[2], 10);
+        fechaObj = new Date(año, mes, dia);
+      } else {
+        fechaObj = new Date(filtros.fecha);
+      }
+    } else {
+      fechaObj = new Date(filtros.fecha);
+    }
+    
+    const inicioDia = new Date(fechaObj);
+    inicioDia.setHours(0, 0, 0, 0);
+    const finDia = new Date(fechaObj);
+    finDia.setHours(23, 59, 59, 999);
     
     where.fechaHora = {
       [Op.between]: [inicioDia, finDia]
@@ -137,9 +154,30 @@ export const findFiltered = async (filtros = {}, page = 1, perPage = 20) => {
 };
 
 export const obtenerTurnosPorFecha = async (fecha, odontologoId = null) => {
-  const fechaObj = new Date(fecha);
-  const inicioDia = new Date(fechaObj.setHours(0, 0, 0, 0));
-  const finDia = new Date(fechaObj.setHours(23, 59, 59, 999));
+  // Parsear fecha sin zona horaria para evitar problemas de UTC
+  // Si viene como string "YYYY-MM-DD", crear fecha en zona horaria local
+  let fechaObj;
+  if (typeof fecha === 'string') {
+    // Si es string, parsear como fecha local (no UTC)
+    const partes = fecha.split('-');
+    if (partes.length === 3) {
+      const año = parseInt(partes[0], 10);
+      const mes = parseInt(partes[1], 10) - 1; // Mes es 0-indexado
+      const dia = parseInt(partes[2], 10);
+      fechaObj = new Date(año, mes, dia);
+    } else {
+      fechaObj = new Date(fecha);
+    }
+  } else {
+    fechaObj = new Date(fecha);
+  }
+  
+  // Crear inicio y fin del día en zona horaria local
+  const inicioDia = new Date(fechaObj);
+  inicioDia.setHours(0, 0, 0, 0);
+  
+  const finDia = new Date(fechaObj);
+  finDia.setHours(23, 59, 59, 999);
   
   const where = {
     fechaHora: {

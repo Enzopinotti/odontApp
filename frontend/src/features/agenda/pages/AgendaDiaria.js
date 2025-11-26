@@ -27,7 +27,7 @@ const formatDateReadable = (date) => {
 // Generar array de horarios (slot base)
 const INICIO_JORNADA = 8; // 8:00 AM
 const FIN_JORNADA = 20; // 8:00 PM
-const SLOT_MINUTOS = 15; // granularidad fina, permite turnos como 09:45
+const SLOT_MINUTOS = 30; // bloques de 30 minutos para simplificar
 
 const horaStringToMinutes = (hora) => {
   if (!hora) return 0;
@@ -65,7 +65,293 @@ const normalizarHora = (hora) => {
   return hora.substring(0, 5); // '09:00:00' -> '09:00'
 };
 
-// Componente Mini Calendario Mensual
+// Componente Mini Calendario Mensual (versión compacta para sidebar)
+function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, disponibilidadesMes, turnosMesData, mesActual, onMesVistaChange }) {
+  const [mesVista, setMesVista] = useState(new Date(fechaSeleccionada));
+  
+  // Sincronizar mesVista cuando cambia fechaSeleccionada desde fuera del calendario
+  useEffect(() => {
+    setMesVista(new Date(fechaSeleccionada));
+  }, [fechaSeleccionada]);
+  
+  // Notificar al componente padre cuando cambia el mes visualizado
+  useEffect(() => {
+    if (onMesVistaChange) {
+      onMesVistaChange(mesVista);
+    }
+  }, [mesVista, onMesVistaChange]);
+  
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  // Obtener días con disponibilidad y turnos
+  const diasConActividad = useMemo(() => {
+    const diasDisponibles = new Set();
+    const diasConTurnos = new Set();
+    
+    if (disponibilidadesMes) {
+      disponibilidadesMes.forEach(disp => {
+        if (typeof disp.fecha === 'string') {
+          const partes = disp.fecha.split('-');
+          if (partes.length === 3) {
+            const año = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const dia = parseInt(partes[2], 10);
+            if (año === mesVista.getFullYear() && mes === mesVista.getMonth()) {
+              if (disp.tipo === 'LABORAL') {
+                diasDisponibles.add(dia);
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    if (turnosMesData) {
+      let turnosList = [];
+      if (Array.isArray(turnosMesData)) {
+        turnosList = turnosMesData;
+      } else if (turnosMesData.data) {
+        turnosList = Array.isArray(turnosMesData.data) ? turnosMesData.data : [];
+      } else if (turnosMesData.rows) {
+        turnosList = turnosMesData.rows || [];
+      }
+      
+      turnosList.forEach(turno => {
+        const fechaHoraStr = turno.fechaHora;
+        let año, mes, dia;
+        
+        if (typeof fechaHoraStr === 'string') {
+          const fechaParte = fechaHoraStr.split('T')[0];
+          const partes = fechaParte.split('-');
+          if (partes.length === 3) {
+            año = parseInt(partes[0], 10);
+            mes = parseInt(partes[1], 10) - 1;
+            dia = parseInt(partes[2], 10);
+            if (año === mesVista.getFullYear() && mes === mesVista.getMonth()) {
+              diasConTurnos.add(dia);
+            }
+          }
+        }
+      });
+    }
+    
+    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
+  }, [disponibilidadesMes, turnosMesData, mesVista]);
+  
+  const cambiarMes = (direccion) => {
+    const nuevo = new Date(mesVista);
+    nuevo.setMonth(nuevo.getMonth() + direccion);
+    setMesVista(nuevo);
+  };
+  
+  const irMesActual = () => {
+    const hoy = new Date();
+    setMesVista(hoy);
+    setFechaSeleccionada(hoy);
+  };
+  
+  const diasDelMes = useMemo(() => {
+    const año = mesVista.getFullYear();
+    const mes = mesVista.getMonth();
+    const primerDia = new Date(año, mes, 1);
+    const ultimoDia = new Date(año, mes + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaSemanaInicio = primerDia.getDay();
+    
+    const dias = [];
+    
+    for (let i = 0; i < diaSemanaInicio; i++) {
+      dias.push(null);
+    }
+    
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const fechaCompleta = new Date(año, mes, dia);
+      const añoStr = año.toString();
+      const mesStr = String(mes + 1).padStart(2, '0');
+      const diaStr = String(dia).padStart(2, '0');
+      const fechaStr = `${añoStr}-${mesStr}-${diaStr}`;
+      
+      const hoy = new Date();
+      const esPasado = fechaCompleta < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      const esHoy = fechaCompleta.getDate() === hoy.getDate() && 
+                    fechaCompleta.getMonth() === hoy.getMonth() && 
+                    fechaCompleta.getFullYear() === hoy.getFullYear();
+      const esSeleccionado = fechaCompleta.getDate() === fechaSeleccionada.getDate() &&
+                             fechaCompleta.getMonth() === fechaSeleccionada.getMonth() &&
+                             fechaCompleta.getFullYear() === fechaSeleccionada.getFullYear();
+      const tieneDisponibilidad = diasConActividad.disponibles.has(dia);
+      const tieneTurnos = diasConActividad.conTurnos.has(dia);
+      
+      dias.push({
+        numero: dia,
+        fecha: fechaStr,
+        esPasado,
+        esHoy,
+        esSeleccionado,
+        tieneDisponibilidad,
+        tieneTurnos
+      });
+    }
+    
+    return dias;
+  }, [mesVista, fechaSeleccionada, diasConActividad]);
+  
+  const handleClickDia = (dia) => {
+    if (!dia || dia.esPasado) return;
+    const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
+    setFechaSeleccionada(nuevaFecha);
+  };
+  
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '8px',
+      padding: '1rem',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      minWidth: '240px'
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '0.75rem'
+      }}>
+        <button
+          onClick={() => cambiarMes(-1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            fontSize: '0.9rem',
+            color: '#145c63'
+          }}
+        >
+          <FaChevronLeft />
+        </button>
+        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>
+          {nombresMeses[mesVista.getMonth()]} {mesVista.getFullYear()}
+        </h4>
+        <button
+          onClick={() => cambiarMes(1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            fontSize: '0.9rem',
+            color: '#145c63'
+          }}
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+      
+      <button
+        onClick={irMesActual}
+        style={{
+          width: '100%',
+          padding: '0.4rem',
+          marginBottom: '0.75rem',
+          background: '#f0f0f0',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '0.75rem'
+        }}
+      >
+        Hoy
+      </button>
+      
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(7, 1fr)', 
+        gap: '0.25rem',
+        marginBottom: '0.5rem'
+      }}>
+        {nombresDias.map(dia => (
+          <div key={dia} style={{ 
+            textAlign: 'center', 
+            fontSize: '0.7rem', 
+            fontWeight: '600',
+            color: '#666',
+            padding: '0.25rem'
+          }}>
+            {dia}
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(7, 1fr)', 
+        gap: '0.25rem'
+      }}>
+        {diasDelMes.map((dia, idx) => {
+          if (!dia) {
+            return <div key={`empty-${idx}`} style={{ aspectRatio: '1' }} />;
+          }
+          
+          return (
+            <button
+              key={dia.numero}
+              onClick={() => handleClickDia(dia)}
+              disabled={dia.esPasado}
+              style={{
+                aspectRatio: '1',
+                border: dia.esSeleccionado 
+                  ? '2px solid #145c63' 
+                  : dia.esHoy 
+                    ? '2px solid #f59e0b'
+                    : '1px solid #e0e0e0',
+                borderRadius: '4px',
+                background: dia.esSeleccionado 
+                  ? '#145c63'
+                  : dia.esHoy
+                    ? '#fef3c7'
+                    : dia.tieneTurnos
+                      ? '#dbeafe'
+                      : dia.tieneDisponibilidad
+                        ? '#d1fae5'
+                        : '#f5f5f5',
+                color: dia.esSeleccionado 
+                  ? 'white'
+                  : dia.esPasado
+                    ? '#999'
+                    : '#333',
+                cursor: dia.esPasado ? 'not-allowed' : 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                opacity: dia.esPasado ? 0.5 : 1
+              }}
+              title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : ''}
+            >
+              {dia.numero}
+              {(dia.tieneTurnos || dia.tieneDisponibilidad) && !dia.esSeleccionado && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  width: '3px',
+                  height: '3px',
+                  borderRadius: '50%',
+                  background: dia.tieneTurnos ? '#3b82f6' : '#10b981'
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Componente Mini Calendario Mensual (versión dropdown original)
 function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mesVista, setMesVista] = useState(new Date(fechaSeleccionada));
@@ -558,6 +844,14 @@ export default function AgendaDiaria() {
 
   const fechaStr = useMemo(() => formatDate(fechaSeleccionada), [fechaSeleccionada]);
 
+  // Estado para el mes visualizado en el mini calendario
+  const [mesVistaCalendario, setMesVistaCalendario] = useState(new Date(fechaSeleccionada));
+  
+  // Sincronizar mesVistaCalendario cuando cambia fechaSeleccionada
+  useEffect(() => {
+    setMesVistaCalendario(new Date(fechaSeleccionada));
+  }, [fechaSeleccionada]);
+
   // Calcular inicio y fin del mes actual para cargar disponibilidades
   const mesActual = useMemo(() => {
     const año = fechaSeleccionada.getFullYear();
@@ -567,12 +861,21 @@ export default function AgendaDiaria() {
     return { inicio, fin };
   }, [fechaSeleccionada]);
 
-  // Cargar disponibilidades del mes para el mini calendario
-  const fechaInicioMes = useMemo(() => formatDate(mesActual.inicio), [mesActual]);
-  const fechaFinMes = useMemo(() => formatDate(mesActual.fin), [mesActual]);
+  // Calcular inicio y fin del mes visualizado en el mini calendario
+  const mesVistaCalendarioCalculado = useMemo(() => {
+    const año = mesVistaCalendario.getFullYear();
+    const mes = mesVistaCalendario.getMonth();
+    const inicio = new Date(año, mes, 1);
+    const fin = new Date(año, mes + 1, 0);
+    return { inicio, fin };
+  }, [mesVistaCalendario]);
+
+  // Cargar disponibilidades del mes visualizado en el mini calendario
+  const fechaInicioMes = useMemo(() => formatDate(mesVistaCalendarioCalculado.inicio), [mesVistaCalendarioCalculado]);
+  const fechaFinMes = useMemo(() => formatDate(mesVistaCalendarioCalculado.fin), [mesVistaCalendarioCalculado]);
   const { data: disponibilidadesMes } = useDisponibilidadesSemanal(fechaInicioMes, fechaFinMes);
 
-  // Cargar turnos del mes completo para el mini calendario
+  // Cargar turnos del mes visualizado en el mini calendario
   const { data: turnosMesData } = useTurnos({
     fechaInicio: fechaInicioMes,
     fechaFin: fechaFinMes,
@@ -594,8 +897,8 @@ export default function AgendaDiaria() {
             const año = parseInt(partes[0], 10);
             const mes = parseInt(partes[1], 10) - 1;
             const dia = parseInt(partes[2], 10);
-            // Verificar que pertenezca al mes actual
-            if (año === mesActual.inicio.getFullYear() && mes === mesActual.inicio.getMonth()) {
+            // Verificar que pertenezca al mes visualizado en el mini calendario
+            if (año === mesVistaCalendarioCalculado.inicio.getFullYear() && mes === mesVistaCalendarioCalculado.inicio.getMonth()) {
               if (disp.tipo === 'LABORAL') {
                 diasDisponibles.add(dia);
               }
@@ -644,15 +947,15 @@ export default function AgendaDiaria() {
           return; // Skip si no podemos parsear
         }
         
-        // Verificar que pertenezca al mes actual
-        if (año === mesActual.inicio.getFullYear() && mes === mesActual.inicio.getMonth()) {
+        // Verificar que pertenezca al mes visualizado en el mini calendario
+        if (año === mesVistaCalendarioCalculado.inicio.getFullYear() && mes === mesVistaCalendarioCalculado.inicio.getMonth()) {
           diasConTurnos.add(dia);
         }
       });
     }
     
     return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
-  }, [disponibilidadesMes, turnosMesData, mesActual]);
+  }, [disponibilidadesMes, turnosMesData, mesVistaCalendarioCalculado]);
 
   // Verificar si la fecha seleccionada es HOY
   const esHoy = useMemo(() => {
@@ -734,6 +1037,15 @@ export default function AgendaDiaria() {
     if (!turnosData) return [];
     let turnosList = Array.isArray(turnosData) ? turnosData : (turnosData.data || []);
     
+    // Filtrar por fecha seleccionada (comparar solo la fecha, sin hora, para evitar problemas de zona horaria)
+    const fechaSeleccionadaStr = formatDate(fechaSeleccionada);
+    turnosList = turnosList.filter(t => {
+      if (!t.fechaHora) return false;
+      const fechaTurno = new Date(t.fechaHora);
+      const fechaTurnoStr = formatDate(fechaTurno);
+      return fechaTurnoStr === fechaSeleccionadaStr;
+    });
+    
     // CU-AG01.5 y CU-AG01.6: Aplicar filtros
     if (filtroEstado) {
       turnosList = turnosList.filter(t => t.estado === filtroEstado);
@@ -761,7 +1073,7 @@ export default function AgendaDiaria() {
     }
     
     return turnosList;
-  }, [turnosData, filtroEstado, filtroPaciente, filtroTratamiento, filtroOdontologos]);
+  }, [turnosData, fechaSeleccionada, filtroEstado, filtroPaciente, filtroTratamiento, filtroOdontologos]);
 
   // Determinar el rango horario dinámico según disponibilidades/turnos
   const { horarioMinimo, horarioMaximo } = useMemo(() => {
@@ -887,7 +1199,7 @@ export default function AgendaDiaria() {
     return null;
   };
 
-  // Obtener turno en un horario específico (intervalos de 30 minutos)
+  // Obtener turno en un horario específico (bloques de 30 minutos)
   const obtenerTurno = (odontologoId, hora) => {
     if (!turnos) return null;
     
@@ -904,10 +1216,19 @@ export default function AgendaDiaria() {
       const inicioMin = horaStringToMinutes(horaInicioStr);
       const finMin = horaStringToMinutes(horaFinStr);
       
-      if (horaSlotMin >= inicioMin && horaSlotMin < finMin) {
+      // Calcular el slot de inicio del turno (redondear hacia abajo al slot de 30 min más cercano)
+      const inicioSlot = Math.floor(inicioMin / SLOT_MINUTOS) * SLOT_MINUTOS;
+      
+      // El turno se muestra en este slot si:
+      // 1. Este slot es donde empieza el turno (redondeado al slot de 30 min), O
+      // 2. Este slot está dentro del rango del turno
+      const esSlotInicio = horaSlotMin === inicioSlot;
+      const estaEnRango = horaSlotMin >= inicioMin && horaSlotMin < finMin;
+      
+      if (esSlotInicio || estaEnRango) {
         return { 
           ...turno, 
-          esInicio: horaSlotMin === inicioMin,
+          esInicio: esSlotInicio, // Es inicio si estamos en el slot donde empieza (redondeado)
           horaInicioStr,
           horaFinStr
         };
@@ -997,31 +1318,56 @@ export default function AgendaDiaria() {
   }
 
   return (
-    <div className="agenda-diaria-container">
+    <div className="agenda-diaria-container" style={{ display: 'flex', gap: '1rem', height: 'calc(100vh - 120px)' }}>
+      {/* Sidebar con mini calendario */}
+      <div style={{ 
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <MiniCalendarioSidebar
+          fechaSeleccionada={fechaSeleccionada}
+          setFechaSeleccionada={setFechaSeleccionada}
+          disponibilidadesMes={disponibilidadesMes}
+          turnosMesData={turnosMesData}
+          mesActual={mesActual}
+          onMesVistaChange={setMesVistaCalendario}
+        />
+      </div>
+
+      {/* Contenido principal */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       {/* Header */}
-      <div className="agenda-diaria-header">
+      <div className="agenda-diaria-header" style={{ marginBottom: '0.5rem' }}>
         <button className="btn-volver" onClick={() => navigate('/agenda')}>
           <FaArrowLeft /> Volver
         </button>
-        <h1>Agenda del Día</h1>
+        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Agenda del Día</h1>
       </div>
 
-      {/* Controles de navegación */}
-      <div className="controles-fecha">
-        <button className="btn-nav" onClick={irDiaAnterior}>
-          <FaChevronLeft /> Anterior
+      {/* Controles de navegación compactos */}
+      <div className="controles-fecha" style={{ 
+        display: 'flex', 
+        gap: '0.5rem', 
+        alignItems: 'center',
+        marginBottom: '0.75rem',
+        flexWrap: 'wrap'
+      }}>
+        <button className="btn-nav" onClick={irDiaAnterior} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
+          <FaChevronLeft /> Ant
         </button>
         
-        <div className="fecha-selector">
-          <span className="fecha-legible">{formatDateReadable(fechaSeleccionada)}</span>
+        <div className="fecha-selector" style={{ padding: '0.4rem 0.75rem', fontSize: '0.9rem', fontWeight: '600' }}>
+          {formatDateReadable(fechaSeleccionada)}
         </div>
         
-        <button className="btn-hoy" onClick={irHoy}>
+        <button className="btn-hoy" onClick={irHoy} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
           Hoy
         </button>
         
-        <button className="btn-nav" onClick={irDiaSiguiente}>
-          Siguiente <FaChevronRight />
+        <button className="btn-nav" onClick={irDiaSiguiente} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
+          Sig <FaChevronRight />
         </button>
 
         {/* CU-AG01.5: Controles de vista y filtros */}
@@ -1061,16 +1407,6 @@ export default function AgendaDiaria() {
           </button>
         </div>
 
-        {/* Mini Calendario Mensual */}
-        <div style={{ 
-          marginLeft: '1rem',
-          position: 'relative'
-        }}>
-          <MiniCalendarioMensual
-            fechaSeleccionada={fechaSeleccionada}
-            setFechaSeleccionada={setFechaSeleccionada}
-          />
-        </div>
 
         {/* CU-AG01.4: Controles de cancelación múltiple */}
         <div className="controles-seleccion-multiple" style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1495,26 +1831,63 @@ export default function AgendaDiaria() {
           </div>
         </div>
       ) : (
-        <>
-      {/* Tabla de agenda */}
-      <div className="agenda-tabla-container">
-        <table className="agenda-tabla">
-          <thead>
+        <div>
+      {/* Tabla de agenda compacta */}
+      <div className="agenda-tabla-container" style={{ 
+        flex: 1, 
+        overflow: 'auto',
+        maxHeight: 'calc(100vh - 280px)'
+      }}>
+        <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
             <tr>
-              <th className="col-hora">Hora</th>
+              <th className="col-hora" style={{ 
+                padding: '0.5rem', 
+                fontSize: '0.8rem',
+                width: '60px',
+                minWidth: '60px',
+                color: '#1f2937',
+                fontWeight: '600'
+              }}>Hora</th>
               {odontologos?.map((odontologo) => (
-                <th key={odontologo.userId} className="col-odontologo">
-                  <div className="odontologo-header">
+                <th key={odontologo.userId} className="col-odontologo" style={{ 
+                  padding: '0.5rem',
+                  minWidth: '180px'
+                }}>
+                  <div className="odontologo-header" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem'
+                  }}>
                     <div 
                       className="color-indicator" 
-                      style={{ backgroundColor: coloresPorOdontologo[odontologo.userId]?.border }}
+                      style={{ 
+                        width: '12px', 
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: coloresPorOdontologo[odontologo.userId]?.border,
+                        flexShrink: 0
+                      }}
                     ></div>
-                    <div className="odontologo-info">
-                      <div className="odontologo-nombre">
+                    <div className="odontologo-info" style={{ flex: 1, minWidth: 0 }}>
+                      <div className="odontologo-nombre" style={{ 
+                        fontSize: '0.85rem', 
+                        fontWeight: '600',
+                        color: '#1f2937',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
                         Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
                       </div>
-                      <div className="odontologo-especialidad">
-                        {odontologo.OdontologoEspecialidades?.[0]?.Especialidad?.nombre || 'Odontología General'}
+                      <div className="odontologo-especialidad" style={{ 
+                        fontSize: '0.7rem', 
+                        color: '#4b5563',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {odontologo.OdontologoEspecialidades?.[0]?.Especialidad?.nombre || 'General'}
                       </div>
                     </div>
                   </div>
@@ -1524,8 +1897,14 @@ export default function AgendaDiaria() {
           </thead>
           <tbody>
             {HORARIOS.map((hora) => (
-              <tr key={hora}>
-                <td className="celda-hora">{hora}</td>
+              <tr key={hora} style={{ height: 'auto' }}>
+                <td className="celda-hora" style={{ 
+                  padding: '0.4rem',
+                  fontSize: '0.8rem',
+                  fontWeight: '500',
+                  textAlign: 'center',
+                  color: '#374151'
+                }}>{hora}</td>
                 {odontologos?.map((odontologo) => {
                   const turno = obtenerTurno(odontologo.userId, hora);
                   const bloqueo = obtenerBloqueo(odontologo.userId, hora);
@@ -1562,7 +1941,10 @@ export default function AgendaDiaria() {
                             esProximo ? '#f59e0b' : 
                             colores.border
                           }`,
-                          color: colores.text,
+                          color: estaSeleccionado ? '#856404' : 
+                            tieneRetraso ? '#991b1b' : 
+                            esProximo ? '#92400e' : 
+                            colores.text,
                           position: 'relative',
                         }}
                         onClick={(e) => handleClickCelda(odontologo.userId, hora, e)}
@@ -1619,22 +2001,57 @@ export default function AgendaDiaria() {
                           </div>
                         )}
                         
-                        <div className="turno-content">
+                        <div className="turno-content" style={{ 
+                          padding: '0.4rem',
+                          fontSize: '0.8rem',
+                          lineHeight: '1.3'
+                        }}>
                           {/* Badge de estado en la esquina superior derecha */}
-                          <span className={`turno-estado-badge estado-${turno.estado.toLowerCase()}`}>
+                          <span className={`turno-estado-badge estado-${turno.estado.toLowerCase()}`} style={{
+                            position: 'absolute',
+                            top: '0.25rem',
+                            right: '0.25rem',
+                            fontSize: '0.7rem'
+                          }}>
                             {turno.estado === 'PENDIENTE' && '⏳'}
                             {turno.estado === 'ASISTIO' && '✓'}
                             {turno.estado === 'AUSENTE' && '✗'}
                             {turno.estado === 'CANCELADO' && '⊘'}
                           </span>
                           
-                          <div className="turno-horario">
-                            ⏰ {turno.horaInicioStr} - {turno.horaFinStr}
+                          <div className="turno-paciente" style={{ 
+                            fontWeight: '600',
+                            marginBottom: '0.2rem',
+                            fontSize: '0.85rem',
+                            color: estaSeleccionado ? '#856404' : 
+                              tieneRetraso ? '#991b1b' : 
+                              esProximo ? '#92400e' : 
+                              colores.text
+                          }}>
+                            {turno.Paciente?.nombre} {turno.Paciente?.apellido}
                           </div>
-                          <div className="turno-paciente">
-                            👤 {turno.Paciente?.nombre} {turno.Paciente?.apellido}
+                          <div className="turno-motivo" style={{ 
+                            fontSize: '0.75rem',
+                            color: estaSeleccionado ? '#856404' : 
+                              tieneRetraso ? '#991b1b' : 
+                              esProximo ? '#92400e' : 
+                              colores.text,
+                            opacity: 0.85,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>{turno.motivo}</div>
+                          <div className="turno-horario" style={{ 
+                            fontSize: '0.7rem',
+                            color: estaSeleccionado ? '#856404' : 
+                              tieneRetraso ? '#991b1b' : 
+                              esProximo ? '#92400e' : 
+                              colores.text,
+                            opacity: 0.75,
+                            marginTop: '0.2rem'
+                          }}>
+                            {turno.horaInicioStr} - {turno.horaFinStr}
                           </div>
-                          <div className="turno-motivo">{turno.motivo}</div>
                         </div>
                       </td>
                     );
@@ -1653,10 +2070,10 @@ export default function AgendaDiaria() {
                         className="celda-bloqueada"
                         onClick={() => handleClickCelda(odontologo.userId, hora)}
                         title={bloqueo.motivo || 'Horario no disponible'}
+                        style={{ padding: '0.25rem', textAlign: 'center' }}
                       >
-                        <div className="bloqueado-content">
-                          <span className="bloqueado-icon">🚫</span>
-                          <span className="bloqueado-text">Bloqueado</span>
+                        <div className="bloqueado-content" style={{ fontSize: '0.7rem', color: '#ef4444' }}>
+                          🚫
                         </div>
                       </td>
                     );
@@ -1669,10 +2086,10 @@ export default function AgendaDiaria() {
                         key={odontologo.userId}
                         className="celda-disponible"
                         onClick={() => handleClickCelda(odontologo.userId, hora)}
+                        style={{ padding: '0.25rem', textAlign: 'center' }}
                       >
-                        <div className="disponible-content">
-                          <FaPlus className="disponible-icon" />
-                          <span className="disponible-text">Disponible</span>
+                        <div className="disponible-content" style={{ fontSize: '0.7rem', color: '#10b981' }}>
+                          <FaPlus style={{ fontSize: '0.7rem' }} />
                         </div>
                       </td>
                     );
@@ -1705,8 +2122,9 @@ export default function AgendaDiaria() {
           </div>
         )}
       </div>
-      </>
+      </div>
       )}
+      </div>
 
       {/* Modal de detalles */}
       {modalAbierto && turnoSeleccionado && (

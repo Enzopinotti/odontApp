@@ -1,4 +1,7 @@
 // index.js
+// Configurar zona horaria de Argentina al inicio
+process.env.TZ = 'America/Argentina/Buenos_Aires';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

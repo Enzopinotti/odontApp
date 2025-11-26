@@ -8,6 +8,10 @@ import BackBar from '../../../components/BackBar';
 import { FaChevronLeft, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
 import '../../../styles/agenda.scss';
 
+// Configurar zona horaria de Argentina para todas las operaciones de fecha
+// Esto asegura que las fechas se interpreten correctamente
+const ARGENTINA_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
 export default function NuevoTurnoPaso1() {
   const navigate = useNavigate();
   const [mesActual, setMesActual] = useState(new Date());
@@ -15,6 +19,42 @@ export default function NuevoTurnoPaso1() {
   const [tratamientoSeleccionado, setTratamientoSeleccionado] = useState(null);
   const [odontologoId, setOdontologoId] = useState(null);
   const [horarioSeleccionado, setHorarioSeleccionado] = useState(null);
+  
+  // Función helper para convertir hora string a minutos (debe estar antes de los useMemo que la usan)
+  // Normaliza el formato de hora (puede venir como "HH:MM:SS" o "HH:MM")
+  const horaStringToMinutes = (hora) => {
+    if (!hora) return 0;
+    // Normalizar: quitar segundos si existen
+    const horaNormalizada = hora.length > 5 ? hora.substring(0, 5) : hora;
+    const [h, m] = horaNormalizada.split(':');
+    const horas = parseInt(h, 10) || 0;
+    const minutos = parseInt(m, 10) || 0;
+    return horas * 60 + minutos;
+  };
+  
+  // Función helper para normalizar formato de hora (siempre devuelve "HH:MM")
+  const normalizarHora = (hora) => {
+    if (!hora) return '';
+    // Si tiene más de 5 caracteres, tomar solo HH:MM
+    return hora.length > 5 ? hora.substring(0, 5) : hora;
+  };
+  
+  // Función helper para normalizar formato de fecha (siempre devuelve "YYYY-MM-DD")
+  const normalizarFecha = (fecha) => {
+    if (!fecha) return '';
+    if (typeof fecha === 'string') {
+      // Si viene como "YYYY-MM-DD" o "YYYY-MM-DDTHH:MM:SS" o "YYYY-MM-DDTHH:MM:SS.000Z"
+      return fecha.split('T')[0].split(' ')[0];
+    }
+    if (fecha instanceof Date) {
+      // Si es Date, convertir a formato YYYY-MM-DD
+      const año = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      return `${año}-${mes}-${dia}`;
+    }
+    return String(fecha);
+  };
   
   const { data: tratamientos, isLoading: tratamientosLoading } = useTratamientos();
   const { data: odontologos, isLoading: odontologosLoading } = useOdontologosPorEspecialidad();
@@ -37,10 +77,31 @@ export default function NuevoTurnoPaso1() {
   );
   
   // Obtener disponibilidades del día seleccionado (si hay fecha)
-  const { data: disponibilidadesDia } = useDisponibilidadesSemanal(
+  const { data: disponibilidadesDia, isLoading: loadingDisponibilidadesDia } = useDisponibilidadesSemanal(
     fecha || fechaInicioMes,
     fecha || fechaInicioMes
   );
+  
+  // Log de disponibilidades recibidas
+  useEffect(() => {
+    if (disponibilidadesDia && fecha && odontologoId) {
+      console.log('[NuevoTurnoPaso1] Disponibilidades del día recibidas:', {
+        fecha,
+        odontologoId,
+        cantidad: disponibilidadesDia.length,
+        disponibilidades: disponibilidadesDia.map(d => ({
+          id: d.id,
+          fecha: d.fecha,
+          fechaTipo: typeof d.fecha,
+          fechaNormalizada: normalizarFecha(d.fecha),
+          odontologoId: d.odontologoId,
+          tipo: d.tipo,
+          horaInicio: d.horaInicio,
+          horaFin: d.horaFin
+        }))
+      });
+    }
+  }, [disponibilidadesDia, fecha, odontologoId]);
 
   // Obtener turnos del día seleccionado para marcar horarios ocupados
   const { data: turnosDiaData, isLoading: turnosDiaLoading } = useTurnosPorFecha(
@@ -104,57 +165,126 @@ export default function NuevoTurnoPaso1() {
   
   // Obtener slots disponibles (solo si hay odontólogo, fecha y tratamiento seleccionados)
   // La duración del tratamiento es importante para generar los slots correctos
+  // Solo hacer la consulta si todos los parámetros están disponibles
   const { data: slots, isLoading: slotsLoading } = useSlotsDisponibles(
-    fecha,
-    odontologoId,
+    fecha && odontologoId && tratamientoSeleccionado ? fecha : null,
+    fecha && odontologoId && tratamientoSeleccionado ? odontologoId : null,
     tratamientoSeleccionado?.duracion || 30
   );
-  const estaCargandoHorarios = slotsLoading || turnosDiaLoading;
+  const estaCargandoHorarios = slotsLoading || turnosDiaLoading || loadingDisponibilidades;
   
   // Obtener franjas de disponibilidad del odontólogo seleccionado para validación
   const franjasDisponibilidad = useMemo(() => {
     if (!disponibilidadesDia || !odontologoId || !fecha) return [];
     
-    return disponibilidadesDia
-      .filter(disp => 
-        disp.fecha === fecha && 
-        disp.odontologoId === odontologoId && 
-        disp.tipo === 'LABORAL'
-      )
+    // Normalizar la fecha seleccionada para comparación
+    const fechaNormalizada = normalizarFecha(fecha);
+    
+    console.log('[NuevoTurnoPaso1] Buscando franjas:', {
+      fecha,
+      fechaNormalizada,
+      odontologoId,
+      disponibilidadesDia: disponibilidadesDia.map(d => ({
+        fecha: d.fecha,
+        fechaNormalizada: normalizarFecha(d.fecha),
+        odontologoId: d.odontologoId,
+        tipo: d.tipo,
+        horaInicio: d.horaInicio,
+        horaFin: d.horaFin
+      }))
+    });
+    
+    const franjas = disponibilidadesDia
+      .filter(disp => {
+        const dispFechaNormalizada = normalizarFecha(disp.fecha);
+        const coincideFecha = dispFechaNormalizada === fechaNormalizada;
+        const coincideOdontologo = disp.odontologoId === odontologoId;
+        const esLaboral = disp.tipo === 'LABORAL';
+        
+        if (!coincideFecha) {
+          console.log('[NuevoTurnoPaso1] Fecha no coincide:', {
+            dispFecha: disp.fecha,
+            dispFechaNormalizada,
+            fechaSeleccionada: fecha,
+            fechaNormalizada
+          });
+        }
+        
+        return coincideFecha && coincideOdontologo && esLaboral;
+      })
       .map(disp => ({
-        inicio: disp.horaInicio,
-        fin: disp.horaFin
-      }));
+        inicio: normalizarHora(disp.horaInicio),
+        fin: normalizarHora(disp.horaFin)
+      }))
+      .filter(franja => franja.inicio && franja.fin); // Solo franjas válidas
+    
+    console.log('[NuevoTurnoPaso1] Franjas encontradas:', {
+      fecha,
+      fechaNormalizada,
+      odontologoId,
+      cantidad: franjas.length,
+      franjas,
+      totalDisponibilidades: disponibilidadesDia.length
+    });
+    
+    return franjas;
   }, [disponibilidadesDia, fecha, odontologoId]);
   
-  // Usar slots directamente (el backend ya los filtra por franjas LABORAL)
-  // Solo validamos que existan y tengan el formato correcto
+  // Filtrar y validar slots: deben estar dentro de las franjas LABORAL del doctor
   const slotsFiltrados = useMemo(() => {
     if (!slots || slots.length === 0) {
-      console.log('[NuevoTurnoPaso1] No hay slots disponibles', { 
-        slots, 
-        fecha, 
-        odontologoId, 
-        tratamientoSeleccionado,
-        duracion: tratamientoSeleccionado?.duracion || 30
-      });
       return [];
     }
     
-    console.log('[NuevoTurnoPaso1] Slots recibidos del backend:', slots);
+    if (!franjasDisponibilidad || franjasDisponibilidad.length === 0) {
+      // Si no hay franjas, no hay slots válidos
+      return [];
+    }
     
-    // El backend ya genera slots solo dentro de franjas LABORAL
-    // Solo necesitamos asegurarnos de que el formato sea correcto
-    const slotsFormateados = slots.map(slot => {
-      if (typeof slot === 'string') {
-        return { inicio: slot, fin: null };
-      }
-      return slot;
+    // Función para verificar si un slot está dentro de alguna franja
+    const estaDentroDeFranja = (inicioSlot, finSlot) => {
+      const inicioMinutos = horaStringToMinutes(inicioSlot);
+      const finMinutos = finSlot ? horaStringToMinutes(finSlot) : inicioMinutos + (tratamientoSeleccionado?.duracion || 30);
+      
+      return franjasDisponibilidad.some(franja => {
+        const inicioFranja = horaStringToMinutes(franja.inicio);
+        const finFranja = horaStringToMinutes(franja.fin);
+        // El slot está dentro de la franja si su inicio y fin están dentro
+        return inicioMinutos >= inicioFranja && finMinutos <= finFranja;
+      });
+    };
+    
+    // Formatear y filtrar slots
+    const slotsFormateados = slots
+      .map(slot => {
+        if (typeof slot === 'string') {
+          return { inicio: normalizarHora(slot), fin: null };
+        }
+        return {
+          inicio: normalizarHora(slot.inicio),
+          fin: slot.fin ? normalizarHora(slot.fin) : null
+        };
+      })
+      .filter(slot => {
+        // Validar que el slot esté dentro de alguna franja del doctor
+        const valido = estaDentroDeFranja(slot.inicio, slot.fin);
+        if (!valido) {
+          console.log('[NuevoTurnoPaso1] Slot rechazado (fuera de franja):', {
+            slot,
+            franjas: franjasDisponibilidad
+          });
+        }
+        return valido;
+      });
+    
+    console.log('[NuevoTurnoPaso1] Slots filtrados:', {
+      slotsOriginales: slots,
+      slotsFiltrados: slotsFormateados,
+      franjas: franjasDisponibilidad
     });
     
-    console.log('[NuevoTurnoPaso1] Slots formateados:', slotsFormateados);
     return slotsFormateados;
-  }, [slots, fecha, odontologoId, tratamientoSeleccionado]);
+  }, [slots, franjasDisponibilidad, tratamientoSeleccionado]);
 
   // Turnos existentes para marcar horarios ocupados
   const turnosDelDia = useMemo(() => {
@@ -171,49 +301,162 @@ export default function NuevoTurnoPaso1() {
 
   const horariosOcupados = useMemo(() => {
     if (!turnosDelDia || turnosDelDia.length === 0) return [];
+    if (!franjasDisponibilidad || franjasDisponibilidad.length === 0) return [];
+    
+    // Función para verificar si un horario está dentro de alguna franja de disponibilidad
+    const estaDentroDeFranja = (inicioMinutos, finMinutos) => {
+      return franjasDisponibilidad.some(franja => {
+        const inicioFranja = horaStringToMinutes(franja.inicio);
+        const finFranja = horaStringToMinutes(franja.fin);
+        // El turno está dentro de la franja si su inicio está dentro y su fin también
+        return inicioMinutos >= inicioFranja && finMinutos <= finFranja;
+      });
+    };
+    
     return turnosDelDia
       .filter(turno => turno.estado !== 'CANCELADO')
       .map(turno => {
+        // Parsear fechaHora considerando zona horaria de Argentina
         const fechaInicio = new Date(turno.fechaHora);
-        const inicio = fechaInicio.toTimeString().slice(0, 5);
+        // Usar métodos locales para obtener hora en zona horaria de Argentina
+        const horaInicio = fechaInicio.getHours();
+        const minutosInicio = fechaInicio.getMinutes();
+        const inicio = normalizarHora(`${String(horaInicio).padStart(2, '0')}:${String(minutosInicio).padStart(2, '0')}`);
+        
         const fechaFin = new Date(fechaInicio.getTime() + (turno.duracion || 30) * 60000);
-        const fin = fechaFin.toTimeString().slice(0, 5);
+        const horaFin = fechaFin.getHours();
+        const minutosFin = fechaFin.getMinutes();
+        const fin = normalizarHora(`${String(horaFin).padStart(2, '0')}:${String(minutosFin).padStart(2, '0')}`);
+        const inicioMinutos = horaStringToMinutes(inicio);
+        const finMinutos = horaStringToMinutes(fin);
+        
         return {
           tipo: 'ocupado',
           inicio,
           fin,
+          inicioMinutos,
+          finMinutos,
           id: turno.id,
           motivo: turno.motivo || 'Horario ocupado',
-          estado: turno.estado
+          estado: turno.estado,
+          estaDentroFranja: estaDentroDeFranja(inicioMinutos, finMinutos)
         };
-      });
-  }, [turnosDelDia]);
+      })
+      .filter(turno => turno.estaDentroFranja); // Solo mostrar turnos dentro de las franjas del doctor
+  }, [turnosDelDia, franjasDisponibilidad]);
 
   const horariosParaMostrar = useMemo(() => {
+    // Si no hay fecha, odontólogo o tratamiento, no mostrar nada
+    if (!fecha || !odontologoId || !tratamientoSeleccionado) {
+      return [];
+    }
+    
+    // Si no hay franjas de disponibilidad, no hay horarios disponibles
+    if (!franjasDisponibilidad || franjasDisponibilidad.length === 0) {
+      return [];
+    }
+    
+    // Calcular rangos de horarios ocupados
     const horariosOcupadosConRango = horariosOcupados.map(h => ({
       ...h,
       inicioMinutos: horaStringToMinutes(h.inicio),
       finMinutos: horaStringToMinutes(h.fin || h.inicio) || horaStringToMinutes(h.inicio) + (tratamientoSeleccionado?.duracion || 30)
     }));
 
+    // Filtrar slots disponibles: deben estar dentro de franjas Y no estar ocupados
+    // Esta es la validación CRÍTICA - solo mostramos horarios que realmente están disponibles
     const disponibles = (slotsFiltrados || [])
       .filter(slot => {
         const inicioSlot = horaStringToMinutes(slot.inicio);
-        return !horariosOcupadosConRango.some(h => inicioSlot >= h.inicioMinutos && inicioSlot < h.finMinutos);
+        const duracionSlot = tratamientoSeleccionado?.duracion || 30;
+        const finSlot = slot.fin ? horaStringToMinutes(slot.fin) : inicioSlot + duracionSlot;
+        
+        // VALIDACIÓN 1: Debe estar dentro de alguna franja laboral
+        // Usar la MISMA lógica que el backend:
+        // Backend busca: horaInicioFranja <= horaInicioTurno && horaFinFranja >= horaFinTurno
+        const estaDentroDeFranja = franjasDisponibilidad.some(franja => {
+          const inicioFranja = horaStringToMinutes(franja.inicio);
+          const finFranja = horaStringToMinutes(franja.fin);
+          
+          // Validación equivalente al backend:
+          // - inicioFranja <= inicioSlot (el inicio de la franja debe ser <= al inicio del slot)
+          // - finFranja >= finSlot (el fin de la franja debe ser >= al fin del slot)
+          // Esto permite que un turno termine exactamente cuando termina la franja
+          const dentro = inicioFranja <= inicioSlot && finFranja >= finSlot;
+          
+          if (!dentro) {
+            console.log('[NuevoTurnoPaso1] Slot fuera de franja:', {
+              slot: { inicio: slot.inicio, fin: slot.fin || `${Math.floor((inicioSlot + duracionSlot) / 60)}:${String((inicioSlot + duracionSlot) % 60).padStart(2, '0')}` },
+              franja: { inicio: franja.inicio, fin: franja.fin },
+              inicioSlot,
+              finSlot,
+              inicioFranja,
+              finFranja,
+              diferenciaInicio: inicioSlot - inicioFranja,
+              diferenciaFin: finFranja - finSlot
+            });
+          }
+          
+          return dentro;
+        });
+        
+        if (!estaDentroDeFranja) {
+          return false; // No mostrar si no está dentro de franja
+        }
+        
+        // VALIDACIÓN 2: No debe solaparse con ningún turno ocupado
+        // Un slot está ocupado si se solapa con algún turno existente
+        const noEstaOcupado = !horariosOcupadosConRango.some(h => {
+          // Verificar solapamiento: 
+          // - El inicio del slot está dentro del turno ocupado, O
+          // - El fin del slot está dentro del turno ocupado, O
+          // - El slot contiene completamente al turno ocupado
+          const solapa = (inicioSlot >= h.inicioMinutos && inicioSlot < h.finMinutos) ||
+                         (finSlot > h.inicioMinutos && finSlot <= h.finMinutos) ||
+                         (inicioSlot <= h.inicioMinutos && finSlot >= h.finMinutos);
+          
+          if (solapa) {
+            console.log('[NuevoTurnoPaso1] Slot solapa con turno ocupado:', {
+              slot: { inicio: slot.inicio, fin: slot.fin || `${inicioSlot + duracionSlot}min` },
+              ocupado: { inicio: h.inicio, fin: h.fin },
+              inicioSlot,
+              finSlot,
+              inicioOcupado: h.inicioMinutos,
+              finOcupado: h.finMinutos
+            });
+          }
+          
+          return solapa;
+        });
+        
+        if (!noEstaOcupado) {
+          return false; // No mostrar si está ocupado
+        }
+        
+        // Si pasa ambas validaciones, el slot está disponible
+        return true;
       })
-      .map(slot => ({
-        tipo: 'libre',
-        inicio: slot.inicio,
-        fin: slot.fin,
-      }));
+      .map(slot => {
+        const inicioNormalizado = normalizarHora(slot.inicio);
+        const inicioMinutos = horaStringToMinutes(inicioNormalizado);
+        const finMinutos = slot.fin ? horaStringToMinutes(normalizarHora(slot.fin)) : inicioMinutos + (tratamientoSeleccionado?.duracion || 30);
+        const horasFin = Math.floor(finMinutos / 60);
+        const minutosFin = finMinutos % 60;
+        const finCalculado = `${String(horasFin).padStart(2, '0')}:${String(minutosFin).padStart(2, '0')}`;
+        
+        return {
+          tipo: 'libre',
+          inicio: inicioNormalizado,
+          fin: slot.fin ? normalizarHora(slot.fin) : finCalculado,
+          inicioMinutos,
+          finMinutos,
+        };
+      });
 
-    const todos = [
-      ...disponibles,
-      ...horariosOcupados
-    ];
-
-    return todos.sort((a, b) => horaStringToMinutes(a.inicio) - horaStringToMinutes(b.inicio));
-  }, [slotsFiltrados, horariosOcupados, tratamientoSeleccionado]);
+    // IMPORTANTE: Solo mostrar horarios DISPONIBLES (libres), NO mostrar ocupados
+    // Si el usuario ve un horario, debe poder seleccionarlo sin errores
+    return disponibles.sort((a, b) => horaStringToMinutes(a.inicio) - horaStringToMinutes(b.inicio));
+  }, [slotsFiltrados, horariosOcupados, tratamientoSeleccionado, fecha, odontologoId, franjasDisponibilidad]);
 
   // Reset fecha y horario cuando cambia el odontólogo
   useEffect(() => {
@@ -222,10 +465,10 @@ export default function NuevoTurnoPaso1() {
     setTratamientoSeleccionado(null);
   }, [odontologoId]);
   
-  // Reset horario cuando cambia la fecha
+  // Reset horario cuando cambia la fecha o el tratamiento
   useEffect(() => {
     setHorarioSeleccionado(null);
-  }, [fecha]);
+  }, [fecha, tratamientoSeleccionado]);
   
   // Generar días del mes para el calendario
   const diasDelMes = useMemo(() => {
@@ -287,14 +530,162 @@ export default function NuevoTurnoPaso1() {
       return;
     }
 
-    const fechaHora = new Date(`${fecha}T${horarioSeleccionado}`);
+    // Validar que el horario seleccionado esté dentro de las franjas del doctor
+    if (!franjasDisponibilidad || franjasDisponibilidad.length === 0) {
+      console.error('[NuevoTurnoPaso1] No hay franjas disponibles', { fecha, odontologoId, franjasDisponibilidad });
+      alert('No hay franjas horarias disponibles para este doctor en la fecha seleccionada');
+      return;
+    }
+
+    const horarioNormalizado = normalizarHora(horarioSeleccionado);
+    const inicioMinutos = horaStringToMinutes(horarioNormalizado);
+    const duracion = tratamientoSeleccionado.duracion || 30;
+    const finMinutos = inicioMinutos + duracion;
+
+    // VALIDACIÓN FINAL: Verificar que el horario seleccionado esté en la lista de disponibles
+    // Si el horario está en la lista de disponibles, significa que pasó todas las validaciones
+    const horarioEnDisponibles = horariosParaMostrar.some(h => 
+      h.tipo === 'libre' && normalizarHora(h.inicio) === horarioNormalizado
+    );
     
+    if (!horarioEnDisponibles) {
+      console.error('[NuevoTurnoPaso1] Horario no está en la lista de disponibles:', {
+        horarioSeleccionado: horarioNormalizado,
+        horariosDisponibles: horariosParaMostrar.filter(h => h.tipo === 'libre').map(h => h.inicio)
+      });
+      alert('El horario seleccionado no está disponible. Por favor, seleccione otro horario de la lista.');
+      return;
+    }
+    
+    // Verificar que el horario esté dentro de alguna franja (validación adicional)
+    // IMPORTANTE: Usar la misma lógica que el backend
+    // Backend busca: horaInicioFranja <= horaInicioTurno && horaFinFranja >= horaFinTurno
+    const estaDentroDeFranja = franjasDisponibilidad.some(franja => {
+      const inicioFranja = horaStringToMinutes(franja.inicio);
+      const finFranja = horaStringToMinutes(franja.fin);
+      
+      // Validación equivalente al backend:
+      // - inicioFranja <= inicioMinutos (el inicio de la franja debe ser <= al inicio del turno)
+      // - finFranja >= finMinutos (el fin de la franja debe ser >= al fin del turno)
+      const dentro = inicioFranja <= inicioMinutos && finFranja >= finMinutos;
+      
+      if (!dentro) {
+        console.log('[NuevoTurnoPaso1] Horario fuera de franja:', {
+          horario: horarioNormalizado,
+          inicioMinutos,
+          finMinutos,
+          duracion,
+          franja: { inicio: franja.inicio, fin: franja.fin, inicioFranja, finFranja },
+          validacion: {
+            inicioFranjaMenorIgual: inicioFranja <= inicioMinutos,
+            finFranjaMayorIgual: finFranja >= finMinutos,
+            diferenciaInicio: inicioMinutos - inicioFranja,
+            diferenciaFin: finFranja - finMinutos
+          }
+        });
+      }
+      
+      return dentro;
+    });
+
+    if (!estaDentroDeFranja) {
+      console.error('[NuevoTurnoPaso1] Validación fallida - no está en franja:', {
+        horarioSeleccionado: horarioNormalizado,
+        inicioMinutos,
+        finMinutos,
+        duracion,
+        franjasDisponibilidad
+      });
+      alert('El horario seleccionado no está dentro de los bloques laborales del odontólogo. Por favor, seleccione otro horario.');
+      return;
+    }
+    
+    // Verificar que no esté ocupado (validación adicional)
+    const noEstaOcupado = !horariosOcupados.some(h => {
+      const hInicio = horaStringToMinutes(h.inicio);
+      const hFin = horaStringToMinutes(h.fin);
+      return (inicioMinutos >= hInicio && inicioMinutos < hFin) ||
+             (finMinutos > hInicio && finMinutos <= hFin) ||
+             (inicioMinutos <= hInicio && finMinutos >= hFin);
+    });
+    
+    if (!noEstaOcupado) {
+      console.error('[NuevoTurnoPaso1] Validación fallida - está ocupado:', {
+        horarioSeleccionado: horarioNormalizado,
+        inicioMinutos,
+        finMinutos,
+        horariosOcupados
+      });
+      alert('El horario seleccionado está ocupado. Por favor, seleccione otro horario.');
+      return;
+    }
+    
+    console.log('[NuevoTurnoPaso1] Validación exitosa:', {
+      horarioSeleccionado: horarioNormalizado,
+      inicioMinutos,
+      finMinutos,
+      duracion,
+      franjasDisponibilidad
+    });
+
+    // Construir fechaHora usando componentes locales para zona horaria de Argentina
+    // Parsear fecha y hora manualmente
+    const [año, mes, dia] = fecha.split('-').map(Number);
+    const [hora, minutos] = horarioNormalizado.split(':').map(Number);
+    
+    // Crear fecha en zona horaria local de Argentina
+    // Usar Date constructor con componentes locales (no UTC)
+    const fechaHoraObj = new Date(año, mes - 1, dia, hora, minutos, 0, 0);
+    
+    // IMPORTANTE: Al convertir a ISO, JavaScript lo convierte a UTC
+    // Para mantener la hora local, necesitamos ajustar el offset de Argentina (UTC-3)
+    // Pero mejor aún: enviar la fecha como string en formato local
+    // Formato: YYYY-MM-DDTHH:MM:00 (sin Z, para que se interprete como local)
+    const fechaHoraISO = `${año}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}T${String(hora).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:00`;
+    
+    // Validar que la fecha/hora construida es correcta
+    const fechaResultante = fechaHoraObj.getFullYear() + '-' + 
+                           String(fechaHoraObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(fechaHoraObj.getDate()).padStart(2, '0');
+    const horaResultante = String(fechaHoraObj.getHours()).padStart(2, '0') + ':' + 
+                          String(fechaHoraObj.getMinutes()).padStart(2, '0');
+    
+    console.log('[NuevoTurnoPaso1] FechaHora construida:', {
+      fecha,
+      horario: horarioNormalizado,
+      componentes: { año, mes, dia, hora, minutos },
+      fechaHoraObj,
+      fechaHoraISO: fechaHoraObj.toISOString(),
+      fechaResultante,
+      horaResultante,
+      coincideFecha: fechaResultante === fecha,
+      coincideHora: horaResultante === horarioNormalizado,
+      duracion,
+      // Mostrar también en minutos para validación
+      inicioMinutos,
+      finMinutos,
+      finCalculado: `${Math.floor(finMinutos / 60)}:${String(finMinutos % 60).padStart(2, '0')}`
+    });
+    
+    // Advertencia si hay discrepancia
+    if (fechaResultante !== fecha || horaResultante !== horarioNormalizado) {
+      console.warn('[NuevoTurnoPaso1] ¡ADVERTENCIA! Discrepancia en fecha/hora:', {
+        esperado: { fecha, hora: horarioNormalizado },
+        obtenido: { fecha: fechaResultante, hora: horaResultante }
+      });
+    }
+    
+    // Enviar fechaHora en formato ISO pero asegurando que se interprete como hora local de Argentina
+    // El backend debe parsear esto correctamente considerando la zona horaria
     navigate('/agenda/turnos/nuevo/paso2', {
       state: {
-        fechaHora: fechaHora.toISOString(),
+        fechaHora: fechaHoraISO, // Enviar como string sin Z para que se interprete como local
         tratamiento: tratamientoSeleccionado,
         odontologoId,
-        duracion: tratamientoSeleccionado.duracion || 30,
+        duracion: duracion,
+        // Agregar datos adicionales para debugging
+        fechaOriginal: fecha,
+        horaOriginal: horarioNormalizado,
       },
     });
   };
@@ -305,12 +696,6 @@ export default function NuevoTurnoPaso1() {
   ];
   
   const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-  function horaStringToMinutes(hora) {
-    if (!hora) return 0;
-    const [h, m] = hora.split(':');
-    return parseInt(h, 10) * 60 + parseInt(m, 10);
-  }
 
   return (
     <div className="nuevo-turno-container">
@@ -686,7 +1071,7 @@ export default function NuevoTurnoPaso1() {
                       <div
                         key={slotKey}
                         className={`horario-slot ${isSelected ? 'selected' : ''} ${isOcupado ? 'ocupado' : ''}`}
-                        onClick={isOcupado ? undefined : () => setHorarioSeleccionado(slot.inicio)}
+                        onClick={isOcupado ? undefined : () => setHorarioSeleccionado(normalizarHora(slot.inicio))}
                         title={
                           isOcupado
                             ? `${displayText} ocupado${slot.motivo ? ` - ${slot.motivo}` : ''}`
@@ -754,12 +1139,66 @@ export default function NuevoTurnoPaso1() {
                     textAlign: 'center',
                     color: '#666'
                   }}>
-                    {horariosOcupados.length > 0 && (!slotsFiltrados || slotsFiltrados.length === 0)
-                      ? 'Todos los horarios del día ya tienen un turno asignado.'
-                      : `No hay horarios disponibles para este odontólogo en la fecha seleccionada.
+                    {(() => {
+                      // Diagnosticar el problema
+                      const tieneFranjas = franjasDisponibilidad && franjasDisponibilidad.length > 0;
+                      const tieneSlots = slotsFiltrados && slotsFiltrados.length > 0;
+                      const tieneOcupados = horariosOcupados && horariosOcupados.length > 0;
+                      const tieneDisponibilidadesDia = disponibilidadesDia && disponibilidadesDia.length > 0;
+                      
+                      console.log('[NuevoTurnoPaso1] Diagnóstico de horarios no disponibles:', {
+                        fecha,
+                        odontologoId,
+                        tratamientoSeleccionado: tratamientoSeleccionado?.nombre,
+                        tieneFranjas,
+                        cantidadFranjas: franjasDisponibilidad?.length || 0,
+                        tieneSlots,
+                        cantidadSlots: slotsFiltrados?.length || 0,
+                        tieneOcupados,
+                        cantidadOcupados: horariosOcupados?.length || 0,
+                        tieneDisponibilidadesDia,
+                        cantidadDisponibilidadesDia: disponibilidadesDia?.length || 0,
+                        disponibilidadesDia: disponibilidadesDia?.map(d => ({
+                          fecha: d.fecha,
+                          fechaNormalizada: normalizarFecha(d.fecha),
+                          odontologoId: d.odontologoId,
+                          tipo: d.tipo
+                        }))
+                      });
+                      
+                      if (tieneOcupados && !tieneSlots) {
+                        return 'Todos los horarios del día ya tienen un turno asignado.';
+                      }
+                      
+                      if (!tieneDisponibilidadesDia) {
+                        return `No se encontraron disponibilidades para este odontólogo en la fecha ${fecha || 'seleccionada'}. Verifique que haya disponibilidades LABORAL configuradas.`;
+                      }
+                      
+                      if (!tieneFranjas) {
+                        const disponibilidadesDelOdontologo = disponibilidadesDia.filter(d => 
+                          d.odontologoId === odontologoId
+                        );
+                        const disponibilidadesLaborales = disponibilidadesDelOdontologo.filter(d => 
+                          d.tipo === 'LABORAL'
+                        );
+                        
+                        return `No hay franjas LABORAL para este odontólogo en la fecha ${fecha || 'seleccionada'}. 
+                        ${disponibilidadesDelOdontologo.length > 0 
+                          ? `Se encontraron ${disponibilidadesDelOdontologo.length} disponibilidad(es) pero ninguna es LABORAL.` 
+                          : `No se encontraron disponibilidades para este odontólogo en esta fecha.`}`;
+                      }
+                      
+                      if (!tieneSlots) {
+                        return `No hay slots disponibles después de filtrar por franjas y horarios ocupados. 
+                        Franjas encontradas: ${franjasDisponibilidad.length}. 
+                        Horarios ocupados: ${horariosOcupados.length}.`;
+                      }
+                      
+                      return `No hay horarios disponibles para este odontólogo en la fecha seleccionada.
                       ${!fecha ? 'Por favor, seleccione una fecha.' : ''}
                       ${!tratamientoSeleccionado ? 'Por favor, seleccione un tratamiento.' : ''}
-                      Verifique que haya disponibilidades LABORAL configuradas para este odontólogo en la fecha ${fecha || 'seleccionada'}.`}
+                      Verifique que haya disponibilidades LABORAL configuradas para este odontólogo en la fecha ${fecha || 'seleccionada'}.`;
+                    })()}
                   </div>
                 )}
               </div>

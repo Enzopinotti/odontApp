@@ -23,15 +23,57 @@ export const obtenerTurnoPorId = async (id) => {
 };
 
 export const crearTurno = async (data, recepcionistaId, ip = null) => {
+  // Parsear fechaHora considerando zona horaria de Argentina
+  // El frontend envía la fecha como string en formato: YYYY-MM-DDTHH:MM:SS (sin Z)
+  // Esto debe interpretarse como hora local de Argentina
+  let fechaHora;
+  if (typeof data.fechaHora === 'string') {
+    // Si viene como string sin Z, parsearlo como hora local
+    // Formato esperado: "2025-01-15T17:00:00" (sin Z)
+    if (data.fechaHora.includes('T') && !data.fechaHora.endsWith('Z')) {
+      // Parsear manualmente para evitar conversiones de zona horaria
+      const [fechaPart, horaPart] = data.fechaHora.split('T');
+      const [año, mes, dia] = fechaPart.split('-').map(Number);
+      const [hora, minutos, segundos = 0] = horaPart.split(':').map(Number);
+      // Crear Date en zona horaria local (Argentina)
+      fechaHora = new Date(año, mes - 1, dia, hora, minutos, segundos || 0, 0);
+    } else {
+      // Si viene con Z o como ISO completo, parsear y convertir a local
+      const fechaISO = new Date(data.fechaHora);
+      const año = fechaISO.getFullYear();
+      const mes = fechaISO.getMonth();
+      const dia = fechaISO.getDate();
+      const hora = fechaISO.getHours();
+      const minutos = fechaISO.getMinutes();
+      const segundos = fechaISO.getSeconds();
+      fechaHora = new Date(año, mes, dia, hora, minutos, segundos, 0);
+    }
+  } else {
+    fechaHora = new Date(data.fechaHora);
+  }
+  
+  console.log('[turnoService.crear] FechaHora parseada:', {
+    fechaHoraRecibida: data.fechaHora,
+    fechaHoraParseada: fechaHora,
+    fechaHoraISO: fechaHora.toISOString(),
+    fechaHoraLocal: fechaHora.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
+    componentes: {
+      año: fechaHora.getFullYear(),
+      mes: fechaHora.getMonth() + 1,
+      dia: fechaHora.getDate(),
+      hora: fechaHora.getHours(),
+      minutos: fechaHora.getMinutes()
+    }
+  });
+  
   // Validar que la fecha sea futura
-  const fechaHora = new Date(data.fechaHora);
   if (fechaHora <= new Date()) {
     throw new ApiError('La fecha del turno debe ser futura', 400, null, 'FECHA_INVALIDA');
   }
 
-  // RN-AG03: Validar duración mínima 15 minutos, máximo 120
-  if (data.duracion < 15 || data.duracion > 120) {
-    throw new ApiError('La duración debe estar entre 15 y 120 minutos', 400, null, 'DURACION_INVALIDA');
+  // RN-AG03: Validar duración solo 30 o 60 minutos
+  if (data.duracion !== 30 && data.duracion !== 60) {
+    throw new ApiError('La duración solo puede ser de 30 o 60 minutos', 400, null, 'DURACION_INVALIDA');
   }
 
   // RN-AG01: Verificar solapamiento con otros turnos del mismo odontólogo
@@ -86,16 +128,64 @@ export const crearTurno = async (data, recepcionistaId, ip = null) => {
   }
 
   // RN-AG02: Verificar que el turno esté dentro de un bloque laboral
+  const fechaStr = fechaHora.toISOString().split('T')[0];
+  
+  // IMPORTANTE: Usar métodos UTC para evitar problemas de zona horaria
+  // O mejor aún, usar los componentes locales directamente
+  const horaInicio = fechaHora.getHours();
+  const minutosInicio = fechaHora.getMinutes();
+  let horaInicioStr = `${String(horaInicio).padStart(2, '0')}:${String(minutosInicio).padStart(2, '0')}`;
+  
+  // Calcular hora de fin usando los mismos componentes
+  const fechaFin = new Date(fechaHora.getTime() + data.duracion * 60000);
+  const horaFin = fechaFin.getHours();
+  const minutosFin = fechaFin.getMinutes();
+  let horaFinStr = `${String(horaFin).padStart(2, '0')}:${String(minutosFin).padStart(2, '0')}`;
+  
+  // Calcular en minutos para validación
+  const horaInicioMinutos = horaInicio * 60 + minutosInicio;
+  const horaFinMinutos = horaFin * 60 + minutosFin;
+  
+  console.log('[turnoService.crear] Validando disponibilidad:', {
+    fechaHoraRecibida: data.fechaHora,
+    fechaHoraObj: fechaHora,
+    fechaStr,
+    horaInicioStr,
+    horaFinStr,
+    duracion: data.duracion,
+    odontologoId: data.odontologoId,
+    componentes: {
+      horaInicio,
+      minutosInicio,
+      horaFin,
+      minutosFin
+    },
+    // Debug: mostrar en minutos para comparación
+    horaInicioMinutos,
+    horaFinMinutos,
+    // Mostrar también usando toTimeString para comparar
+    horaInicioTimeString: fechaHora.toTimeString().slice(0, 5),
+    horaFinTimeString: fechaFin.toTimeString().slice(0, 5)
+  });
+  
   const esDisponible = await disponibilidadRepo.validarDisponibilidad(
-    fechaHora.toISOString().split('T')[0],
-    fechaHora.toTimeString().slice(0, 5),
-    new Date(fechaHora.getTime() + data.duracion * 60000).toTimeString().slice(0, 5),
+    fechaStr,
+    horaInicioStr,
+    horaFinStr,
     data.odontologoId
   );
 
   if (!esDisponible) {
+    console.error('[turnoService.crear] Horario no disponible:', {
+      fechaStr,
+      horaInicioStr,
+      horaFinStr,
+      odontologoId: data.odontologoId
+    });
     throw new ApiError('El horario no está dentro de los bloques laborales del odontólogo', 409, null, 'HORARIO_NO_DISPONIBLE');
   }
+  
+  console.log('[turnoService.crear] Validación exitosa');
 
   // Crear el turno
   const turnoData = {
@@ -661,18 +751,18 @@ export const obtenerOdontologosPorEspecialidad = async (especialidad = null) => 
   }
 };
 
-// CU-AG01.2: Obtener tratamientos disponibles
+// CU-AG01.2: Obtener tratamientos disponibles (solo 30 o 60 minutos)
 export const obtenerTratamientos = async () => {
-  // Tratamientos comunes con formato para el frontend
+  // Tratamientos comunes con formato para el frontend - solo 30 o 60 minutos
   return [
     { id: 1, nombre: 'Consulta General', duracion: 30, duracionDefault: 30 },
-    { id: 2, nombre: 'Limpieza Dental', duracion: 45, duracionDefault: 45 },
+    { id: 2, nombre: 'Limpieza Dental', duracion: 30, duracionDefault: 30 },
     { id: 3, nombre: 'Extracción Simple', duracion: 30, duracionDefault: 30 },
     { id: 4, nombre: 'Extracción Compleja', duracion: 60, duracionDefault: 60 },
-    { id: 5, nombre: 'Endodoncia', duracion: 90, duracionDefault: 90 },
+    { id: 5, nombre: 'Endodoncia', duracion: 60, duracionDefault: 60 },
     { id: 6, nombre: 'Ortodoncia - Control', duracion: 30, duracionDefault: 30 },
     { id: 7, nombre: 'Cirugía Menor', duracion: 60, duracionDefault: 60 },
-    { id: 8, nombre: 'Prótesis', duracion: 45, duracionDefault: 45 }
+    { id: 8, nombre: 'Prótesis', duracion: 60, duracionDefault: 60 }
   ];
 };
 

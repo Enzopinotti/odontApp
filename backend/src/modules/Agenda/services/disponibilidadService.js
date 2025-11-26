@@ -145,7 +145,30 @@ export const obtenerDisponibilidadPorFecha = async (fecha, odontologoId) => {
 };
 
 export const obtenerDisponibilidadPorRango = async (fechaInicio, fechaFin, odontologoId) => {
-  return await repo.obtenerDisponibilidadPorRango(fechaInicio, fechaFin, odontologoId);
+  // Normalizar fechas antes de buscar
+  const normalizarFecha = (fecha) => {
+    if (!fecha) return fecha;
+    if (fecha instanceof Date) {
+      return fecha.toISOString().split('T')[0];
+    }
+    if (typeof fecha === 'string') {
+      return fecha.split('T')[0].split(' ')[0];
+    }
+    return fecha;
+  };
+  
+  const fechaInicioNorm = normalizarFecha(fechaInicio);
+  const fechaFinNorm = normalizarFecha(fechaFin);
+  
+  console.log('[disponibilidadService.obtenerDisponibilidadPorRango] Parámetros:', {
+    fechaInicio,
+    fechaInicioNormalizada: fechaInicioNorm,
+    fechaFin,
+    fechaFinNormalizada: fechaFinNorm,
+    odontologoId
+  });
+  
+  return await repo.obtenerDisponibilidadPorRango(fechaInicioNorm, fechaFinNorm, odontologoId);
 };
 
 export const obtenerDisponibilidadesPorOdontologo = async (odontologoId) => {

@@ -14,8 +14,8 @@ export const validarCrearTurno = [
     }),
   
   body('duracion')
-    .isInt({ min: 15, max: 120 })
-    .withMessage('La duración debe estar entre 15 y 120 minutos'),
+    .isIn([30, 60])
+    .withMessage('La duración solo puede ser de 30 o 60 minutos'),
   
   body('motivo')
     .trim()
@@ -53,8 +53,8 @@ export const validarActualizarTurno = [
   
   body('duracion')
     .optional()
-    .isInt({ min: 15, max: 120 })
-    .withMessage('La duración debe estar entre 15 y 120 minutos'),
+    .isIn([30, 60])
+    .withMessage('La duración solo puede ser de 30 o 60 minutos'),
   
   body('motivo')
     .optional()
@@ -187,8 +187,8 @@ export const validarObtenerSlotsDisponibles = [
   
   query('duracion')
     .optional()
-    .isInt({ min: 15, max: 120 })
-    .withMessage('La duración debe estar entre 15 y 120 minutos')
+    .isIn([30, 60])
+    .withMessage('La duración solo puede ser de 30 o 60 minutos')
 ];
 
 // Validadores para ID de turno

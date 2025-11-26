@@ -50,8 +50,30 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
 
   // Filtro por rango de fechas
   if (filtros.fechaInicio && filtros.fechaFin) {
+    // Normalizar fechas a formato YYYY-MM-DD
+    const normalizarFecha = (fecha) => {
+      if (!fecha) return fecha;
+      if (fecha instanceof Date) {
+        return fecha.toISOString().split('T')[0];
+      }
+      if (typeof fecha === 'string') {
+        return fecha.split('T')[0].split(' ')[0];
+      }
+      return fecha;
+    };
+    
+    const fechaInicioNorm = normalizarFecha(filtros.fechaInicio);
+    const fechaFinNorm = normalizarFecha(filtros.fechaFin);
+    
+    console.log('[findFiltered] Rango de fechas:', {
+      fechaInicio: filtros.fechaInicio,
+      fechaInicioNormalizada: fechaInicioNorm,
+      fechaFin: filtros.fechaFin,
+      fechaFinNormalizada: fechaFinNorm
+    });
+    
     where.fecha = {
-      [Op.between]: [filtros.fechaInicio, filtros.fechaFin]
+      [Op.between]: [fechaInicioNorm, fechaFinNorm]
     };
   }
 
@@ -107,10 +129,33 @@ export const obtenerDisponibilidadPorFecha = (fecha, odontologoId) => {
 };
 
 export const obtenerDisponibilidadPorRango = (fechaInicio, fechaFin, odontologoId) => {
+  // Normalizar fechas a formato YYYY-MM-DD
+  const normalizarFecha = (fecha) => {
+    if (!fecha) return fecha;
+    if (fecha instanceof Date) {
+      return fecha.toISOString().split('T')[0];
+    }
+    if (typeof fecha === 'string') {
+      return fecha.split('T')[0].split(' ')[0];
+    }
+    return fecha;
+  };
+  
+  const fechaInicioNorm = normalizarFecha(fechaInicio);
+  const fechaFinNorm = normalizarFecha(fechaFin);
+  
+  console.log('[obtenerDisponibilidadPorRango] Parámetros:', {
+    fechaInicio,
+    fechaInicioNormalizada: fechaInicioNorm,
+    fechaFin,
+    fechaFinNormalizada: fechaFinNorm,
+    odontologoId
+  });
+  
   return Disponibilidad.findAll({
     where: {
       fecha: {
-        [Op.between]: [fechaInicio, fechaFin]
+        [Op.between]: [fechaInicioNorm, fechaFinNorm]
       },
       odontologoId
     },
@@ -118,6 +163,20 @@ export const obtenerDisponibilidadPorRango = (fechaInicio, fechaFin, odontologoI
       { model: Odontologo, as: 'Odontologo', include: [{ model: Usuario, as: 'Usuario' }] }
     ],
     order: [['fecha', 'ASC'], ['horaInicio', 'ASC']]
+  }).then(result => {
+    console.log('[obtenerDisponibilidadPorRango] Resultado:', {
+      cantidad: result.length,
+      disponibilidades: result.map(d => ({
+        id: d.id,
+        fecha: d.fecha,
+        fechaTipo: typeof d.fecha,
+        odontologoId: d.odontologoId,
+        tipo: d.tipo,
+        horaInicio: d.horaInicio,
+        horaFin: d.horaFin
+      }))
+    });
+    return result;
   });
 };
 
@@ -177,21 +236,109 @@ export const verificarSolapamiento = (fecha, horaInicio, horaFin, odontologoId, 
 };
 
 export const validarDisponibilidad = async (fecha, horaInicio, horaFin, odontologoId) => {
+  console.log('[disponibilidadRepository.validarDisponibilidad] Parámetros:', {
+    fecha,
+    horaInicio,
+    horaFin,
+    odontologoId
+  });
+  
+  // Normalizar formatos de hora (asegurar formato HH:MM)
+  const normalizarHora = (hora) => {
+    if (!hora) return '';
+    return hora.length > 5 ? hora.substring(0, 5) : hora;
+  };
+  
+  const horaInicioNorm = normalizarHora(horaInicio);
+  const horaFinNorm = normalizarHora(horaFin);
+  
+  console.log('[disponibilidadRepository.validarDisponibilidad] Horas normalizadas:', {
+    horaInicioOriginal: horaInicio,
+    horaInicioNormalizada: horaInicioNorm,
+    horaFinOriginal: horaFin,
+    horaFinNormalizada: horaFinNorm
+  });
+  
   // Verificar que existe un bloque laboral que contenga el horario solicitado
+  // El bloque debe cumplir: horaInicioFranja <= horaInicioTurno && horaFinFranja >= horaFinTurno
+  // IMPORTANTE: La comparación de strings funciona correctamente para formato HH:MM
   const bloqueLaboral = await Disponibilidad.findOne({
     where: {
       fecha,
       odontologoId,
       tipo: TipoDisponibilidad.LABORAL,
-      horaInicio: { [Op.lte]: horaInicio },
-      horaFin: { [Op.gte]: horaFin }
-    }
+      horaInicio: { [Op.lte]: horaInicioNorm },
+      horaFin: { [Op.gte]: horaFinNorm }
+    },
+    order: [['horaInicio', 'ASC']] // Ordenar por hora de inicio
   });
+  
+  // Log detallado para debugging
+  if (!bloqueLaboral) {
+    // Buscar todos los bloques del día para ver qué hay disponible
+    const todosLosBloques = await Disponibilidad.findAll({
+      where: {
+        fecha,
+        odontologoId,
+        tipo: TipoDisponibilidad.LABORAL
+      },
+      order: [['horaInicio', 'ASC']]
+    });
+    
+    console.log('[disponibilidadRepository.validarDisponibilidad] No se encontró bloque, pero hay estos bloques:', {
+      cantidad: todosLosBloques.length,
+      bloques: todosLosBloques.map(b => ({
+        horaInicio: b.horaInicio,
+        horaFin: b.horaFin,
+        // Comparación manual
+        inicioMenorIgual: b.horaInicio <= horaInicioNorm,
+        finMayorIgual: b.horaFin >= horaFinNorm,
+        cumple: b.horaInicio <= horaInicioNorm && b.horaFin >= horaFinNorm
+      })),
+      horarioBuscado: {
+        horaInicio: horaInicioNorm,
+        horaFin: horaFinNorm
+      }
+    });
+  }
+
+  console.log('[disponibilidadRepository.validarDisponibilidad] Resultado:', {
+    bloqueEncontrado: !!bloqueLaboral,
+    bloque: bloqueLaboral ? {
+      fecha: bloqueLaboral.fecha,
+      horaInicio: bloqueLaboral.horaInicio,
+      horaFin: bloqueLaboral.horaFin,
+      tipo: bloqueLaboral.tipo
+    } : null
+  });
+  
+  // Si no se encontró bloque, buscar todos los bloques del día para debugging
+  if (!bloqueLaboral) {
+    const bloquesDelDia = await Disponibilidad.findAll({
+      where: {
+        fecha,
+        odontologoId,
+        tipo: TipoDisponibilidad.LABORAL
+      }
+    });
+    
+    console.log('[disponibilidadRepository.validarDisponibilidad] Bloques laborales del día:', {
+      cantidad: bloquesDelDia.length,
+      bloques: bloquesDelDia.map(b => ({
+        horaInicio: b.horaInicio,
+        horaFin: b.horaFin
+      }))
+    });
+  }
 
   return !!bloqueLaboral;
 };
 
 export const generarSlotsDisponibles = async (fecha, odontologoId, duracionSlot = 30) => {
+  // Asegurar que solo se generen slots de 30 o 60 minutos
+  if (duracionSlot !== 30 && duracionSlot !== 60) {
+    duracionSlot = 30; // Por defecto 30 minutos
+  }
   // Normalizar fecha a formato YYYY-MM-DD (sin zona horaria)
   let fechaNormalizada;
   if (fecha instanceof Date) {

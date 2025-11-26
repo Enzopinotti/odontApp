@@ -164,3 +164,4 @@ npm run test:coverage
 - Asegurar que los usuarios de prueba se creen correctamente
 
 
+

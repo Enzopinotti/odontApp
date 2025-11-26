@@ -105,6 +105,39 @@ export default (sequelize, DataTypes) => {
     return this.tipo === TipoDisponibilidad.NOLABORAL;
   };
 
+  // Método toJSON para asegurar que las fechas se serialicen correctamente
+  Disponibilidad.prototype.toJSON = function() {
+    const values = { ...this.get() };
+    
+    // Normalizar fecha a formato YYYY-MM-DD (string)
+    if (values.fecha) {
+      if (values.fecha instanceof Date) {
+        const año = values.fecha.getFullYear();
+        const mes = String(values.fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(values.fecha.getDate()).padStart(2, '0');
+        values.fecha = `${año}-${mes}-${dia}`;
+      } else if (typeof values.fecha === 'string') {
+        // Asegurar formato YYYY-MM-DD
+        values.fecha = values.fecha.split('T')[0].split(' ')[0];
+      }
+    }
+    
+    // Normalizar horas a formato HH:MM (string)
+    if (values.horaInicio) {
+      if (typeof values.horaInicio === 'string') {
+        values.horaInicio = values.horaInicio.length > 5 ? values.horaInicio.substring(0, 5) : values.horaInicio;
+      }
+    }
+    
+    if (values.horaFin) {
+      if (typeof values.horaFin === 'string') {
+        values.horaFin = values.horaFin.length > 5 ? values.horaFin.substring(0, 5) : values.horaFin;
+      }
+    }
+    
+    return values;
+  };
+
   // Métodos estáticos
   Disponibilidad.obtenerDisponibilidadPorFecha = function(fecha, odontologoId) {
     return this.findAll({

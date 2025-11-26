@@ -23,13 +23,9 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 30,
       validate: {
-        min: {
-          args: [15],
-          msg: 'La duración mínima es de 15 minutos'
-        },
-        max: {
-          args: [120],
-          msg: 'La duración máxima es de 120 minutos'
+        isIn: {
+          args: [[30, 60]],
+          msg: 'La duración solo puede ser de 30 o 60 minutos'
         }
       }
     },

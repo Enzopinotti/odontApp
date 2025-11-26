@@ -31,8 +31,8 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
       return;
     }
 
-    if (duracion < 15 || duracion > 120) {
-      showToast('La duración debe estar entre 15 y 120 minutos', 'error');
+    if (duracion !== 30 && duracion !== 60) {
+      showToast('La duración solo puede ser de 30 o 60 minutos', 'error');
       return;
     }
 
@@ -53,7 +53,7 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
     }
   };
 
-  const duracionesComunes = [15, 30, 45, 60, 90, 120];
+  const duracionesComunes = [30, 60];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -128,13 +128,13 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
                   type="number"
                   value={duracion}
                   onChange={(e) => setDuracion(e.target.value)}
-                  min="15"
-                  max="120"
-                  step="5"
+                  min="30"
+                  max="60"
+                  step="30"
                   className="duracion-input-custom"
                 />
               </div>
-              <small className="form-hint">Entre 15 y 120 minutos</small>
+              <small className="form-hint">Solo 30 o 60 minutos</small>
             </div>
 
             {/* Observaciones */}
@@ -172,5 +172,6 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
     </div>
   );
 }
+
 
 

@@ -41,9 +41,9 @@ export default function NuevoTurnoPaso3() {
   });
 
   const handleConfirmar = async () => {
-    // Validar duración (15-120 minutos)
-    if (duracion < 15 || duracion > 120) {
-      showToast('La duración debe estar entre 15 y 120 minutos', 'error');
+    // Validar duración (solo 30 o 60 minutos)
+    if (duracion !== 30 && duracion !== 60) {
+      showToast('La duración solo puede ser de 30 o 60 minutos', 'error');
       return;
     }
     
@@ -52,6 +52,25 @@ export default function NuevoTurnoPaso3() {
       showToast('El motivo es requerido y debe tener entre 1 y 255 caracteres', 'error');
       return;
     }
+    
+    // Log de datos a enviar
+    const fechaHoraObj = new Date(fechaHora);
+    const fechaStr = fechaHoraObj.toISOString().split('T')[0];
+    const horaInicioStr = fechaHoraObj.toTimeString().slice(0, 5);
+    const fechaFinObj = new Date(fechaHoraObj.getTime() + duracion * 60000);
+    const horaFinStr = fechaFinObj.toTimeString().slice(0, 5);
+    
+    console.log('[NuevoTurnoPaso3] Datos a enviar al backend:', {
+      fechaHora,
+      fechaHoraObj,
+      fechaStr,
+      horaInicioStr,
+      horaFinStr,
+      duracion,
+      odontologoId,
+      pacienteId: paciente.id,
+      motivo: motivo.trim()
+    });
     
     try {
       await crearTurno.mutateAsync({
@@ -70,7 +89,36 @@ export default function NuevoTurnoPaso3() {
       const res = error?.response;
       if (res?.status === 409) {
         const { code, message, metadata } = res.data || {};
+        
+        // Si el error es de horario no disponible, es un error crítico
+        // porque solo mostramos horarios disponibles
+        if (code === 'HORARIO_NO_DISPONIBLE') {
+          console.error('[NuevoTurnoPaso3] ERROR CRÍTICO: Horario no disponible aunque se mostró como disponible:', {
+            fechaHora,
+            fechaStr,
+            horaInicioStr,
+            horaFinStr,
+            duracion,
+            odontologoId
+          });
+          showToast('Error: El horario seleccionado no está disponible. Por favor, vuelva a seleccionar fecha y horario.', 'error');
+          // Redirigir al paso 1 para que seleccione nuevamente
+          setTimeout(() => {
+            navigate('/agenda/turnos/nuevo');
+          }, 2000);
+          return;
+        }
+        
         if (code === 'SOLAPAMIENTO_TURNO' && metadata) {
+          console.error('[NuevoTurnoPaso3] ERROR CRÍTICO: Solapamiento aunque se validó:', {
+            fechaHora,
+            fechaStr,
+            horaInicioStr,
+            horaFinStr,
+            duracion,
+            odontologoId,
+            metadata
+          });
           setConflicto({
             message: message || 'Conflicto de horario',
             ...metadata
@@ -170,23 +218,17 @@ export default function NuevoTurnoPaso3() {
           <label className="form-label">
             Duración (minutos) <span style={{ color: 'red' }}>*</span>
           </label>
-          <input
-            type="number"
+          <select
             value={duracion}
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || 30;
-              if (value >= 15 && value <= 120) {
-                setDuracion(value);
-              }
-            }}
-            min={15}
-            max={120}
-            step={15}
+            onChange={(e) => setDuracion(parseInt(e.target.value))}
             className="form-input"
             style={{ width: '200px' }}
-          />
+          >
+            <option value={30}>30 minutos</option>
+            <option value={60}>60 minutos</option>
+          </select>
           <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
-            Duración entre 15 y 120 minutos (múltiplos de 15 recomendados)
+            Solo se permiten turnos de 30 o 60 minutos
           </div>
         </div>
         

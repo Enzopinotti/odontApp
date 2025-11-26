@@ -5,14 +5,38 @@ export const obtenerDisponibilidades = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const perPage = parseInt(req.query.perPage) || 20;
-    const { fecha, odontologoId, tipo, ...filtros } = req.query;
+    const { fecha, fechaInicio, fechaFin, odontologoId, tipo, ...filtros } = req.query;
+
+    console.log('[obtenerDisponibilidades] Query params recibidos:', {
+      fecha,
+      fechaInicio,
+      fechaFin,
+      odontologoId,
+      tipo,
+      page,
+      perPage
+    });
 
     const { data, total } = await disponibilidadService.buscarConFiltros({
       ...filtros,
       fecha,
+      fechaInicio,
+      fechaFin,
       odontologoId,
       tipo
     }, page, perPage);
+
+    console.log('[obtenerDisponibilidades] Resultado:', {
+      cantidad: data?.length || 0,
+      total,
+      disponibilidades: data?.map(d => ({
+        id: d.id,
+        fecha: d.fecha,
+        fechaTipo: typeof d.fecha,
+        odontologoId: d.odontologoId,
+        tipo: d.tipo
+      }))
+    });
 
     return res.paginated(data, { page, perPage, total }, 'Disponibilidades listadas');
   } catch (error) {
@@ -90,6 +114,13 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
     const { odontologoId } = req.params;
     const { fecha, fechaInicio, fechaFin } = req.query;
     
+    console.log('[obtenerDisponibilidadesPorOdontologo] Parámetros:', {
+      odontologoId,
+      fecha,
+      fechaInicio,
+      fechaFin
+    });
+    
     let disponibilidades;
     
     if (fecha) {
@@ -99,6 +130,19 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
     } else {
       disponibilidades = await disponibilidadService.obtenerDisponibilidadesPorOdontologo(odontologoId);
     }
+    
+    console.log('[obtenerDisponibilidadesPorOdontologo] Resultado:', {
+      cantidad: disponibilidades?.length || 0,
+      disponibilidades: disponibilidades?.map(d => ({
+        id: d.id,
+        fecha: d.fecha,
+        fechaTipo: typeof d.fecha,
+        odontologoId: d.odontologoId,
+        tipo: d.tipo,
+        horaInicio: d.horaInicio,
+        horaFin: d.horaFin
+      }))
+    });
     
     return res.ok(disponibilidades, 'Disponibilidades obtenidas');
   } catch (error) {
