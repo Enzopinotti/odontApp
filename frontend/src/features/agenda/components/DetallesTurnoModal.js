@@ -1,18 +1,27 @@
 // src/features/agenda/components/DetallesTurnoModal.js
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FaTimes, FaCheck, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit } from 'react-icons/fa';
 import { useMarcarAsistencia, useMarcarAusencia, useCancelarTurno } from '../hooks/useTurnos';
 import useToast from '../../../hooks/useToast';
+import useAuth from '../../../features/auth/hooks/useAuth';
 import { handleApiError } from '../../../utils/handleApiError';
 import ReprogramarTurnoModal from './ReprogramarTurnoModal';
 import EditarTurnoModal from './EditarTurnoModal';
+import * as agendaApi from '../../../api/agenda';
 
 export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  // CU-AG01.5: Verificar si el usuario es odontólogo
+  const esOdontologo = useMemo(() => {
+    return user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+  }, [user]);
   const [mostrandoConfirmacion, setMostrandoConfirmacion] = useState(null); // 'asistencia', 'ausencia', 'cancelar'
   const [mostrandoModal, setMostrandoModal] = useState(null); // 'reprogramar', 'editar'
   const [motivo, setMotivo] = useState('');
   const [nota, setNota] = useState('');
+  const [mostrarCampoNota, setMostrarCampoNota] = useState(false); // Para odontólogos: controlar si se muestra el campo de notas
 
   const marcarAsistencia = useMarcarAsistencia();
   const marcarAusencia = useMarcarAusencia();
@@ -200,14 +209,38 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                   <div style={{ marginTop: '1rem' }}>
                     <strong>Notas del turno:</strong>
                     <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
-                      {turno.Notas.map((nota, idx) => (
-                        <li key={idx} style={{ marginBottom: '0.5rem' }}>
-                          <span style={{ color: '#2c3e50' }}>{nota.descripcion}</span>
-                          <span style={{ color: '#7f8c8d', fontSize: '0.85rem', marginLeft: '0.5rem' }}>
-                            ({new Date(nota.createdAt).toLocaleDateString('es-AR')})
-                          </span>
-                        </li>
-                      ))}
+                      {turno.Notas.map((nota, idx) => {
+                        const autorNombre = nota.Usuario 
+                          ? `${nota.Usuario.nombre} ${nota.Usuario.apellido}`
+                          : 'Usuario desconocido';
+                        const fechaNota = new Date(nota.createdAt);
+                        const fechaFormateada = fechaNota.toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                        
+                        return (
+                          <li key={idx} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: idx < turno.Notas.length - 1 ? '1px solid #e0e0e0' : 'none' }}>
+                            <div style={{ color: '#2c3e50', marginBottom: '0.25rem' }}>
+                              {nota.descripcion}
+                            </div>
+                            <div style={{ 
+                              color: '#7f8c8d', 
+                              fontSize: '0.8rem',
+                              display: 'flex',
+                              gap: '0.5rem',
+                              alignItems: 'center'
+                            }}>
+                              <span>👤 {autorNombre}</span>
+                              <span>•</span>
+                              <span>📅 {fechaFormateada}</span>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
@@ -278,33 +311,118 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                 borderRadius: '6px',
                 fontSize: '0.9rem'
               }}>
-                <p style={{ color: '#7f8c8d', fontStyle: 'italic', marginBottom: '0.75rem' }}>
-                  Agregue notas durante la atención del paciente. Estas notas se guardarán en el historial del turno.
-                </p>
-                <textarea
-                  placeholder="Ingrese notas sobre la consulta, observaciones, recomendaciones, etc..."
-                  rows="4"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '0.9rem',
-                    fontFamily: 'inherit',
-                    resize: 'vertical',
-                    minHeight: '100px'
-                  }}
-                  value={nota}
-                  onChange={(e) => setNota(e.target.value)}
-                />
-                <p style={{ 
-                  fontSize: '0.8rem', 
-                  color: '#7f8c8d', 
-                  marginTop: '0.5rem',
-                  fontStyle: 'italic'
-                }}>
-                  💡 Las notas se pueden guardar al marcar asistencia o agregar como nota separada.
-                </p>
+                {/* CU-AG01.5: Para odontólogos, mostrar botón para agregar nota en lugar del campo siempre visible */}
+                {esOdontologo && !mostrarCampoNota ? (
+                  <div style={{ textAlign: 'center', padding: '1rem' }}>
+                    <button
+                      onClick={() => setMostrarCampoNota(true)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#3498db',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseOver={(e) => e.target.style.background = '#2980b9'}
+                      onMouseOut={(e) => e.target.style.background = '#3498db'}
+                    >
+                      📝 Agregar Nota
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p style={{ color: '#7f8c8d', fontStyle: 'italic', marginBottom: '0.75rem' }}>
+                      Agregue notas durante la atención del paciente. Estas notas se guardarán en el historial del turno.
+                    </p>
+                    <textarea
+                      placeholder="Ingrese notas sobre la consulta, observaciones, recomendaciones, etc..."
+                      rows="4"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                        minHeight: '100px'
+                      }}
+                      value={nota}
+                      onChange={(e) => setNota(e.target.value)}
+                    />
+                    {esOdontologo && (
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '0.5rem', 
+                        marginTop: '0.75rem',
+                        justifyContent: 'flex-end'
+                      }}>
+                        <button
+                          onClick={() => {
+                            setMostrarCampoNota(false);
+                            setNota('');
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#95a5a6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!nota.trim()) {
+                              showToast('Por favor ingrese una nota', 'error');
+                              return;
+                            }
+                            try {
+                              await agendaApi.crearNota(turno.id, nota);
+                              showToast('Nota agregada correctamente', 'success');
+                              setNota('');
+                              setMostrarCampoNota(false);
+                              onSuccess(); // Refrescar los datos
+                            } catch (error) {
+                              handleApiError(error, showToast);
+                            }
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#27ae60',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          Guardar Nota
+                        </button>
+                      </div>
+                    )}
+                    {!esOdontologo && (
+                      <p style={{ 
+                        fontSize: '0.8rem', 
+                        color: '#7f8c8d', 
+                        marginTop: '0.5rem',
+                        fontStyle: 'italic'
+                      }}>
+                        💡 Las notas se pueden guardar al marcar asistencia o agregar como nota separada.
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -383,7 +501,8 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
         </div>
 
         {/* Footer con acciones */}
-        {esPendiente && !mostrandoConfirmacion && (
+        {/* CU-AG01.5: Solo recepcionista puede realizar acciones sobre turnos */}
+        {esPendiente && !mostrandoConfirmacion && !esOdontologo && (
           <>
             <div className="modal-footer-section">
               <h4 className="footer-section-title">Acciones Principales</h4>
@@ -427,6 +546,16 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
               </div>
             </div>
           </>
+        )}
+        
+        {/* CU-AG01.5: Mensaje informativo para odontólogos */}
+        {esPendiente && esOdontologo && (
+          <div className="modal-footer-info">
+            <p style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
+              Como odontólogo, puedes ver los detalles del turno pero no puedes modificarlo. 
+              Contacta a recepción para realizar cambios.
+            </p>
+          </div>
         )}
 
         {!esPendiente && (

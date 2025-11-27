@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTratamientos, useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useSlotsDisponibles, useTurnosPorFecha } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
+import useAuth from '../../../features/auth/hooks/useAuth';
 import BackBar from '../../../components/BackBar';
 import { FaChevronLeft, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
 import '../../../styles/agenda.scss';
@@ -14,6 +15,15 @@ const ARGENTINA_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 export default function NuevoTurnoPaso1() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // CU-AG01.5: Proteger ruta - Solo recepcionista puede crear turnos
+  useEffect(() => {
+    const esOdontologo = user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+    if (esOdontologo) {
+      navigate('/agenda/diaria');
+    }
+  }, [user, navigate]);
   const [mesActual, setMesActual] = useState(new Date());
   const [fecha, setFecha] = useState(null);
   const [tratamientoSeleccionado, setTratamientoSeleccionado] = useState(null);

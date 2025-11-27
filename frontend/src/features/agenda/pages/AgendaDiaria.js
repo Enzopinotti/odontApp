@@ -10,6 +10,7 @@ import CancelarTurnosMultipleModal from '../components/CancelarTurnosMultipleMod
 import BuscarTurnosModal from '../components/BuscarTurnosModal';
 import useToast from '../../../hooks/useToast';
 import useAuth from '../../../features/auth/hooks/useAuth';
+import { getHoraArgentina, getHoraStringArgentina } from '../utils/timezoneHelpers';
 import '../../../styles/agendaDiaria.scss';
 
 // Helper para formatear fecha
@@ -980,12 +981,14 @@ export default function AgendaDiaria() {
     return () => clearInterval(intervalo);
   }, [esHoy]);
 
-  // Calcular posición de la línea de hora actual (en porcentaje)
+  // Calcular posición de la línea de hora actual (en píxeles)
   const calcularPosicionLineaActual = () => {
     if (!esHoy) return null;
 
     const ahora = horaActual;
-    const horaMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+    // Usar zona horaria de Argentina para la hora actual
+    const { hora, minutos } = getHoraArgentina(ahora);
+    const horaMinutos = hora * 60 + minutos;
     const inicioJornadaMinutos = INICIO_JORNADA * 60;
     const finJornadaMinutos = FIN_JORNADA * 60;
 
@@ -994,14 +997,27 @@ export default function AgendaDiaria() {
       return null;
     }
 
-    // Calcular porcentaje de la posición
+    // Calcular posición en píxeles
+    // Cada fila de la tabla tiene 80px de altura (según el CSS)
+    // Cada fila representa un slot de 30 minutos (SLOT_MINUTOS)
     const minutosDesdeInicio = horaMinutos - inicioJornadaMinutos;
-    const totalMinutosJornada = finJornadaMinutos - inicioJornadaMinutos;
-    const porcentaje = (minutosDesdeInicio / totalMinutosJornada) * 100;
+    
+    // Calcular qué slot (fila) corresponde a esta hora
+    const slotIndex = Math.floor(minutosDesdeInicio / SLOT_MINUTOS);
+    
+    // Calcular el offset dentro del slot (0-30 minutos)
+    const minutosEnSlot = minutosDesdeInicio % SLOT_MINUTOS;
+    const offsetEnSlot = (minutosEnSlot / SLOT_MINUTOS) * 80; // 80px es la altura de cada fila
+    
+    // Altura del header de la tabla (thead) - aproximadamente 60px
+    const headerHeight = 60;
+    
+    // Posición total en píxeles desde el top del contenedor
+    const topPixels = headerHeight + (slotIndex * 80) + offsetEnSlot;
 
     return {
-      porcentaje,
-      hora: `${ahora.getHours().toString().padStart(2, '0')}:${ahora.getMinutes().toString().padStart(2, '0')}`
+      topPixels,
+      hora: `${hora.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`
     };
   };
 
@@ -1087,11 +1103,8 @@ export default function AgendaDiaria() {
     let max = FIN_JORNADA * 60;
 
     turnos.forEach((turno) => {
-      const inicioFecha = new Date(turno.fechaHora);
-      const inicioStr = `${inicioFecha.getHours().toString().padStart(2, '0')}:${inicioFecha
-        .getMinutes()
-        .toString()
-        .padStart(2, '0')}`;
+      // Usar zona horaria de Argentina para obtener las horas correctas
+      const inicioStr = getHoraStringArgentina(turno.fechaHora);
       const inicioMin = horaStringToMinutes(inicioStr);
       const finMin = inicioMin + (turno.duracion || 30);
       min = Math.min(min, inicioMin);
@@ -1214,10 +1227,11 @@ export default function AgendaDiaria() {
     for (const turno of turnos) {
       if (turno.odontologoId !== odontologoId) continue;
       
+      // Usar zona horaria de Argentina para obtener las horas correctas
+      const horaInicioStr = getHoraStringArgentina(turno.fechaHora);
       const turnoFecha = new Date(turno.fechaHora);
-      const horaInicioStr = `${turnoFecha.getHours().toString().padStart(2, '0')}:${turnoFecha.getMinutes().toString().padStart(2, '0')}`;
       const horaFin = new Date(turnoFecha.getTime() + (turno.duracion || 30) * 60000);
-      const horaFinStr = `${horaFin.getHours().toString().padStart(2, '0')}:${horaFin.getMinutes().toString().padStart(2, '0')}`;
+      const horaFinStr = getHoraStringArgentina(horaFin);
       
       const inicioMin = horaStringToMinutes(horaInicioStr);
       const finMin = horaStringToMinutes(horaFinStr);
@@ -1266,6 +1280,17 @@ export default function AgendaDiaria() {
 
   // CU-AG01.4: Manejar click en celda
   const handleClickCelda = (odontologoId, hora, e) => {
+    // CU-AG01.5: Si es odontólogo, solo puede ver turnos, no crear
+    if (esOdontologo) {
+      const turno = obtenerTurno(odontologoId, hora);
+      if (turno) {
+        // Solo puede abrir detalles del turno
+        setTurnoSeleccionado(turno);
+        setModalAbierto(true);
+      }
+      return;
+    }
+    
     // Si está en modo selección múltiple y hay un turno, toggle selección
     if (modoSeleccionMultiple) {
       const turno = obtenerTurno(odontologoId, hora);
@@ -1288,7 +1313,7 @@ export default function AgendaDiaria() {
       // Mostrar tooltip o alerta con el motivo del bloqueo
       alert(`Horario bloqueado: ${bloqueo.motivo || 'No disponible'}`);
     } else if (disponible) {
-      // Ir a crear turno con datos pre-cargados
+      // Ir a crear turno con datos pre-cargados (solo recepcionista)
       const fechaHora = new Date(fechaSeleccionada);
       const [horas, minutos] = hora.split(':');
       fechaHora.setHours(parseInt(horas), parseInt(minutos), 0, 0);
@@ -1344,13 +1369,6 @@ export default function AgendaDiaria() {
 
       {/* Contenido principal */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      {/* Header */}
-      <div className="agenda-diaria-header" style={{ marginBottom: '0.5rem' }}>
-        <button className="btn-volver" onClick={() => navigate('/agenda')}>
-          <FaArrowLeft /> Volver
-        </button>
-        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Agenda del Día</h1>
-      </div>
 
       {/* Controles de navegación compactos */}
       <div className="controles-fecha" style={{ 
@@ -1431,52 +1449,54 @@ export default function AgendaDiaria() {
         </div>
 
 
-        {/* CU-AG01.4: Controles de cancelación múltiple */}
-        <div className="controles-seleccion-multiple" style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button
-            className={`btn-seleccion-multiple ${modoSeleccionMultiple ? 'active' : ''}`}
-            onClick={toggleModoSeleccionMultiple}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              background: modoSeleccionMultiple ? '#3498db' : 'white',
-              color: modoSeleccionMultiple ? 'white' : '#333',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FaCheckSquare /> {modoSeleccionMultiple ? 'Cancelar selección' : 'Seleccionar turnos'}
-          </button>
-          
-          {modoSeleccionMultiple && turnosSeleccionados.length > 0 && (
-            <>
-              <span style={{ color: '#7f8c8d' }}>
-                {turnosSeleccionados.length} seleccionado(s)
-              </span>
-              <button
-                className="btn-cancelar-multiple"
-                onClick={handleAbrirCancelacionMultiple}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: '#e74c3c',
-                  color: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontWeight: '600'
-                }}
-              >
-                <FaBan /> Cancelar {turnosSeleccionados.length} turno(s)
-              </button>
-            </>
-          )}
-        </div>
+        {/* CU-AG01.4: Controles de cancelación múltiple - Solo recepcionista */}
+        {!esOdontologo && (
+          <div className="controles-seleccion-multiple" style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              className={`btn-seleccion-multiple ${modoSeleccionMultiple ? 'active' : ''}`}
+              onClick={toggleModoSeleccionMultiple}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                border: '1px solid #ddd',
+                background: modoSeleccionMultiple ? '#3498db' : 'white',
+                color: modoSeleccionMultiple ? 'white' : '#333',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <FaCheckSquare /> {modoSeleccionMultiple ? 'Cancelar selección' : 'Seleccionar turnos'}
+            </button>
+            
+            {modoSeleccionMultiple && turnosSeleccionados.length > 0 && (
+              <>
+                <span style={{ color: '#7f8c8d' }}>
+                  {turnosSeleccionados.length} seleccionado(s)
+                </span>
+                <button
+                  className="btn-cancelar-multiple"
+                  onClick={handleAbrirCancelacionMultiple}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#e74c3c',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  <FaBan /> Cancelar {turnosSeleccionados.length} turno(s)
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
 
@@ -1761,15 +1781,15 @@ export default function AgendaDiaria() {
                               padding: '0.75rem',
                               marginBottom: '0.5rem',
                               cursor: 'pointer',
-                              transition: 'all 0.2s',
+                              transition: 'opacity 0.2s ease, box-shadow 0.2s ease',
                               position: 'relative'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                              e.currentTarget.style.opacity = '0.95';
+                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.opacity = '1';
                               e.currentTarget.style.boxShadow = 'none';
                             }}
                           >
@@ -2010,14 +2030,15 @@ export default function AgendaDiaria() {
                             style={{
                               position: 'absolute',
                               top: '0.25rem',
-                              left: '0.25rem',
+                              right: '2.5rem', // Mover a la derecha, dejando espacio para el badge de estado
                               background: esProximo ? '#f59e0b' : '#ef4444',
                               color: 'white',
                               padding: '0.25rem 0.5rem',
                               borderRadius: '4px',
                               fontSize: '0.75rem',
                               fontWeight: 'bold',
-                              zIndex: 5
+                              zIndex: 5,
+                              whiteSpace: 'nowrap'
                             }}
                           >
                             {esProximo ? `⏰ ${minutosHastaTurno} min` : `⚠️ ${minutosRetraso} min retraso`}
@@ -2027,7 +2048,9 @@ export default function AgendaDiaria() {
                         <div className="turno-content" style={{ 
                           padding: '0.4rem',
                           fontSize: '0.8rem',
-                          lineHeight: '1.3'
+                          lineHeight: '1.3',
+                          // Ajustar padding-top si hay indicador de tiempo para evitar que tape el nombre
+                          paddingTop: (esProximo || tieneRetraso) ? '2rem' : '0.4rem'
                         }}>
                           {/* Badge de estado en la esquina superior derecha */}
                           <span className={`turno-estado-badge estado-${turno.estado.toLowerCase()}`} style={{
@@ -2136,7 +2159,7 @@ export default function AgendaDiaria() {
         {lineaActual && (
           <div 
             className="linea-hora-actual"
-            style={{ top: `${lineaActual.porcentaje}%` }}
+            style={{ top: `${lineaActual.topPixels}px` }}
           >
             <div className="linea-hora-actual-indicator">
               <span className="hora-actual-text">{lineaActual.hora}</span>

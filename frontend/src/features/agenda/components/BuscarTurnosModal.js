@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { FaSearch, FaTimes, FaCalendarAlt, FaUserMd, FaFileMedical, FaCheckCircle, FaClock, FaBan, FaUser } from 'react-icons/fa';
 import { useTurnos } from '../hooks/useTurnos';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
+import useAuth from '../../../features/auth/hooks/useAuth';
 import * as agendaApi from '../../../api/agenda';
 import { useQuery } from '@tanstack/react-query';
 import useToast from '../../../hooks/useToast';
@@ -10,9 +11,22 @@ import '../../../styles/agenda.scss';
 
 export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  // CU-AG01.5: Verificar si el usuario es odontólogo
+  const esOdontologo = useMemo(() => {
+    return user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+  }, [user]);
   
   // Estados de filtros
   const [filtroOdontologo, setFiltroOdontologo] = useState('');
+  
+  // CU-AG01.5: Si es odontólogo, pre-seleccionar automáticamente su odontologoId
+  useEffect(() => {
+    if (esOdontologo && user?.id && !filtroOdontologo) {
+      setFiltroOdontologo(String(user.id));
+    }
+  }, [esOdontologo, user, filtroOdontologo]);
   const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
   const [filtroFechaFin, setFiltroFechaFin] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -38,7 +52,12 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   
   // Construir parámetros de búsqueda
   const paramsBusqueda = {};
-  if (filtroOdontologo) paramsBusqueda.odontologoId = filtroOdontologo;
+  // CU-AG01.5: Si es odontólogo, siempre filtrar por su odontologoId
+  if (esOdontologo && user?.id) {
+    paramsBusqueda.odontologoId = user.id;
+  } else if (filtroOdontologo) {
+    paramsBusqueda.odontologoId = filtroOdontologo;
+  }
   if (filtroFechaInicio) paramsBusqueda.fechaInicio = new Date(filtroFechaInicio).toISOString();
   if (filtroFechaFin) {
     const fechaFin = new Date(filtroFechaFin);
@@ -50,7 +69,8 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   
   // Query de búsqueda (se ejecuta si hay filtros del backend o texto de paciente)
   // Si hay texto de paciente sin seleccionar, se ejecuta la query sin filtro de pacienteId y se filtra en el frontend
-  const tieneFiltrosBackend = !!(filtroOdontologo || filtroFechaInicio || filtroFechaFin || filtroEstado || pacienteSeleccionado?.id);
+  // CU-AG01.5: Si es odontólogo, siempre tiene filtro de odontologoId
+  const tieneFiltrosBackend = !!(esOdontologo || filtroOdontologo || filtroFechaInicio || filtroFechaFin || filtroEstado || pacienteSeleccionado?.id);
   const tieneFiltros = tieneFiltrosBackend || !!filtroPacienteTexto;
   const queryParams = tieneFiltros ? paramsBusqueda : {};
   const { data: turnosData, isLoading: loadingTurnos } = useTurnos(queryParams, { enabled: tieneFiltros });
@@ -188,30 +208,52 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
             borderRadius: '8px',
             border: '1px solid #e0e0e0'
           }}>
-            {/* Filtro Odontólogo */}
-            <div className="form-group">
-              <label htmlFor="filtro-odontologo" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
-                <FaUserMd /> Odontólogo
-              </label>
-              <select
-                id="filtro-odontologo"
-                value={filtroOdontologo}
-                onChange={(e) => setFiltroOdontologo(e.target.value)}
-                style={{
+            {/* Filtro Odontólogo - Solo visible para recepcionistas */}
+            {!esOdontologo && (
+              <div className="form-group">
+                <label htmlFor="filtro-odontologo" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  <FaUserMd /> Odontólogo
+                </label>
+                <select
+                  id="filtro-odontologo"
+                  value={filtroOdontologo}
+                  onChange={(e) => setFiltroOdontologo(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd'
+                  }}
+                >
+                  <option value="">Todos</option>
+                  {odontologosData.map(odonto => (
+                    <option key={odonto.userId} value={odonto.userId}>
+                      Dr. {odonto.Usuario?.nombre} {odonto.Usuario?.apellido}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* CU-AG01.5: Información para odontólogos (filtro automático) */}
+            {esOdontologo && (
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  <FaUserMd /> Odontólogo
+                </label>
+                <div style={{
                   width: '100%',
                   padding: '0.5rem',
                   borderRadius: '6px',
-                  border: '1px solid #ddd'
-                }}
-              >
-                <option value="">Todos</option>
-                {odontologosData.map(odonto => (
-                  <option key={odonto.userId} value={odonto.userId}>
-                    Dr. {odonto.Usuario?.nombre} {odonto.Usuario?.apellido}
-                  </option>
-                ))}
-              </select>
-            </div>
+                  border: '1px solid #ddd',
+                  background: '#f8f9fa',
+                  color: '#6c757d',
+                  fontSize: '0.9rem'
+                }}>
+                  Dr. {user?.nombre} {user?.apellido} (Solo tus turnos)
+                </div>
+              </div>
+            )}
             
             {/* Filtro Paciente */}
             <div className="form-group" style={{ position: 'relative' }}>

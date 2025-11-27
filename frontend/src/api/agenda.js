@@ -154,3 +154,9 @@ export async function validarDisponibilidad(data) {
   return res.data;
 }
 
+/** Notas ---------------------------------------- */
+export async function crearNota(turnoId, descripcion) {
+  const res = await api.post('/agenda/notas', { turnoId, descripcion });
+  return res.data;
+}
+

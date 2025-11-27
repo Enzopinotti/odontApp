@@ -1,9 +1,10 @@
 // src/features/agenda/pages/GestionDisponibilidades.js
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import { useTurnosPorFecha } from '../hooks/useTurnos';
+import useAuth from '../../../features/auth/hooks/useAuth';
 import DisponibilidadModal from '../components/DisponibilidadModal';
 import DisponibilidadRecurrenteModal from '../components/DisponibilidadRecurrenteModal';
 import { FaChevronLeft, FaChevronRight, FaPlus, FaCalendarAlt, FaSyncAlt, FaCalendarCheck } from 'react-icons/fa';
@@ -48,6 +49,15 @@ const HORAS_DIA = Array.from({ length: 15 }, (_, i) => {
 
 export default function GestionDisponibilidades() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // CU-AG01.5: Proteger ruta - Solo recepcionista puede gestionar disponibilidades
+  useEffect(() => {
+    const esOdontologo = user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+    if (esOdontologo) {
+      navigate('/agenda/diaria');
+    }
+  }, [user, navigate]);
   
   // Estado para el día actual (solo vista diaria)
   const [diaActual, setDiaActual] = useState(new Date());
