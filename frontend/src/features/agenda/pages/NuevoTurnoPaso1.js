@@ -1,12 +1,12 @@
 // src/features/agenda/pages/NuevoTurnoPaso1.js
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTratamientos, useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useSlotsDisponibles, useTurnosPorFecha } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import useAuth from '../../../features/auth/hooks/useAuth';
 import BackBar from '../../../components/BackBar';
-import { FaChevronLeft, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaCalendarCheck, FaSearch, FaTimes, FaUserMd } from 'react-icons/fa';
 import '../../../styles/agenda.scss';
 
 // Configurar zona horaria de Argentina para todas las operaciones de fecha
@@ -29,6 +29,10 @@ export default function NuevoTurnoPaso1() {
   const [tratamientoSeleccionado, setTratamientoSeleccionado] = useState(null);
   const [odontologoId, setOdontologoId] = useState(null);
   const [horarioSeleccionado, setHorarioSeleccionado] = useState(null);
+  const [busquedaOdontologo, setBusquedaOdontologo] = useState('');
+  const [mostrarListaOdontologos, setMostrarListaOdontologos] = useState(false);
+  const odontologoInputRef = useRef(null);
+  const odontologoListRef = useRef(null);
   
   // Función helper para convertir hora string a minutos (debe estar antes de los useMemo que la usan)
   // Normaliza el formato de hora (puede venir como "HH:MM:SS" o "HH:MM")
@@ -68,6 +72,52 @@ export default function NuevoTurnoPaso1() {
   
   const { data: tratamientos, isLoading: tratamientosLoading } = useTratamientos();
   const { data: odontologos, isLoading: odontologosLoading } = useOdontologosPorEspecialidad();
+  
+  // Filtrar odontólogos basado en la búsqueda
+  const odontologosFiltrados = useMemo(() => {
+    if (!odontologos || !Array.isArray(odontologos)) return [];
+    
+    if (!busquedaOdontologo || busquedaOdontologo.trim() === '') {
+      return odontologos;
+    }
+    
+    const termino = busquedaOdontologo.toLowerCase().trim();
+    return odontologos.filter(odontologo => {
+      const nombre = `${odontologo.Usuario?.nombre || ''} ${odontologo.Usuario?.apellido || ''}`.toLowerCase();
+      const matricula = odontologo.matricula?.toLowerCase() || '';
+      return nombre.includes(termino) || matricula.includes(termino);
+    });
+  }, [odontologos, busquedaOdontologo]);
+  
+  // Obtener el odontólogo seleccionado para mostrar en el input
+  const odontologoSeleccionado = useMemo(() => {
+    if (!odontologoId) return null;
+    return odontologos?.find(o => o.userId === odontologoId);
+  }, [odontologoId, odontologos]);
+  
+  // Actualizar búsqueda cuando se selecciona un odontólogo
+  useEffect(() => {
+    if (odontologoSeleccionado) {
+      setBusquedaOdontologo(`Dr. ${odontologoSeleccionado.Usuario?.nombre} ${odontologoSeleccionado.Usuario?.apellido}`);
+    }
+  }, [odontologoSeleccionado]);
+  
+  // Cerrar lista al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        odontologoInputRef.current && 
+        !odontologoInputRef.current.contains(event.target) &&
+        odontologoListRef.current &&
+        !odontologoListRef.current.contains(event.target)
+      ) {
+        setMostrarListaOdontologos(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   // Calcular rango del mes para obtener disponibilidades
   const fechaInicioMes = useMemo(() => {
@@ -727,30 +777,166 @@ export default function NuevoTurnoPaso1() {
       </div>
 
       <div className="nuevo-turno-form">
-        {/* Paso 1: Seleccionar Odontólogo */}
+        {/* Paso 1: Seleccionar Odontólogo con búsqueda */}
         <div className="form-section">
           <label className="form-label">Odontólogo <span style={{ color: 'red' }}>*</span></label>
           {odontologosLoading ? (
             <div>Cargando odontólogos...</div>
           ) : (
-            <select
-              value={odontologoId || ''}
-              onChange={(e) => {
-                setOdontologoId(Number(e.target.value));
-                setFecha(null);
-                setHorarioSeleccionado(null);
-              }}
-              className="form-input"
-              style={{ fontSize: '1rem', padding: '0.75rem' }}
-            >
-              <option value="">Seleccione un odontólogo</option>
-              {odontologos?.map(odonto => (
-                <option key={odonto.userId} value={odonto.userId}>
-                  Dr. {odonto.Usuario?.nombre} {odonto.Usuario?.apellido}
-                  {odonto.matricula ? ` (Mat. ${odonto.matricula})` : ''}
-                </option>
-              ))}
-            </select>
+            <div ref={odontologoInputRef} style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }}>
+                <FaUserMd style={{
+                  position: 'absolute',
+                  left: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#6b7280',
+                  pointerEvents: 'none',
+                  zIndex: 1
+                }} />
+                <input
+                  type="text"
+                  value={busquedaOdontologo}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    setBusquedaOdontologo(valor);
+                    setMostrarListaOdontologos(true);
+                    
+                    // Si se limpia la búsqueda, limpiar también la selección
+                    if (!valor || valor.trim() === '') {
+                      setOdontologoId(null);
+                      setFecha(null);
+                      setHorarioSeleccionado(null);
+                    }
+                  }}
+                  onFocus={() => setMostrarListaOdontologos(true)}
+                  placeholder="Buscar odontólogo por nombre, apellido o matrícula..."
+                  className="form-input"
+                  style={{
+                    fontSize: '1rem',
+                    padding: '0.75rem 0.75rem 0.75rem 2.5rem',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {odontologoId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusquedaOdontologo('');
+                      setOdontologoId(null);
+                      setFecha(null);
+                      setHorarioSeleccionado(null);
+                      setMostrarListaOdontologos(false);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#6b7280',
+                      padding: '0.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 1
+                    }}
+                    title="Limpiar selección"
+                  >
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
+              
+              {mostrarListaOdontologos && odontologosFiltrados && odontologosFiltrados.length > 0 && (
+                <div
+                  ref={odontologoListRef}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '0.25rem',
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    zIndex: 1000
+                  }}
+                >
+                  {odontologosFiltrados.map(odontologo => (
+                    <div
+                      key={odontologo.userId}
+                      onClick={() => {
+                        setOdontologoId(odontologo.userId);
+                        setBusquedaOdontologo(`Dr. ${odontologo.Usuario?.nombre} ${odontologo.Usuario?.apellido}`);
+                        setMostrarListaOdontologos(false);
+                        setFecha(null);
+                        setHorarioSeleccionado(null);
+                      }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f3f4f6',
+                        transition: 'background-color 0.2s ease',
+                        backgroundColor: odontologoId === odontologo.userId ? '#f0f9ff' : 'white'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (odontologoId !== odontologo.userId) {
+                          e.currentTarget.style.backgroundColor = '#f9fafb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (odontologoId !== odontologo.userId) {
+                          e.currentTarget.style.backgroundColor = 'white';
+                        }
+                      }}
+                    >
+                      <div style={{ fontWeight: '600', color: '#111827' }}>
+                        Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                      </div>
+                      {odontologo.matricula && (
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                          Mat. {odontologo.matricula}
+                        </div>
+                      )}
+                      {odontologo.OdontologoEspecialidades?.[0]?.Especialidad?.nombre && (
+                        <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.15rem' }}>
+                          {odontologo.OdontologoEspecialidades[0].Especialidad.nombre}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {mostrarListaOdontologos && busquedaOdontologo && odontologosFiltrados && odontologosFiltrados.length === 0 && (
+                <div
+                  ref={odontologoListRef}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '0.25rem',
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    zIndex: 1000
+                  }}
+                >
+                  No se encontraron odontólogos
+                </div>
+              )}
+            </div>
           )}
         </div>
 
