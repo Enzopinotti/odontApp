@@ -17,7 +17,7 @@
       background-color: v.$color-light;
       color: v.$color-text;
       border: none;
-      border-radius: 8px;
+      border-radius: v.$radius;
       cursor: pointer;
       font-weight: 500;
       display: flex;
@@ -41,37 +41,63 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem;
     padding: 1rem;
     background-color: v.$color-white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: v.$radius;
+    box-shadow: v.$shadow;
 
-    .btn-nav,
-    .btn-hoy {
-      padding: 0.75rem 1.5rem;
-      background-color: v.$color-primary;
-      color: v.$color-white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      display: flex;
+    .btn-nav {
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      transition: all 0.3s ease;
+      background: v.$color-white;
+      border: 1px solid #e4e6ed;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      cursor: pointer;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.14s ease;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: v.$color-text;
+
+      svg {
+        font-size: 0.85rem;
+      }
 
       &:hover {
-        background-color: darken(v.$color-primary, 10%);
-        transform: translateY(-2px);
+        background: v.$color-light;
+        box-shadow: v.$shadow;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
       }
     }
 
     .btn-hoy {
-      background-color: v.$color-success;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: v.$color-primary;
+      color: v.$color-white;
+      border: none;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      cursor: pointer;
+      transition: filter 0.18s, transform 0.15s, box-shadow 0.18s;
+      box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+      font-size: 0.9rem;
+      font-weight: 500;
 
       &:hover {
-        background-color: darken(v.$color-success, 10%);
+        filter: brightness(0.97);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
       }
     }
 
@@ -79,14 +105,17 @@
       flex: 1;
       display: flex;
       align-items: center;
-      gap: 1rem;
-      padding: 0.5rem 1rem;
+      gap: 0.5rem;
+      padding: 0.42rem 0.72rem;
       background-color: v.$color-light;
-      border-radius: 8px;
+      border-radius: v.$radius;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: v.$color-text;
 
       svg {
         color: v.$color-primary;
-        font-size: 1.3rem;
+        font-size: 0.85rem;
       }
 
       .input-fecha {
@@ -108,8 +137,8 @@
   .agenda-tabla-container {
     position: relative; // Para posicionar la línea de hora actual
     background-color: v.$color-white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    border-radius: v.$radius;
+    box-shadow: v.$shadow;
     overflow-x: auto;
   }
 
@@ -119,17 +148,20 @@
     min-width: 1200px;
 
     thead {
-      background-color: v.$color-primary;
-      color: v.$color-white;
+      background: v.$color-light;
+      border-bottom: 2px solid #e5e8ef;
       position: sticky;
       top: 0;
       z-index: 10;
 
       th {
-        padding: 1rem;
+        padding: 0.75rem 1rem;
         text-align: left;
+        font-size: 0.85rem;
         font-weight: 600;
-        border-bottom: 2px solid darken(v.$color-primary, 10%);
+        color: v.$color-text;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
 
         &.col-hora {
           width: 100px;
@@ -174,78 +206,88 @@
 
     tbody {
       tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.15s;
+
         &:hover {
-          background-color: rgba(v.$color-light, 0.5);
+          background: rgba(v.$color-primary, 0.04);
         }
       }
 
       td {
         padding: 0;
-        border: 1px solid v.$color-light;
+        border: 1px solid #f0f0f0;
         height: 80px; // Incrementado para intervalos de 1 hora
         vertical-align: middle;
 
         &.celda-hora {
           text-align: center;
           font-weight: 600;
-          font-size: 1rem;
-          color: lighten(v.$color-text, 20%);
-          background-color: #f8f9fa;
+          font-size: 0.9rem;
+          color: #555;
+          background-color: v.$color-light;
         }
 
         &.celda-turno {
           cursor: pointer;
-          transition: opacity 0.2s ease, box-shadow 0.2s ease;
-          padding: 1rem;
+          transition: background 0.15s;
+          padding: 0.35rem 0.5rem;
 
           &:hover {
-            opacity: 0.95;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: rgba(v.$color-primary, 0.04);
           }
 
           .turno-content {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.2rem;
             position: relative; // Para posicionar el badge absoluto
 
             .turno-horario {
-              font-weight: 700;
-              font-size: 0.9rem;
-              padding-bottom: 0.5rem;
-              border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+              font-weight: 600;
+              font-size: 0.75rem;
+              color: #555;
+              padding-bottom: 0.2rem;
+              border-bottom: 1px solid #f0f0f0;
+              line-height: 1.2;
             }
 
             .turno-paciente {
               font-weight: 600;
-              font-size: 0.95rem;
+              font-size: 0.8rem;
+              color: v.$color-text;
+              line-height: 1.2;
             }
 
             .turno-motivo {
-              font-size: 0.85rem;
-              opacity: 0.9;
+              font-size: 0.75rem;
+              color: #555;
               font-style: italic;
+              line-height: 1.2;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
             }
 
             // Badge de estado en la esquina superior derecha
             .turno-estado-badge {
               position: absolute;
-              top: 0.5rem;
-              right: 0.5rem;
-              width: 28px;
-              height: 28px;
+              top: 0.2rem;
+              right: 0.2rem;
+              width: 20px;
+              height: 20px;
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 0.9rem;
-              font-weight: 700;
-              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+              font-size: 0.75rem;
+              font-weight: 600;
+              box-shadow: v.$shadow;
               z-index: 10;
-              transition: box-shadow 0.2s ease;
+              transition: filter 0.18s;
 
               &:hover {
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                filter: brightness(0.9);
               }
 
               &.estado-pendiente {
@@ -277,11 +319,11 @@
 
         &.celda-disponible {
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background 0.15s;
           text-align: center;
 
           &:hover {
-            background-color: rgba(v.$color-success, 0.1);
+            background: rgba(v.$color-primary, 0.04);
           }
 
           .disponible-content {
@@ -309,7 +351,7 @@
         }
 
         &.celda-bloqueada {
-          background-color: #f3f4f6;
+          background-color: v.$color-light;
           cursor: pointer;
           text-align: center;
 
@@ -331,12 +373,12 @@
           }
 
           &:hover {
-            background-color: #e5e7eb;
+            background: rgba(v.$color-primary, 0.04);
           }
         }
 
         &.celda-no-laboral {
-          background-color: #fafafa;
+          background-color: v.$color-light;
         }
       }
     }
@@ -347,8 +389,8 @@
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    font-size: 1.2rem;
-    color: lighten(v.$color-text, 30%);
+    font-size: 0.9rem;
+    color: #555;
   }
 
   // Línea de hora actual (solo visible cuando es HOY)
@@ -433,7 +475,7 @@
 // Modal de detalles del turno
 .modal-detalles-turno {
   background-color: v.$color-white;
-  border-radius: 12px;
+    border-radius: v.$radius;
   max-width: 700px;
   width: 90%;
   max-height: 90vh;
@@ -549,7 +591,7 @@
     .confirmacion-form {
       background-color: #fef3c7;
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: v.$radius;
       border-left: 4px solid #f59e0b;
       margin-top: 1.5rem;
 
@@ -569,7 +611,7 @@
           width: 100%;
           padding: 0.75rem;
           border: 2px solid v.$color-light;
-          border-radius: 8px;
+          border-radius: v.$radius;
           font-family: inherit;
           font-size: 0.95rem;
           margin-top: 0.5rem;
@@ -591,7 +633,7 @@
         button {
           padding: 0.75rem 1.5rem;
           border: none;
-          border-radius: 8px;
+          border-radius: v.$radius;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
@@ -646,7 +688,7 @@
       flex: 1;
       padding: 0.75rem 1rem;
       border: none;
-      border-radius: 8px;
+      border-radius: v.$radius;
       font-weight: 500;
       cursor: pointer;
       display: flex;
@@ -742,23 +784,7 @@
 }
 
 .controles-semana {
-  .btn-nav {
-    padding: 0.75rem 1.5rem;
-    background-color: v.$color-light;
-    color: v.$color-text;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background-color: darken(v.$color-light, 5%);
-    }
-  }
+  // Los estilos de .btn-nav ya están definidos arriba en el bloque principal
 }
 
 .dia-semana-card {
@@ -784,11 +810,10 @@
 }
 
 .turno-card-semanal {
-  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.15s;
   
   &:hover {
-    opacity: 0.95;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: rgba(v.$color-primary, 0.04);
   }
 
   &.turno-proximo {
@@ -820,6 +845,74 @@
       width: 100%;
       justify-content: center;
     }
+  }
+}
+
+/* Botones de acción - Estética Pacientes */
+.btn-vista,
+.btn-filtro,
+.btn-buscar,
+.btn-seleccion-multiple {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: v.$color-white;
+  border: 1px solid #e4e6ed;
+  border-radius: v.$radius;
+  padding: 0.42rem 0.72rem;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.14s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: v.$color-text;
+
+  svg {
+    font-size: 0.85rem;
+  }
+
+  &:hover {
+    background: v.$color-light;
+    box-shadow: v.$shadow;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.active {
+    background: v.$color-primary;
+    color: v.$color-white;
+    border-color: v.$color-primary;
+    box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+
+    &:hover {
+      background: darken(v.$color-primary, 5%);
+      box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
+    }
+  }
+}
+
+.btn-buscar {
+  background: v.$color-primary;
+  color: v.$color-white;
+  border-color: v.$color-primary;
+  box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+
+  &:hover {
+    background: darken(v.$color-primary, 5%);
+    box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
+  }
+}
+
+.btn-filtro.active {
+  background: #27ae60;
+  border-color: #27ae60;
+  box-shadow: 0 4px 14px rgba(39, 174, 96, 0.18);
+
+  &:hover {
+    background: darken(#27ae60, 5%);
+    box-shadow: 0 6px 18px rgba(39, 174, 96, 0.25);
   }
 }
 

@@ -1,6 +1,6 @@
 // src/features/agenda/components/DetallesTurnoModal.js
 import { useState, useMemo } from 'react';
-import { FaTimes, FaCheck, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit } from 'react-icons/fa';
+import { FaTimes, FaCheck, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit, FaStickyNote } from 'react-icons/fa';
 import { useMarcarAsistencia, useMarcarAusencia, useCancelarTurno } from '../hooks/useTurnos';
 import useToast from '../../../hooks/useToast';
 import useAuth from '../../../features/auth/hooks/useAuth';
@@ -17,11 +17,10 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
   const esOdontologo = useMemo(() => {
     return user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
   }, [user]);
-  const [mostrandoConfirmacion, setMostrandoConfirmacion] = useState(null); // 'asistencia', 'ausencia', 'cancelar'
+  const [mostrandoConfirmacion, setMostrandoConfirmacion] = useState(null); // 'asistencia', 'ausencia', 'cancelar', 'nota'
   const [mostrandoModal, setMostrandoModal] = useState(null); // 'reprogramar', 'editar'
   const [motivo, setMotivo] = useState('');
   const [nota, setNota] = useState('');
-  const [mostrarCampoNota, setMostrarCampoNota] = useState(false); // Para odontólogos: controlar si se muestra el campo de notas
 
   const marcarAsistencia = useMarcarAsistencia();
   const marcarAusencia = useMarcarAusencia();
@@ -134,6 +133,55 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
             <FaTimes />
           </button>
         </div>
+
+        {/* Acciones Principales - Arriba para fácil acceso */}
+        {/* CU-AG01.5: Solo recepcionista puede realizar acciones sobre turnos */}
+        {esPendiente && !mostrandoConfirmacion && !esOdontologo && (
+          <div className="modal-acciones-principales">
+            <div className="acciones-botones">
+              <div className="acciones-fila-1">
+                <button 
+                  className="btn-accion btn-asistencia"
+                  onClick={() => setMostrandoConfirmacion('asistencia')}
+                >
+                  <FaCheck /> Marcar Asistencia
+                </button>
+                <button 
+                  className="btn-accion btn-ausencia"
+                  onClick={() => setMostrandoConfirmacion('ausencia')}
+                >
+                  <FaTimesCircle /> Marcar Ausencia
+                </button>
+                <button 
+                  className="btn-accion btn-cancelar-turno"
+                  onClick={() => setMostrandoConfirmacion('cancelar')}
+                >
+                  <FaBan /> Cancelar Turno
+                </button>
+              </div>
+              <div className="acciones-fila-2">
+                <button 
+                  className="btn-accion btn-reprogramar"
+                  onClick={() => setMostrandoModal('reprogramar')}
+                >
+                  <FaCalendarAlt /> Reprogramar
+                </button>
+                <button 
+                  className="btn-accion btn-editar"
+                  onClick={() => setMostrandoModal('editar')}
+                >
+                  <FaEdit /> Editar Detalles
+                </button>
+                <button 
+                  className="btn-accion btn-nota"
+                  onClick={() => setMostrandoConfirmacion('nota')}
+                >
+                  <FaStickyNote /> Agregar Nota
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div className="modal-body">
@@ -279,153 +327,11 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                   >
                     📋 Ver Historia Clínica
                   </button>
-                  <button
-                    onClick={() => window.location.href = `/pacientes/${turno.Paciente.id}/odontograma`}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#27ae60',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    🦷 Ver Odontograma
-                  </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Notas de la visita (para agregar durante la atención) */}
-          {esPendiente && (
-            <div className="info-section">
-              <h3>Notas de la Visita</h3>
-              <div style={{ 
-                padding: '0.5rem',
-                background: '#f8f9fa',
-                borderRadius: '6px',
-                fontSize: '0.9rem'
-              }}>
-                {/* CU-AG01.5: Para odontólogos, mostrar botón para agregar nota en lugar del campo siempre visible */}
-                {esOdontologo && !mostrarCampoNota ? (
-                  <div style={{ textAlign: 'center', padding: '1rem' }}>
-                    <button
-                      onClick={() => setMostrarCampoNota(true)}
-                      style={{
-                        padding: '0.75rem 1.5rem',
-                        background: '#3498db',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        fontWeight: '500',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseOver={(e) => e.target.style.background = '#2980b9'}
-                      onMouseOut={(e) => e.target.style.background = '#3498db'}
-                    >
-                      📝 Agregar Nota
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p style={{ color: '#7f8c8d', fontStyle: 'italic', marginBottom: '0.75rem' }}>
-                      Agregue notas durante la atención del paciente. Estas notas se guardarán en el historial del turno.
-                    </p>
-                    <textarea
-                      placeholder="Ingrese notas sobre la consulta, observaciones, recomendaciones, etc..."
-                      rows="4"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '0.9rem',
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                        minHeight: '100px'
-                      }}
-                      value={nota}
-                      onChange={(e) => setNota(e.target.value)}
-                    />
-                    {esOdontologo && (
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '0.5rem', 
-                        marginTop: '0.75rem',
-                        justifyContent: 'flex-end'
-                      }}>
-                        <button
-                          onClick={() => {
-                            setMostrarCampoNota(false);
-                            setNota('');
-                          }}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#95a5a6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!nota.trim()) {
-                              showToast('Por favor ingrese una nota', 'error');
-                              return;
-                            }
-                            try {
-                              await agendaApi.crearNota(turno.id, nota);
-                              showToast('Nota agregada correctamente', 'success');
-                              setNota('');
-                              setMostrarCampoNota(false);
-                              onSuccess(); // Refrescar los datos
-                            } catch (error) {
-                              handleApiError(error, showToast);
-                            }
-                          }}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            background: '#27ae60',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          Guardar Nota
-                        </button>
-                      </div>
-                    )}
-                    {!esOdontologo && (
-                      <p style={{ 
-                        fontSize: '0.8rem', 
-                        color: '#7f8c8d', 
-                        marginTop: '0.5rem',
-                        fontStyle: 'italic'
-                      }}>
-                        💡 Las notas se pueden guardar al marcar asistencia o agregar como nota separada.
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Formulario de confirmación si está activo */}
           {mostrandoConfirmacion === 'asistencia' && (
@@ -498,56 +404,49 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
               </div>
             </div>
           )}
+
+          {mostrandoConfirmacion === 'nota' && (
+            <div className="confirmacion-form">
+              <h4>Agregar Nota</h4>
+              <label>
+                Nota *:
+                <textarea
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                  placeholder="Ingrese notas sobre la consulta, observaciones, recomendaciones, etc..."
+                  rows="4"
+                  required
+                />
+              </label>
+              <div className="form-actions">
+                <button className="btn-cancelar" onClick={() => {
+                  setMostrandoConfirmacion(null);
+                  setNota('');
+                }}>
+                  Cancelar
+                </button>
+                <button className="btn-confirmar" onClick={async () => {
+                  if (!nota.trim()) {
+                    showToast('Por favor ingrese una nota', 'error');
+                    return;
+                  }
+                  try {
+                    await agendaApi.crearNota(turno.id, nota);
+                    showToast('Nota agregada correctamente', 'success');
+                    setNota('');
+                    setMostrandoConfirmacion(null);
+                    onSuccess(); // Refrescar los datos
+                  } catch (error) {
+                    handleApiError(error, showToast);
+                  }
+                }}>
+                  Guardar Nota
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Footer con acciones */}
-        {/* CU-AG01.5: Solo recepcionista puede realizar acciones sobre turnos */}
-        {esPendiente && !mostrandoConfirmacion && !esOdontologo && (
-          <>
-            <div className="modal-footer-section">
-              <h4 className="footer-section-title">Acciones Principales</h4>
-              <div className="modal-footer">
-                <button 
-                  className="btn-accion btn-asistencia"
-                  onClick={() => setMostrandoConfirmacion('asistencia')}
-                >
-                  <FaCheck /> Marcar Asistencia
-                </button>
-                <button 
-                  className="btn-accion btn-ausencia"
-                  onClick={() => setMostrandoConfirmacion('ausencia')}
-                >
-                  <FaTimesCircle /> Marcar Ausencia
-                </button>
-                <button 
-                  className="btn-accion btn-cancelar-turno"
-                  onClick={() => setMostrandoConfirmacion('cancelar')}
-                >
-                  <FaBan /> Cancelar Turno
-                </button>
-              </div>
-            </div>
-            
-            <div className="modal-footer-section">
-              <h4 className="footer-section-title">Modificar Turno</h4>
-              <div className="modal-footer">
-                <button 
-                  className="btn-accion btn-reprogramar"
-                  onClick={() => setMostrandoModal('reprogramar')}
-                >
-                  <FaCalendarAlt /> Reprogramar
-                </button>
-                <button 
-                  className="btn-accion btn-editar"
-                  onClick={() => setMostrandoModal('editar')}
-                >
-                  <FaEdit /> Editar Detalles
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-        
         {/* CU-AG01.5: Mensaje informativo para odontólogos */}
         {esPendiente && esOdontologo && (
           <div className="modal-footer-info">
@@ -558,9 +457,15 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           </div>
         )}
 
-        {!esPendiente && (
+        {!esPendiente && !esOdontologo && (
           <div className="modal-footer-info">
             <p>Este turno ya no está pendiente y no puede ser modificado.</p>
+          </div>
+        )}
+        
+        {!esPendiente && esOdontologo && (
+          <div className="modal-footer-info">
+            <p>Este turno ya no está pendiente.</p>
           </div>
         )}
       </div>

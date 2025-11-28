@@ -275,8 +275,8 @@ export default function DisponibilidadRecurrenteModal({
       <div className="modal-content disponibilidad-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
         {/* Header */}
         <div className="modal-header">
-          <h2>
-            <FaCalendarCheck style={{ marginRight: '0.5rem' }} />
+          <h2 style={{ color: 'white' }}>
+            <FaCalendarCheck style={{ marginRight: '0.5rem', color: 'white' }} />
             Disponibilidad Recurrente
           </h2>
           <button className="btn-close" onClick={onClose} disabled={isLoading}>

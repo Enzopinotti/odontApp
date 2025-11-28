@@ -730,7 +730,7 @@ function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
   );
 }
 
-export default function AgendaDiaria() {
+export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConDisponibilidad }) {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -1047,8 +1047,24 @@ export default function AgendaDiaria() {
       );
     }
     
+    // Filtrar solo odontólogos con disponibilidad activa ese día
+    if (soloConDisponibilidad && disponibilidades) {
+      const fechaSeleccionadaStr = formatDate(fechaSeleccionada);
+      const odontologosConDisponibilidad = new Set();
+      
+      disponibilidades.forEach(disp => {
+        if (disp.fecha === fechaSeleccionadaStr && disp.tipo === 'LABORAL') {
+          odontologosConDisponibilidad.add(disp.odontologoId);
+        }
+      });
+      
+      odontologosFiltrados = odontologosFiltrados.filter(odonto => 
+        odontologosConDisponibilidad.has(odonto.userId)
+      );
+    }
+    
     return odontologosFiltrados;
-  }, [odontologosData, esOdontologo, user, filtroOdontologos]);
+  }, [odontologosData, esOdontologo, user, filtroOdontologos, soloConDisponibilidad, disponibilidades, fechaSeleccionada]);
 
   // Extraer turnos del array y aplicar filtros
   const turnos = useMemo(() => {
@@ -1365,6 +1381,43 @@ export default function AgendaDiaria() {
           mesActual={mesActual}
           onMesVistaChange={setMesVistaCalendario}
         />
+        
+        {/* Checkbox para filtrar solo odontólogos con disponibilidad */}
+        {setSoloConDisponibilidad && (
+          <div style={{ 
+            background: 'white',
+            borderRadius: '6px',
+            padding: '1rem',
+            boxShadow: '0 2px 6px rgba(170, 147, 147, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              color: '#1c1c1e',
+              userSelect: 'none',
+              width: '100%'
+            }}>
+              <input
+                type="checkbox"
+                checked={soloConDisponibilidad}
+                onChange={(e) => setSoloConDisponibilidad(e.target.checked)}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: '#145c63'
+                }}
+              />
+              <span>Disponibilidad activa</span>
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Contenido principal */}
@@ -1378,73 +1431,36 @@ export default function AgendaDiaria() {
         marginBottom: '0.75rem',
         flexWrap: 'wrap'
       }}>
-        <button className="btn-nav" onClick={irDiaAnterior} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
+        <button className="btn-nav" onClick={irDiaAnterior}>
           <FaChevronLeft /> Ant
         </button>
         
-        <div className="fecha-selector" style={{ padding: '0.4rem 0.75rem', fontSize: '0.9rem', fontWeight: '600' }}>
+        <div className="fecha-selector">
           {formatDateReadable(fechaSeleccionada)}
         </div>
         
-        <button className="btn-hoy" onClick={irHoy} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
+        <button className="btn-hoy" onClick={irHoy}>
           Hoy
         </button>
         
-        <button className="btn-nav" onClick={irDiaSiguiente} style={{ padding: '0.4rem 0.75rem', fontSize: '0.875rem' }}>
+        <button className="btn-nav" onClick={irDiaSiguiente}>
           Sig <FaChevronRight />
         </button>
 
         {/* CU-AG01.5: Controles de vista y filtros */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '1rem' }}>
           <button
+            className={`btn-vista ${vista === 'semanal' ? 'active' : ''}`}
             onClick={() => setVista(vista === 'diaria' ? 'semanal' : 'diaria')}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              background: vista === 'semanal' ? '#3498db' : 'white',
-              color: vista === 'semanal' ? 'white' : '#333',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
           >
             <FaCalendarWeek /> {vista === 'diaria' ? 'Vista Semanal' : 'Vista Diaria'}
           </button>
           
           <button
+            className={`btn-filtro ${mostrarFiltros ? 'active' : ''}`}
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              background: mostrarFiltros ? '#27ae60' : 'white',
-              color: mostrarFiltros ? 'white' : '#333',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
           >
             <FaFilter /> Filtros
-          </button>
-          
-          <button
-            onClick={() => setModalBusquedaAbierto(true)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #ddd',
-              background: '#3498db',
-              color: 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FaSearch /> Buscar Turnos
           </button>
         </div>
 
@@ -1455,17 +1471,6 @@ export default function AgendaDiaria() {
             <button
               className={`btn-seleccion-multiple ${modoSeleccionMultiple ? 'active' : ''}`}
               onClick={toggleModoSeleccionMultiple}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                border: '1px solid #ddd',
-                background: modoSeleccionMultiple ? '#3498db' : 'white',
-                color: modoSeleccionMultiple ? 'white' : '#333',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
             >
               <FaCheckSquare /> {modoSeleccionMultiple ? 'Cancelar selección' : 'Seleccionar turnos'}
             </button>
@@ -1876,23 +1881,24 @@ export default function AgendaDiaria() {
       ) : (
         <div>
       {/* Tabla de agenda compacta */}
-      <div className="agenda-tabla-container" style={{ 
-        flex: 1, 
-        overflow: 'auto',
-        maxHeight: 'calc(100vh - 280px)'
-      }}>
-        <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
-            <tr>
-              <th className="col-hora" style={{ 
-                padding: '0.5rem', 
-                fontSize: '0.8rem',
-                width: '60px',
-                minWidth: '60px',
-                color: '#1f2937',
-                fontWeight: '600'
-              }}>Hora</th>
-              {odontologos?.map((odontologo) => (
+      {odontologos && odontologos.length > 0 ? (
+        <div className="agenda-tabla-container" style={{ 
+          flex: 1, 
+          overflow: 'auto',
+          maxHeight: 'calc(100vh - 280px)'
+        }}>
+          <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
+              <tr>
+                <th className="col-hora" style={{ 
+                  padding: '0.5rem', 
+                  fontSize: '0.8rem',
+                  width: '60px',
+                  minWidth: '60px',
+                  color: '#1f2937',
+                  fontWeight: '600'
+                }}>Hora</th>
+                {odontologos?.map((odontologo) => (
                 <th key={odontologo.userId} className="col-odontologo" style={{ 
                   padding: '0.5rem',
                   minWidth: '180px'
@@ -2029,13 +2035,13 @@ export default function AgendaDiaria() {
                             className="indicador-tiempo"
                             style={{
                               position: 'absolute',
-                              top: '0.25rem',
-                              right: '2.5rem', // Mover a la derecha, dejando espacio para el badge de estado
+                              top: '0.15rem',
+                              right: '1.8rem', // Mover a la derecha, dejando espacio para el badge de estado
                               background: esProximo ? '#f59e0b' : '#ef4444',
                               color: 'white',
-                              padding: '0.25rem 0.5rem',
+                              padding: '0.15rem 0.4rem',
                               borderRadius: '4px',
-                              fontSize: '0.75rem',
+                              fontSize: '0.65rem',
                               fontWeight: 'bold',
                               zIndex: 5,
                               whiteSpace: 'nowrap'
@@ -2046,18 +2052,18 @@ export default function AgendaDiaria() {
                         )}
                         
                         <div className="turno-content" style={{ 
-                          padding: '0.4rem',
-                          fontSize: '0.8rem',
-                          lineHeight: '1.3',
+                          padding: '0.2rem',
+                          fontSize: '0.75rem',
+                          lineHeight: '1.2',
                           // Ajustar padding-top si hay indicador de tiempo para evitar que tape el nombre
-                          paddingTop: (esProximo || tieneRetraso) ? '2rem' : '0.4rem'
+                          paddingTop: (esProximo || tieneRetraso) ? '1.5rem' : '0.2rem'
                         }}>
                           {/* Badge de estado en la esquina superior derecha */}
                           <span className={`turno-estado-badge estado-${turno.estado.toLowerCase()}`} style={{
                             position: 'absolute',
-                            top: '0.25rem',
-                            right: '0.25rem',
-                            fontSize: '0.7rem'
+                            top: '0.15rem',
+                            right: '0.15rem',
+                            fontSize: '0.65rem'
                           }}>
                             {turno.estado === 'PENDIENTE' && '⏳'}
                             {turno.estado === 'ASISTIO' && '✓'}
@@ -2067,8 +2073,9 @@ export default function AgendaDiaria() {
                           
                           <div className="turno-paciente" style={{ 
                             fontWeight: '600',
-                            marginBottom: '0.2rem',
-                            fontSize: '0.85rem',
+                            marginBottom: '0.1rem',
+                            fontSize: '0.75rem',
+                            lineHeight: '1.2',
                             color: estaSeleccionado ? '#856404' : 
                               tieneRetraso ? '#991b1b' : 
                               esProximo ? '#92400e' : 
@@ -2077,7 +2084,7 @@ export default function AgendaDiaria() {
                             {turno.Paciente?.nombre} {turno.Paciente?.apellido}
                           </div>
                           <div className="turno-motivo" style={{ 
-                            fontSize: '0.75rem',
+                            fontSize: '0.7rem',
                             color: estaSeleccionado ? '#856404' : 
                               tieneRetraso ? '#991b1b' : 
                               esProximo ? '#92400e' : 
@@ -2085,16 +2092,18 @@ export default function AgendaDiaria() {
                             opacity: 0.85,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            lineHeight: '1.2'
                           }}>{turno.motivo}</div>
                           <div className="turno-horario" style={{ 
-                            fontSize: '0.7rem',
+                            fontSize: '0.65rem',
                             color: estaSeleccionado ? '#856404' : 
                               tieneRetraso ? '#991b1b' : 
                               esProximo ? '#92400e' : 
                               colores.text,
                             opacity: 0.75,
-                            marginTop: '0.2rem'
+                            marginTop: '0.1rem',
+                            lineHeight: '1.2'
                           }}>
                             {turno.horaInicioStr} - {turno.horaFinStr}
                           </div>
@@ -2168,7 +2177,53 @@ export default function AgendaDiaria() {
           </div>
         )}
       </div>
-      </div>
+      ) : (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '3rem',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 6px rgba(170, 147, 147, 0.1)',
+          minHeight: '400px'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            color: '#667085'
+          }}>
+            <div style={{
+              fontSize: '3rem',
+              marginBottom: '1rem',
+              opacity: 0.5
+            }}>
+              📅
+            </div>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1c1c1e',
+              marginBottom: '0.5rem'
+            }}>
+              No hay odontólogos disponibles
+            </h3>
+            <p style={{
+              fontSize: '0.95rem',
+              color: '#667085',
+              margin: 0
+            }}>
+              No hay odontólogos con disponibilidad activa para el día seleccionado.
+              {soloConDisponibilidad && (
+                <span style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                  Desactiva el filtro "Disponibilidad activa" para ver todos los odontólogos.
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+        </div>
       )}
       </div>
 

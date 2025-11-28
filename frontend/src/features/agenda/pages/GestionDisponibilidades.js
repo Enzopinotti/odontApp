@@ -3,11 +3,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
-import { useTurnosPorFecha } from '../hooks/useTurnos';
+import { useTurnosPorFecha, useTurnos } from '../hooks/useTurnos';
 import useAuth from '../../../features/auth/hooks/useAuth';
 import DisponibilidadModal from '../components/DisponibilidadModal';
 import DisponibilidadRecurrenteModal from '../components/DisponibilidadRecurrenteModal';
-import { FaChevronLeft, FaChevronRight, FaPlus, FaCalendarAlt, FaSyncAlt, FaCalendarCheck } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus, FaCalendarAlt, FaSyncAlt, FaCalendarCheck, FaUserMd, FaTimes } from 'react-icons/fa';
 import '../../../styles/disponibilidades.scss';
 
 // Función helper para formatear fecha YYYY-MM-DD
@@ -47,6 +47,319 @@ const HORAS_DIA = Array.from({ length: 15 }, (_, i) => {
   return `${hora.toString().padStart(2, '0')}:00`;
 });
 
+// Componente Mini Calendario Mensual (versión compacta para sidebar)
+function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, disponibilidadesMes, turnosMesData, mesActual, onMesVistaChange }) {
+  const [mesVista, setMesVista] = useState(new Date(fechaSeleccionada));
+  
+  // Sincronizar mesVista cuando cambia fechaSeleccionada desde fuera del calendario
+  useEffect(() => {
+    setMesVista(new Date(fechaSeleccionada));
+  }, [fechaSeleccionada]);
+  
+  // Notificar al componente padre cuando cambia el mes visualizado
+  useEffect(() => {
+    if (onMesVistaChange) {
+      onMesVistaChange(mesVista);
+    }
+  }, [mesVista, onMesVistaChange]);
+  
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  // Obtener días con disponibilidad y turnos
+  const diasConActividad = useMemo(() => {
+    const diasDisponibles = new Set();
+    const diasConTurnos = new Set();
+    
+    if (disponibilidadesMes) {
+      disponibilidadesMes.forEach(disp => {
+        if (typeof disp.fecha === 'string') {
+          const partes = disp.fecha.split('-');
+          if (partes.length === 3) {
+            const año = parseInt(partes[0], 10);
+            const mes = parseInt(partes[1], 10) - 1;
+            const dia = parseInt(partes[2], 10);
+            if (año === mesVista.getFullYear() && mes === mesVista.getMonth()) {
+              if (disp.tipo === 'LABORAL') {
+                diasDisponibles.add(dia);
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    if (turnosMesData) {
+      let turnosList = [];
+      if (Array.isArray(turnosMesData)) {
+        turnosList = turnosMesData;
+      } else if (turnosMesData.data) {
+        turnosList = Array.isArray(turnosMesData.data) ? turnosMesData.data : [];
+      } else if (turnosMesData.rows) {
+        turnosList = turnosMesData.rows || [];
+      }
+      
+      turnosList.forEach(turno => {
+        const fechaHoraStr = turno.fechaHora;
+        let año, mes, dia;
+        
+        if (typeof fechaHoraStr === 'string') {
+          const fechaParte = fechaHoraStr.split('T')[0];
+          const partes = fechaParte.split('-');
+          if (partes.length === 3) {
+            año = parseInt(partes[0], 10);
+            mes = parseInt(partes[1], 10) - 1;
+            dia = parseInt(partes[2], 10);
+            if (año === mesVista.getFullYear() && mes === mesVista.getMonth()) {
+              diasConTurnos.add(dia);
+            }
+          }
+        }
+      });
+    }
+    
+    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
+  }, [disponibilidadesMes, turnosMesData, mesVista]);
+  
+  const cambiarMes = (direccion) => {
+    const nuevo = new Date(mesVista);
+    nuevo.setMonth(nuevo.getMonth() + direccion);
+    setMesVista(nuevo);
+  };
+  
+  const irMesActual = () => {
+    const hoy = new Date();
+    setMesVista(hoy);
+    setFechaSeleccionada(hoy);
+  };
+  
+  const diasDelMes = useMemo(() => {
+    const año = mesVista.getFullYear();
+    const mes = mesVista.getMonth();
+    const primerDia = new Date(año, mes, 1);
+    const ultimoDia = new Date(año, mes + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaSemanaInicio = primerDia.getDay();
+    
+    const dias = [];
+    
+    for (let i = 0; i < diaSemanaInicio; i++) {
+      dias.push(null);
+    }
+    
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const fechaCompleta = new Date(año, mes, dia);
+      const hoy = new Date();
+      const esPasado = fechaCompleta < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      const esHoy = fechaCompleta.getDate() === hoy.getDate() && 
+                    fechaCompleta.getMonth() === hoy.getMonth() && 
+                    fechaCompleta.getFullYear() === hoy.getFullYear();
+      const esSeleccionado = fechaCompleta.getDate() === fechaSeleccionada.getDate() &&
+                             fechaCompleta.getMonth() === fechaSeleccionada.getMonth() &&
+                             fechaCompleta.getFullYear() === fechaSeleccionada.getFullYear();
+      const tieneDisponibilidad = diasConActividad.disponibles.has(dia);
+      const tieneTurnos = diasConActividad.conTurnos.has(dia);
+      
+      const añoStr = año.toString();
+      const mesStr = String(mes + 1).padStart(2, '0');
+      const diaStr = String(dia).padStart(2, '0');
+      const fechaStr = `${añoStr}-${mesStr}-${diaStr}`;
+      
+      dias.push({
+        numero: dia,
+        fecha: fechaStr,
+        esPasado,
+        esHoy,
+        esSeleccionado,
+        tieneDisponibilidad,
+        tieneTurnos
+      });
+    }
+    
+    return dias;
+  }, [mesVista, fechaSeleccionada, diasConActividad]);
+  
+  const handleClickDia = (dia) => {
+    if (!dia) return;
+    const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
+    setFechaSeleccionada(nuevaFecha);
+  };
+  
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '6px',
+      padding: '1rem',
+      boxShadow: '0 2px 6px rgba(170, 147, 147, 0.1)',
+      minWidth: '240px'
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '0.75rem'
+      }}>
+        <button
+          onClick={() => cambiarMes(-1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            fontSize: '0.9rem',
+            color: '#145c63',
+            transition: 'opacity 0.18s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
+          <FaChevronLeft />
+        </button>
+        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: '#1c1c1e' }}>
+          {nombresMeses[mesVista.getMonth()]} {mesVista.getFullYear()}
+        </h4>
+        <button
+          onClick={() => cambiarMes(1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            fontSize: '0.9rem',
+            color: '#145c63',
+            transition: 'opacity 0.18s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+      
+      <button
+        onClick={irMesActual}
+        style={{
+          width: '100%',
+          padding: '0.4rem',
+          marginBottom: '0.75rem',
+          background: '#f7f9fc',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '0.75rem',
+          fontWeight: '500',
+          color: '#1c1c1e',
+          transition: 'background 0.18s ease'
+        }}
+        onMouseEnter={(e) => e.target.style.background = '#e5e7eb'}
+        onMouseLeave={(e) => e.target.style.background = '#f7f9fc'}
+      >
+        Hoy
+      </button>
+      
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(7, 1fr)', 
+        gap: '0.25rem',
+        marginBottom: '0.5rem'
+      }}>
+        {nombresDias.map(dia => (
+          <div key={dia} style={{ 
+            textAlign: 'center', 
+            fontSize: '0.7rem', 
+            fontWeight: '600',
+            color: '#667085',
+            padding: '0.25rem'
+          }}>
+            {dia}
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(7, 1fr)', 
+        gap: '0.25rem'
+      }}>
+        {diasDelMes.map((dia, idx) => {
+          if (!dia) {
+            return <div key={`empty-${idx}`} style={{ aspectRatio: '1' }} />;
+          }
+          
+          return (
+            <button
+              key={dia.numero}
+              onClick={() => handleClickDia(dia)}
+              style={{
+                aspectRatio: '1',
+                border: dia.esSeleccionado 
+                  ? '2px solid #145c63'
+                  : dia.esHoy 
+                    ? '2px solid #f59e0b'
+                    : '1px solid #e0e0e0',
+                borderRadius: '4px',
+                background: dia.esSeleccionado 
+                  ? '#145c63'
+                  : dia.esHoy
+                    ? '#fef3c7'
+                    : dia.tieneTurnos
+                      ? '#dbeafe'
+                      : dia.tieneDisponibilidad
+                        ? '#d1fae5'
+                        : '#f5f5f5',
+                color: dia.esSeleccionado 
+                  ? 'white'
+                  : dia.esHoy
+                    ? '#92400e'
+                    : '#2c3e50',
+                cursor: 'pointer',
+                fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                transition: 'all 0.15s ease',
+                fontSize: '0.85rem',
+                opacity: dia.esPasado ? 0.7 : 1
+              }}
+              title={dia.esPasado ? 'Día pasado' : (dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : '')}
+              onMouseEnter={(e) => {
+                if (!dia.esSeleccionado) {
+                  e.target.style.background = dia.esHoy ? '#fde68a' : '#e5e7eb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!dia.esSeleccionado) {
+                  e.target.style.background = dia.esHoy
+                    ? '#fef3c7'
+                    : dia.tieneTurnos
+                      ? '#dbeafe'
+                      : dia.tieneDisponibilidad
+                        ? '#d1fae5'
+                        : '#f5f5f5';
+                }
+              }}
+            >
+              {dia.numero}
+              {(dia.tieneTurnos || dia.tieneDisponibilidad) && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  background: dia.tieneTurnos ? '#3b82f6' : '#10b981'
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function GestionDisponibilidades() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,9 +375,15 @@ export default function GestionDisponibilidades() {
   // Estado para el día actual (solo vista diaria)
   const [diaActual, setDiaActual] = useState(new Date());
   
+  // Estado para el mes visualizado en el mini calendario
+  const [mesVistaCalendario, setMesVistaCalendario] = useState(new Date());
+  
   // Estado para filtros
   const [odontologoFiltro, setOdontologoFiltro] = useState([]); // [] = todos, array de IDs para múltiple
   const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'disponibles' | 'seleccionados'
+  const [busquedaOdontologo, setBusquedaOdontologo] = useState(''); // Texto de búsqueda
+  const [mostrarSugerenciasOdontologo, setMostrarSugerenciasOdontologo] = useState(false);
+  const [odontologoSeleccionado, setOdontologoSeleccionado] = useState(null);
   
   // Estado para modal
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -78,11 +397,34 @@ export default function GestionDisponibilidades() {
   const fechaInicio = fechaActual;
   const fechaFin = fechaActual;
   
+  // Calcular rango del mes para el mini calendario
+  const mesVistaCalendarioCalculado = useMemo(() => {
+    return mesVistaCalendario || new Date();
+  }, [mesVistaCalendario]);
+  
+  const fechaInicioMes = useMemo(() => {
+    const año = mesVistaCalendarioCalculado.getFullYear();
+    const mes = mesVistaCalendarioCalculado.getMonth();
+    return new Date(año, mes, 1);
+  }, [mesVistaCalendarioCalculado]);
+  
+  const fechaFinMes = useMemo(() => {
+    const año = mesVistaCalendarioCalculado.getFullYear();
+    const mes = mesVistaCalendarioCalculado.getMonth();
+    return new Date(año, mes + 1, 0);
+  }, [mesVistaCalendarioCalculado]);
+  
+  const fechaInicioMesStr = useMemo(() => formatDate(fechaInicioMes), [fechaInicioMes]);
+  const fechaFinMesStr = useMemo(() => formatDate(fechaFinMes), [fechaFinMes]);
+  
   // Cargar odontólogos
   const { data: odontologos, isLoading: loadingOdontologos } = useOdontologosPorEspecialidad();
   
   // Cargar disponibilidades del día actual
   const { data: disponibilidades, isLoading: loadingDisponibilidades, refetch, isFetching } = useDisponibilidadesSemanal(fechaInicio, fechaFin);
+  
+  // Cargar disponibilidades del mes para el mini calendario
+  const { data: disponibilidadesMes } = useDisponibilidadesSemanal(fechaInicioMesStr, fechaFinMesStr);
   
   // Cargar turnos del día actual (filtrado por odontólogo si está seleccionado)
   const { data: turnosData, isLoading: loadingTurnos } = useTurnosPorFecha(
@@ -93,6 +435,83 @@ export default function GestionDisponibilidades() {
     if (!turnosData) return [];
     return Array.isArray(turnosData) ? turnosData : (turnosData.data || []);
   }, [turnosData]);
+  
+  // Cargar turnos del mes para el mini calendario
+  const { data: turnosMesData } = useTurnos({
+    fechaInicio: fechaInicioMesStr,
+    fechaFin: fechaFinMesStr
+  });
+  
+  // Filtrar odontólogos según búsqueda
+  const odontologosFiltradosPorBusqueda = useMemo(() => {
+    if (!busquedaOdontologo || busquedaOdontologo.length < 1) {
+      return odontologos || [];
+    }
+    
+    const textoBusqueda = busquedaOdontologo.toLowerCase();
+    return (odontologos || []).filter(odonto => {
+      const nombre = odonto.Usuario?.nombre?.toLowerCase() || '';
+      const apellido = odonto.Usuario?.apellido?.toLowerCase() || '';
+      const matricula = odonto.matricula?.toLowerCase() || '';
+      return nombre.includes(textoBusqueda) || 
+             apellido.includes(textoBusqueda) || 
+             matricula.includes(textoBusqueda) ||
+             `${nombre} ${apellido}`.includes(textoBusqueda);
+    });
+  }, [odontologos, busquedaOdontologo]);
+  
+  // Manejar selección de odontólogo
+  const handleSeleccionarOdontologo = (odontologo) => {
+    if (odontologo === null) {
+      // Seleccionar "Todos"
+      setFiltroTipo('todos');
+      setOdontologoFiltro([]);
+      setOdontologoSeleccionado(null);
+      setBusquedaOdontologo('');
+    } else if (odontologo === 'disponibles') {
+      // Seleccionar "Disponibles"
+      setFiltroTipo('disponibles');
+      setOdontologoFiltro([]);
+      setOdontologoSeleccionado(null);
+      setBusquedaOdontologo('');
+    } else {
+      // Seleccionar un odontólogo específico
+      setOdontologoSeleccionado(odontologo);
+      setOdontologoFiltro([odontologo.userId]);
+      setFiltroTipo('seleccionados');
+      setBusquedaOdontologo(`Dr. ${odontologo.Usuario?.nombre} ${odontologo.Usuario?.apellido}`);
+      setMostrarSugerenciasOdontologo(false);
+    }
+  };
+  
+  // Manejar cambio de texto de búsqueda
+  const handleCambiarBusquedaOdontologo = (texto) => {
+    setBusquedaOdontologo(texto);
+    setMostrarSugerenciasOdontologo(true); // Siempre mostrar cuando hay foco o texto
+    if (texto.length === 0) {
+      setOdontologoSeleccionado(null);
+      // No cambiar el filtro automáticamente, solo limpiar la búsqueda
+    }
+  };
+  
+  // Manejar click en el input para mostrar opciones
+  const handleClickInputOdontologo = () => {
+    setMostrarSugerenciasOdontologo(true);
+  };
+  
+  // Cerrar sugerencias al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mostrarSugerenciasOdontologo && !event.target.closest('.filtro-odontologo-container')) {
+        setMostrarSugerenciasOdontologo(false);
+      }
+    };
+    
+    if (mostrarSugerenciasOdontologo) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [mostrarSugerenciasOdontologo]);
   
   // Navegar días
   const irDiaSiguiente = () => {
@@ -400,132 +819,56 @@ export default function GestionDisponibilidades() {
   return (
     <div className="gestion-disponibilidades-container">
       {/* Header */}
-      <div className="disponibilidades-header">
-        <h1>Gestión de Disponibilidades</h1>
-        <div className="header-actions">
-          <button 
-            className="btn-recargar" 
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <FaSyncAlt className={isFetching ? 'rotating' : ''} /> 
-            {isFetching ? 'Recargando...' : 'Recargar'}
-          </button>
-          <button className="btn-volver" onClick={() => navigate('/agenda')}>
-            Volver a Agenda
-          </button>
+      <header className="disponibilidades-header">
+        <div className="top-bar">
+          <h2>Gestión de Disponibilidades</h2>
+          <div className="header-actions">
+            <button 
+              className="btn-recargar" 
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <FaSyncAlt className={isFetching ? 'rotating' : ''} /> 
+              {isFetching ? 'Recargando...' : 'Recargar'}
+            </button>
+            <button className="btn-volver" onClick={() => navigate('/agenda')}>
+              Volver a Agenda
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
       
-      {/* Controles de navegación diaria y botón de disponibilidades recurrentes */}
-      <div className="semana-controles">
-        <button 
-          className="btn-nav btn-recurrente"
-          onClick={() => setModalRecurrenteAbierto(true)}
-        >
-          <FaCalendarCheck />
-          Agregar Disponibilidad Recurrente
+      {/* Layout con sidebar y contenido principal */}
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        {/* Sidebar con mini calendario */}
+        <div style={{ 
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <MiniCalendarioSidebar
+            fechaSeleccionada={diaActual}
+            setFechaSeleccionada={setDiaActual}
+            disponibilidadesMes={disponibilidadesMes}
+            turnosMesData={turnosMesData}
+            mesActual={mesVistaCalendarioCalculado}
+            onMesVistaChange={setMesVistaCalendario}
+          />
+        </div>
+
+        {/* Contenido principal */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      
+      {/* Controles de navegación diaria - Mismo estilo y orden que Agenda */}
+      <div className="controles-fecha">
+        <button className="btn-nav" onClick={irDiaAnterior}>
+          <FaChevronLeft /> Ant
         </button>
         
-        {/* Filtro por odontólogo */}
-        <select
-          value={filtroTipo === 'seleccionados' && odontologoFiltro.length === 1
-            ? `odontologo-${odontologoFiltro[0]}`
-            : filtroTipo}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (value === 'todos') {
-              setFiltroTipo('todos');
-              setOdontologoFiltro([]);
-            } else if (value === 'disponibles') {
-              setFiltroTipo('disponibles');
-              setOdontologoFiltro([]);
-            } else if (value.startsWith('odontologo-')) {
-              const odontologoId = parseInt(value.replace('odontologo-', ''));
-              setOdontologoFiltro([odontologoId]);
-              setFiltroTipo('seleccionados');
-            }
-          }}
-          className="btn-nav"
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: filtroTipo === 'disponibles' 
-              ? '#10b981' 
-              : filtroTipo === 'seleccionados' 
-                ? '#3b82f6' 
-                : '#145c63',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '500',
-            fontSize: '0.875rem',
-            minWidth: '220px',
-            appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.75rem center',
-            paddingRight: '2.5rem',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            if (filtroTipo === 'todos') {
-              e.target.style.backgroundColor = '#1a7a82';
-            } else if (filtroTipo === 'disponibles') {
-              e.target.style.backgroundColor = '#059669';
-            } else {
-              e.target.style.backgroundColor = '#2563eb';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (filtroTipo === 'todos') {
-              e.target.style.backgroundColor = '#145c63';
-            } else if (filtroTipo === 'disponibles') {
-              e.target.style.backgroundColor = '#10b981';
-            } else {
-              e.target.style.backgroundColor = '#3b82f6';
-            }
-          }}
-        >
-          <option value="todos" style={{ background: 'white', color: '#374151' }}>
-            Todos los odontólogos
-          </option>
-          <option value="disponibles" style={{ background: 'white', color: '#374151' }}>
-            Disponibles ({odontologosDisponibles.length})
-          </option>
-          {odontologos?.map((odontologo) => {
-            const estaDisponible = odontologosDisponibles.includes(odontologo.userId);
-            return (
-              <option 
-                key={odontologo.userId} 
-                value={`odontologo-${odontologo.userId}`}
-                style={{ background: 'white', color: '#374151' }}
-              >
-                Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
-                {estaDisponible ? ' ✓ Disponible' : ''}
-              </option>
-            );
-          })}
-        </select>
-        
-        <div 
-          className="semana-info" 
-          style={{ position: 'relative', cursor: 'pointer' }}
-          onClick={() => {
-            const input = document.getElementById('fecha-selector-hidden');
-            if (input) {
-              // Intentar usar showPicker si está disponible (Chrome/Edge)
-              if (input.showPicker) {
-                input.showPicker();
-              } else {
-                // Fallback: hacer click en el input
-                input.click();
-              }
-            }
-          }}
-        >
-          <FaCalendarAlt style={{ cursor: 'pointer' }} />
-          <span>
+        <div className="fecha-selector" style={{ position: 'relative', cursor: 'pointer' }}>
+          <FaCalendarAlt />
+          <span className="fecha-legible">
             {formatDateReadable(diaActual)}
           </span>
           <input
@@ -533,6 +876,7 @@ export default function GestionDisponibilidades() {
             type="date"
             value={fechaActual}
             onChange={handleCambiarFecha}
+            className="input-fecha"
             style={{
               position: 'absolute',
               opacity: 0,
@@ -546,18 +890,270 @@ export default function GestionDisponibilidades() {
           />
         </div>
         
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-nav" onClick={irDiaAnterior}>
-            <FaChevronLeft /> Día Anterior
+        <button className="btn-hoy" onClick={irHoy}>
+          Hoy
+        </button>
+        
+        <button className="btn-nav" onClick={irDiaSiguiente}>
+          Sig <FaChevronRight />
+        </button>
+
+        {/* Controles adicionales */}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '1rem' }}>
+          <button 
+            className="btn-secondary"
+            onClick={() => setModalRecurrenteAbierto(true)}
+          >
+            <FaCalendarCheck />
+            Agregar Disponibilidad Recurrente
           </button>
           
-          <button className="btn-hoy" onClick={irHoy}>
-            Hoy
-          </button>
-          
-          <button className="btn-nav" onClick={irDiaSiguiente}>
-            Día Siguiente <FaChevronRight />
-          </button>
+          {/* Filtro por odontólogo con búsqueda y desplegable */}
+          <div className="filtro-odontologo-container" style={{ position: 'relative', minWidth: '250px' }}>
+            <div style={{ position: 'relative' }}>
+              <FaUserMd style={{ 
+                position: 'absolute', 
+                left: '0.75rem', 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: '#667085',
+                fontSize: '0.85rem',
+                zIndex: 2
+              }} />
+              <input
+                type="text"
+                value={odontologoSeleccionado 
+                  ? `Dr. ${odontologoSeleccionado.Usuario?.nombre} ${odontologoSeleccionado.Usuario?.apellido}`
+                  : filtroTipo === 'disponibles' 
+                    ? `Disponibles (${odontologosDisponibles.length})`
+                    : filtroTipo === 'todos'
+                      ? 'Todos los odontólogos'
+                      : busquedaOdontologo}
+                onChange={(e) => handleCambiarBusquedaOdontologo(e.target.value)}
+                onFocus={handleClickInputOdontologo}
+                onClick={handleClickInputOdontologo}
+                placeholder="Seleccionar odontólogo..."
+                readOnly={!mostrarSugerenciasOdontologo || (odontologoSeleccionado !== null || filtroTipo !== 'todos')}
+                className={`btn-filtro-odontologo ${filtroTipo === 'disponibles' || filtroTipo === 'seleccionados' ? 'active' : ''}`}
+                style={{
+                  paddingLeft: '2.5rem',
+                  paddingRight: (filtroTipo !== 'todos' || odontologoSeleccionado) ? '2.5rem' : '2.5rem',
+                  cursor: (odontologoSeleccionado !== null || filtroTipo !== 'todos') ? 'pointer' : 'text',
+                  backgroundImage: 'none !important',
+                  backgroundRepeat: 'no-repeat !important'
+                }}
+              />
+              {/* Icono de flecha/cerrar */}
+              {(odontologoSeleccionado || filtroTipo !== 'todos') ? (
+                <button
+                  onClick={() => handleSeleccionarOdontologo(null)}
+                  style={{
+                    position: 'absolute',
+                    right: '0.5rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#667085',
+                    zIndex: 2
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#1c1c1e'}
+                  onMouseLeave={(e) => e.target.style.color = '#667085'}
+                >
+                  <FaTimes />
+                </button>
+              ) : (
+                <div
+                  onClick={() => setMostrarSugerenciasOdontologo(!mostrarSugerenciasOdontologo)}
+                  style={{
+                    position: 'absolute',
+                    right: '0.5rem',
+                    top: '50%',
+                    transform: mostrarSugerenciasOdontologo ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#667085',
+                    zIndex: 2,
+                    transition: 'transform 0.2s ease',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#1c1c1e'}
+                  onMouseLeave={(e) => e.target.style.color = '#667085'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L1 4H11L6 9Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              )}
+            </div>
+            
+            {/* Desplegable de odontólogos */}
+            {mostrarSugerenciasOdontologo && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                background: 'white',
+                border: '1px solid #e4e6ed',
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                marginTop: '0.25rem'
+              }}>
+                {/* Campo de búsqueda dentro del desplegable */}
+                <div style={{ padding: '0.5rem', borderBottom: '1px solid #f0f0f0' }}>
+                  <input
+                    type="text"
+                    value={busquedaOdontologo}
+                    onChange={(e) => handleCambiarBusquedaOdontologo(e.target.value)}
+                    placeholder="Buscar por nombre, apellido o matrícula..."
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #e4e6ed',
+                      borderRadius: '4px',
+                      fontSize: '0.9rem'
+                    }}
+                    autoFocus
+                  />
+                </div>
+                
+                {/* Opción "Todos" */}
+                <div
+                  onClick={() => handleSeleccionarOdontologo(null)}
+                  style={{
+                    padding: '0.75rem',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #f0f0f0',
+                    backgroundColor: filtroTipo === 'todos' ? '#f7f9fc' : 'white',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filtroTipo !== 'todos') e.target.style.backgroundColor = '#f7f9fc';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filtroTipo !== 'todos') e.target.style.backgroundColor = 'white';
+                  }}
+                >
+                  <div style={{ fontWeight: '500', color: '#1c1c1e' }}>
+                    Todos los odontólogos
+                  </div>
+                </div>
+                
+                {/* Opción "Disponibles" */}
+                <div
+                  onClick={() => handleSeleccionarOdontologo('disponibles')}
+                  style={{
+                    padding: '0.75rem',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #f0f0f0',
+                    backgroundColor: filtroTipo === 'disponibles' ? '#f7f9fc' : 'white',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filtroTipo !== 'disponibles') e.target.style.backgroundColor = '#f7f9fc';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filtroTipo !== 'disponibles') e.target.style.backgroundColor = 'white';
+                  }}
+                >
+                  <div style={{ fontWeight: '500', color: '#1c1c1e' }}>
+                    Disponibles ({odontologosDisponibles.length})
+                  </div>
+                </div>
+                
+                {/* Lista de odontólogos filtrados */}
+                {odontologosFiltradosPorBusqueda.length > 0 ? (
+                  odontologosFiltradosPorBusqueda.map((odontologo) => {
+                    const estaDisponible = odontologosDisponibles.includes(odontologo.userId);
+                    const estaSeleccionado = odontologoSeleccionado?.userId === odontologo.userId;
+                    return (
+                      <div
+                        key={odontologo.userId}
+                        onClick={() => handleSeleccionarOdontologo(odontologo)}
+                        style={{
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f0f0f0',
+                          backgroundColor: estaSeleccionado ? '#f7f9fc' : 'white',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!estaSeleccionado) e.target.style.backgroundColor = '#f7f9fc';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!estaSeleccionado) e.target.style.backgroundColor = 'white';
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#1c1c1e', marginBottom: '0.25rem' }}>
+                          Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#667085' }}>
+                          Mat. {odontologo.matricula}
+                          {estaDisponible && (
+                            <span style={{ color: '#28a745', marginLeft: '0.5rem' }}>✓ Disponible</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : busquedaOdontologo.length >= 1 ? (
+                  <div style={{ padding: '0.75rem', color: '#667085', textAlign: 'center' }}>
+                    No se encontraron odontólogos
+                  </div>
+                ) : (
+                  // Si no hay búsqueda, mostrar todos los odontólogos
+                  odontologos?.map((odontologo) => {
+                    const estaDisponible = odontologosDisponibles.includes(odontologo.userId);
+                    const estaSeleccionado = odontologoSeleccionado?.userId === odontologo.userId;
+                    return (
+                      <div
+                        key={odontologo.userId}
+                        onClick={() => handleSeleccionarOdontologo(odontologo)}
+                        style={{
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f0f0f0',
+                          backgroundColor: estaSeleccionado ? '#f7f9fc' : 'white',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!estaSeleccionado) e.target.style.backgroundColor = '#f7f9fc';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!estaSeleccionado) e.target.style.backgroundColor = 'white';
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#1c1c1e', marginBottom: '0.25rem' }}>
+                          Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#667085' }}>
+                          Mat. {odontologo.matricula}
+                          {estaDisponible && (
+                            <span style={{ color: '#28a745', marginLeft: '0.5rem' }}>✓ Disponible</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -569,7 +1165,7 @@ export default function GestionDisponibilidades() {
           gridTemplateColumns: `80px repeat(${odontologosFiltrados?.length || 1}, 1fr)`
         }}>
           <div className="columna-horas">
-            <div className="header-cell">Horario</div>
+            <div className="header-cell">Hora</div>
           </div>
           
           {odontologosFiltrados && odontologosFiltrados.length > 0 ? (
@@ -613,6 +1209,8 @@ export default function GestionDisponibilidades() {
               </div>
             );
           })}
+        </div>
+      </div>
         </div>
       </div>
       

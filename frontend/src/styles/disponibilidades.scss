@@ -2,204 +2,343 @@
 @use 'variables' as v;
 
 .gestion-disponibilidades-container {
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 0.75rem;
+  width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
   
   .disponibilidades-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 1.25rem;
 
-    h1 {
-      font-size: 2rem;
-      color: v.$color-text;
-      margin: 0;
-    }
-
-    .header-actions {
+    .top-bar {
       display: flex;
-      gap: 1rem;
+      justify-content: space-between;
       align-items: center;
-    }
 
-    .btn-recargar {
-      padding: 0.75rem 1.5rem;
-      background-color: v.$color-primary;
-      color: v.$color-white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-
-      &:hover:not(:disabled) {
-        background-color: darken(v.$color-primary, 10%);
+      h2 {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: v.$color-text;
+        letter-spacing: 0.3px;
+        margin: 0;
       }
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
       }
 
-      .rotating {
-        animation: spin 1s linear infinite;
+      .btn-recargar {
+        background: v.$color-primary;
+        color: v.$color-white;
+        border: none;
+        border-radius: v.$radius;
+        padding: 0.55rem 1.25rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.18s, transform 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &:hover:not(:disabled) {
+          background: darken(v.$color-primary, 8%);
+          transform: translateY(-1.5px);
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .rotating {
+          animation: spin 1s linear infinite;
+        }
       }
-    }
 
-    .btn-volver {
-      padding: 0.75rem 1.5rem;
-      background-color: v.$color-light;
-      color: v.$color-text;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.3s ease;
+      .btn-volver {
+        background: #ecf0f1;
+        color: v.$color-text;
+        border: none;
+        border-radius: v.$radius;
+        padding: 0.55rem 1.25rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.18s, transform 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
 
-      &:hover {
-        background-color: darken(v.$color-light, 5%);
+        &:hover {
+          background: #bdc3c7;
+          transform: translateY(-1.5px);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
       }
     }
   }
   
-  .semana-controles {
+  .controles-fecha {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem;
     padding: 1rem;
     background-color: v.$color-white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    
-    .btn-nav,
-    .btn-hoy {
-      padding: 0.75rem 1.5rem;
-      background-color: v.$color-primary;
-      color: v.$color-white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      display: flex;
+    border-radius: v.$radius;
+    box-shadow: v.$shadow;
+    flex-wrap: wrap;
+
+    .btn-nav {
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      transition: all 0.3s ease;
-      white-space: nowrap;
-      
+      background: v.$color-white;
+      border: 1px solid #e4e6ed;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      cursor: pointer;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.14s ease;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: v.$color-text;
+
+      svg {
+        font-size: 0.85rem;
+      }
+
       &:hover {
-        background-color: darken(v.$color-primary, 10%);
-        transform: translateY(-2px);
+        background: v.$color-light;
+        box-shadow: v.$shadow;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
       }
     }
-    
-    .btn-recurrente {
-      background-color: v.$color-success;
-      
-      &:hover {
-        background-color: darken(v.$color-success, 10%);
-        transform: translateY(-2px);
-      }
-    }
-    
+
     .btn-hoy {
-      background-color: v.$color-success;
-      
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: v.$color-primary;
+      color: v.$color-white;
+      border: none;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      cursor: pointer;
+      transition: filter 0.18s, transform 0.15s, box-shadow 0.18s;
+      box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+      font-size: 0.9rem;
+      font-weight: 500;
+
       &:hover {
-        background-color: darken(v.$color-success, 10%);
+        filter: brightness(0.97);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
       }
     }
-    
-    .semana-info {
+
+    .fecha-selector {
       flex: 1;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      font-size: 1.1rem;
-      font-weight: 600;
+      gap: 0.5rem;
+      padding: 0.42rem 0.72rem;
+      background-color: v.$color-light;
+      border-radius: v.$radius;
+      font-size: 0.9rem;
+      font-weight: 500;
       color: v.$color-text;
-      
+      min-width: 0;
+
       svg {
         color: v.$color-primary;
-        font-size: 1.3rem;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+      }
+
+      .input-fecha {
+        border: none;
+        background: transparent;
+        font-size: 1rem;
+        padding: 0.5rem;
+        cursor: pointer;
+      }
+
+      .fecha-legible {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: v.$color-text;
+      }
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #ecf0f1;
+      color: v.$color-text;
+      border: none;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.15s;
+      font-size: 0.9rem;
+      font-weight: 500;
+
+      svg {
+        font-size: 0.85rem;
+      }
+
+      &:hover {
+        background: #bdc3c7;
+        transform: translateY(-1.5px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    .btn-filtro-odontologo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: v.$color-white !important;
+      border: 1px solid #e4e6ed;
+      border-radius: v.$radius;
+      padding: 0.42rem 0.72rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+      transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.14s ease;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: v.$color-text;
+      min-width: 220px;
+      appearance: none;
+      background-image: none !important;
+      background-repeat: no-repeat !important;
+
+      &:hover {
+        background: v.$color-light !important;
+        box-shadow: v.$shadow;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &.active {
+        background: v.$color-primary !important;
+        color: v.$color-white;
+        border-color: v.$color-primary;
+        box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+        background-image: none !important;
+
+        &:hover {
+          background: darken(v.$color-primary, 5%) !important;
+          box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
+        }
       }
     }
   }
   
   .calendario-container {
+    position: relative;
     background-color: v.$color-white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    border-radius: v.$radius;
+    box-shadow: v.$shadow;
+    overflow-x: auto;
     
     .calendario-header {
-      display: grid;
-      background-color: v.$color-primary;
-      color: v.$color-white;
+      background: v.$color-light;
+      border-bottom: 2px solid #e5e8ef;
       position: sticky;
       top: 0;
-      z-index: 4;
+      z-index: 10;
       
       .columna-horas {
         width: 80px;
         min-width: 80px;
         position: sticky;
         left: 0;
-        z-index: 5;
+        z-index: 11;
+        background: v.$color-light;
         
         .header-cell {
-          padding: 1rem;
+          padding: 0.75rem 1rem;
           text-align: center;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
+          color: v.$color-text;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
         }
       }
       
       .columna-odontologo {
         min-width: 150px;
-        border-left: 2px solid rgba(255, 255, 255, 0.3);
+        border-left: 1px solid #e5e8ef;
         
         .header-cell {
-          padding: 1rem;
-          text-align: center;
+          padding: 0.75rem 1rem;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: v.$color-text;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
           
           &.odontologo-info {
             .odontologo-nombre {
               font-weight: 600;
-              font-size: 1rem;
+              font-size: 0.95rem;
               margin-bottom: 0.25rem;
+              color: v.$color-text;
             }
             
             .odontologo-matricula {
-              font-size: 0.85rem;
-              opacity: 0.9;
+              font-size: 0.8rem;
+              color: #667085;
+              font-weight: 400;
             }
           }
           
           &.dia-actual {
-            background-color: rgba(255, 255, 255, 0.2);
-            font-weight: bold;
+            background-color: rgba(v.$color-primary, 0.1);
           }
         }
       }
       
       .no-odontologos {
         grid-column: 2 / -1;
-        padding: 1rem;
+        padding: 0.75rem 1rem;
         text-align: center;
-        opacity: 0.8;
+        color: #667085;
+        font-size: 0.9rem;
       }
     }
     
     .calendario-grid {
-      display: grid;
       max-height: 600px;
       overflow-y: auto;
       overflow-x: auto;
@@ -207,7 +346,7 @@
       .columna-horas {
         width: 80px;
         min-width: 80px;
-        border-right: 2px solid v.$color-light;
+        border-right: 1px solid #f0f0f0;
         position: sticky;
         left: 0;
         background: v.$color-white;
@@ -218,26 +357,28 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          border-bottom: 1px solid v.$color-light;
-          font-weight: 500;
+          border-bottom: 1px solid #f0f0f0;
+          font-weight: 600;
           font-size: 0.9rem;
-          color: lighten(v.$color-text, 30%);
+          color: #555;
+          background-color: v.$color-light;
         }
       }
       
       .columna-odontologo {
         min-width: 150px;
-        border-left: 1px solid v.$color-light;
+        border-left: 1px solid #f0f0f0;
         
         .celda-hora {
           height: 60px;
-          border-bottom: 1px solid v.$color-light;
+          border-bottom: 1px solid #f0f0f0;
+          border-right: 1px solid #f0f0f0;
           position: relative;
           cursor: pointer;
-          transition: background-color 0.2s ease;
+          transition: background-color 0.15s ease;
           
-          &:hover:not(.celda-ocupada):not(.celda-con-bloque) {
-            background-color: rgba(20, 92, 99, 0.05);
+          &:hover:not(.celda-ocupada):not(.celda-con-bloque):not(.celda-ocupada-turno) {
+            background-color: rgba(v.$color-primary, 0.04);
           }
 
           &.celda-ocupada {
@@ -248,6 +389,11 @@
           &.celda-con-bloque {
             cursor: default;
           }
+
+          &.celda-ocupada-turno {
+            cursor: default;
+            background-color: rgba(59, 130, 246, 0.1);
+          }
           
           .celda-vacia {
             height: 100%;
@@ -255,74 +401,93 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.15s ease;
             
             .icon-add {
               color: v.$color-primary;
-              font-size: 1.2rem;
+              font-size: 1rem;
             }
           }
           
           &:hover .celda-vacia {
             opacity: 1;
           }
+
+          .turno-bloque {
+            border-radius: 6px;
+            padding: 0.35rem 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: 1px solid #1e40af;
+            color: white;
+            font-size: 0.75rem;
+            
+            &:hover {
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+          }
           
           .disponibilidad-bloque {
-            border-radius: 8px;
-            padding: 1rem;
+            border-radius: 6px;
+            padding: 0.5rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             
             &.bloque-laboral {
               background: linear-gradient(135deg, #10b981 0%, #059669 100%);
               color: v.$color-white;
-              border: 2px solid #059669;
+              border: 1px solid #059669;
             }
             
             &.bloque-nolaboral {
               background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
               color: v.$color-white;
-              border: 2px solid #dc2626;
+              border: 1px solid #dc2626;
             }
             
             &:hover {
-              transform: translateY(-2px);
-              box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
               z-index: 10;
             }
 
             .bloque-info {
               display: flex;
               flex-direction: column;
-              gap: 0.5rem;
+              gap: 0.25rem;
             }
             
             .bloque-hora {
-              font-weight: 700;
-              font-size: 0.95rem;
-              letter-spacing: 0.5px;
+              font-weight: 600;
+              font-size: 0.8rem;
+              letter-spacing: 0.3px;
             }
 
             .bloque-tipo {
-              font-size: 0.85rem;
-              font-weight: 600;
+              font-size: 0.75rem;
+              font-weight: 500;
               opacity: 0.95;
             }
             
             .bloque-hora-fin {
-              font-size: 0.75rem;
+              font-size: 0.7rem;
               opacity: 0.9;
             }
             
             .bloque-motivo {
-              font-size: 0.8rem;
+              font-size: 0.7rem;
               margin-top: 0.25rem;
-              padding-top: 0.5rem;
+              padding-top: 0.25rem;
               border-top: 1px solid rgba(255, 255, 255, 0.3);
               opacity: 0.9;
               font-style: italic;
@@ -360,10 +525,11 @@
         align-items: center;
         padding: 1.5rem;
         border-bottom: 1px solid v.$color-light;
+        background: v.$color-primary;
         
         h2 {
           margin: 0;
-          color: v.$color-text;
+          color: v.$color-white !important;
           font-size: 1.5rem;
         }
         

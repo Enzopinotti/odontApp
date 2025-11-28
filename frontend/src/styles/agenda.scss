@@ -24,13 +24,14 @@
 .modal-detalles-turno,
 .modal-reprogramar,
 .modal-editar {
-  background-color: white;
-  border-radius: 12px;
+  background-color: v.$color-white;
+  border-radius: v.$radius;
   max-width: 700px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  overflow-x: hidden;
+  box-shadow: v.$shadow;
   animation: modalFadeIn 0.3s ease;
   position: relative;
   margin: auto;
@@ -47,49 +48,246 @@
   }
 }
 
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 2px solid #e0e0e0;
+  padding: 1.2rem 1rem;
+  background: v.$color-primary;
+  border-bottom: none;
+  border-radius: v.$radius v.$radius 0 0;
+
+  @media (min-width: 600px) {
+    padding: 1.6rem 1.4rem;
+  }
 
   h2 {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #2c3e50;
+    gap: 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: v.$color-white;
+    letter-spacing: 0.2px;
     margin: 0;
 
     svg {
-      color: #3498db;
+      color: v.$color-white;
+      font-size: 1.1rem;
     }
   }
 
   .btn-close {
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 1.5rem;
-    color: #7f8c8d;
+    font-size: 1.2rem;
+    color: v.$color-white;
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-    border-radius: 4px;
+    transition: color 0.18s ease, transform 0.12s ease, background 0.18s ease;
+    border-radius: 0.5rem;
+    opacity: 0.9;
 
     &:hover {
-      background: #f0f0f0;
-      color: #2c3e50;
+      color: v.$color-white;
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+      opacity: 1;
+    }
+
+    &:active {
+      transform: translateY(0);
     }
   }
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.2rem 1rem;
+
+  @media (min-width: 600px) {
+    padding: 1.6rem 1.4rem;
+  }
+}
+
+/* Acciones principales - Arriba del modal */
+.modal-acciones-principales {
+  padding: 1.2rem 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e8ef;
+  overflow-x: hidden;
+
+  @media (min-width: 600px) {
+    padding: 1.6rem 1.4rem;
+  }
+
+  .acciones-botones {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+
+    .acciones-fila-1 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      width: 100%;
+
+      @media (min-width: 600px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
+
+      @media (min-width: 768px) {
+        gap: 0.75rem;
+      }
+    }
+
+    .acciones-fila-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      width: 100%;
+
+      @media (min-width: 600px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
+
+      @media (min-width: 768px) {
+        gap: 0.75rem;
+      }
+    }
+  }
+}
+
+.btn-accion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.5rem;
+  border: none;
+  border-radius: v.$radius;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (min-width: 768px) {
+    padding: 0.56rem 0.65rem;
+    font-size: 0.85rem;
+    gap: 0.45rem;
+  }
+
+  svg {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+
+    @media (min-width: 768px) {
+      font-size: 0.85rem;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.btn-asistencia {
+    background: #27ae60;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(39, 174, 96, 0.18);
+
+    &:hover {
+      background: darken(#27ae60, 5%);
+      box-shadow: 0 6px 18px rgba(39, 174, 96, 0.25);
+    }
+  }
+
+  &.btn-ausencia {
+    background: #f39c12;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(243, 156, 18, 0.18);
+
+    &:hover {
+      background: darken(#f39c12, 5%);
+      box-shadow: 0 6px 18px rgba(243, 156, 18, 0.25);
+    }
+  }
+
+  &.btn-cancelar-turno {
+    background: #e74c3c;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(231, 76, 60, 0.18);
+
+    &:hover {
+      background: darken(#e74c3c, 5%);
+      box-shadow: 0 6px 18px rgba(231, 76, 60, 0.25);
+    }
+  }
+
+  &.btn-reprogramar {
+    background: v.$color-primary;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+
+    &:hover {
+      background: darken(v.$color-primary, 5%);
+      box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
+    }
+  }
+
+  &.btn-editar {
+    background: #3498db;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(52, 152, 219, 0.18);
+
+    &:hover {
+      background: darken(#3498db, 5%);
+      box-shadow: 0 6px 18px rgba(52, 152, 219, 0.25);
+    }
+  }
+
+  &.btn-nota {
+    background: #9b59b6;
+    color: v.$color-white;
+    box-shadow: 0 4px 14px rgba(155, 89, 182, 0.18);
+
+    &:hover {
+      background: darken(#9b59b6, 5%);
+      box-shadow: 0 6px 18px rgba(155, 89, 182, 0.25);
+    }
+  }
 }
 
 .modal-footer {
@@ -149,12 +347,201 @@
 }
 
 .modal-footer-info {
-  padding: 1.5rem;
+  padding: 1.2rem 1rem;
   text-align: center;
   background: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
-  color: #7f8c8d;
+  border-top: 1px solid #e5e8ef;
+  color: #667085;
   font-style: italic;
+  font-size: 0.9rem;
+
+  @media (min-width: 600px) {
+    padding: 1.6rem 1.4rem;
+  }
+}
+
+/* Estilos para secciones de información del modal */
+.modal-detalles-turno {
+  .turno-estado {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.2px;
+    border: 1px solid transparent;
+
+    &.estado-pendiente {
+      background: rgba(245, 158, 11, 0.14);
+      color: #d97706;
+      border-color: rgba(245, 158, 11, 0.22);
+    }
+
+    &.estado-asistio {
+      background: rgba(34, 197, 94, 0.14);
+      color: #16a34a;
+      border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    &.estado-ausente {
+      background: rgba(239, 68, 68, 0.14);
+      color: #dc2626;
+      border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    &.estado-cancelado {
+      background: rgba(107, 114, 128, 0.14);
+      color: #6b7280;
+      border-color: rgba(107, 114, 128, 0.22);
+    }
+  }
+
+  .info-section {
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: v.$color-text;
+      margin: 0 0 0.75rem 0;
+      letter-spacing: 0.1px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.68rem;
+
+      @media (min-width: 600px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        &.full-width {
+          grid-column: 1 / -1;
+        }
+
+        .info-label {
+          font-weight: 500;
+          font-size: 0.82rem;
+          color: #667085;
+        }
+
+        .info-value {
+          font-size: 0.95rem;
+          color: v.$color-text;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .confirmacion-form {
+    background: #f8f9fa;
+    padding: 1.2rem;
+    border-radius: v.$radius;
+    margin-top: 1rem;
+    border: 1px solid #e5e8ef;
+
+    h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: v.$color-text;
+      margin: 0 0 1rem 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      color: v.$color-text;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e8ef;
+      border-radius: v.$radius;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.18s ease;
+
+      &:focus {
+        outline: none;
+        border-color: v.$color-primary;
+        box-shadow: 0 0 0 2px rgba(v.$color-primary, 0.1);
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+
+      button {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: v.$radius;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.18s ease;
+
+        &.btn-cancelar {
+          background: #ecf0f1;
+          color: v.$color-text;
+
+          &:hover {
+            background: #bdc3c7;
+          }
+        }
+
+        &.btn-confirmar {
+          background: v.$color-primary;
+          color: v.$color-white;
+          box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
+
+          &:hover {
+            background: darken(v.$color-primary, 5%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
+          }
+
+          &.btn-ausencia {
+            background: #f39c12;
+            box-shadow: 0 4px 14px rgba(243, 156, 18, 0.18);
+
+            &:hover {
+              background: darken(#f39c12, 5%);
+              box-shadow: 0 6px 18px rgba(243, 156, 18, 0.25);
+            }
+          }
+
+          &.btn-danger {
+            background: #e74c3c;
+            box-shadow: 0 4px 14px rgba(231, 76, 60, 0.18);
+
+            &:hover {
+              background: darken(#e74c3c, 5%);
+              box-shadow: 0 6px 18px rgba(231, 76, 60, 0.25);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 /* ====================================================
@@ -224,9 +611,14 @@
       align-items: center;
       gap: 0.5rem;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: #bdc3c7;
         transform: translateY(-1.5px);
+      }
+      
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
 
       &:active {
