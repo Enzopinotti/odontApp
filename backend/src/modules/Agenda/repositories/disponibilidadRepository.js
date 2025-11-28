@@ -457,18 +457,46 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
 
 export const generarDisponibilidadesRecurrentes = async (odontologoId, tipoRecurrencia, configuracion, fechaInicio, fechaFin, horarioLaboral) => {
   const disponibilidades = [];
-  const fechaInicioObj = new Date(fechaInicio);
-  const fechaFinObj = new Date(fechaFin);
+  
+  // Parsear fechas en zona horaria local (Argentina) para evitar problemas con UTC
+  // Si la fecha viene como string "YYYY-MM-DD", crear la fecha en hora local
+  const parsearFechaLocal = (fechaStr) => {
+    if (typeof fechaStr === 'string' && fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Formato YYYY-MM-DD: parsear como fecha local (no UTC)
+      const [year, month, day] = fechaStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // month es 0-indexed en Date
+    }
+    return new Date(fechaStr);
+  };
+  
+  const fechaInicioObj = parsearFechaLocal(fechaInicio);
+  const fechaFinObj = parsearFechaLocal(fechaFin);
+  
+  // Asegurar que las fechas estén en medianoche hora local
+  fechaInicioObj.setHours(0, 0, 0, 0);
+  fechaFinObj.setHours(23, 59, 59, 999);
   
   if (tipoRecurrencia === 'semanal') {
     // Recurrencia semanal: días específicos de la semana (ej: todos los martes)
+    // Nota: diasSemana viene del frontend como [1,2,3,4,5,6] donde 1=Lunes, 6=Sábado
+    // getDay() devuelve: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado
+    // Necesitamos convertir: frontend 1-6 -> getDay() 1-6 (coinciden excepto que frontend no tiene 0)
     const diasSemana = configuracion.diasSemana || [];
     
     for (let fecha = new Date(fechaInicioObj); fecha <= fechaFinObj; fecha.setDate(fecha.getDate() + 1)) {
-      const diaSemana = fecha.getDay();
+      const diaSemana = fecha.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+      // El frontend envía: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado
+      // getDay() devuelve: 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado
+      // Entonces coinciden directamente (1-6)
       if (diasSemana.includes(diaSemana)) {
+        // Formatear fecha como YYYY-MM-DD en hora local
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, '0');
+        const day = String(fecha.getDate()).padStart(2, '0');
+        const fechaStr = `${year}-${month}-${day}`;
+        
         disponibilidades.push({
-          fecha: fecha.toISOString().split('T')[0],
+          fecha: fechaStr,
           horaInicio: horarioLaboral.horaInicio,
           horaFin: horarioLaboral.horaFin,
           tipo: TipoDisponibilidad.LABORAL,
@@ -479,11 +507,12 @@ export const generarDisponibilidadesRecurrentes = async (odontologoId, tipoRecur
     }
   } else if (tipoRecurrencia === 'mensual') {
     // Recurrencia mensual: día específico del mes (ej: primeros martes)
-    const diaSemana = configuracion.diaSemana; // 0-6
+    const diaSemana = configuracion.diaSemana; // 1-6 del frontend (1=Lunes, 6=Sábado)
     const posicionMes = configuracion.posicionMes; // 'primero', 'segundo', 'tercero', 'cuarto', 'ultimo'
     
     for (let fecha = new Date(fechaInicioObj); fecha <= fechaFinObj; fecha.setDate(fecha.getDate() + 1)) {
       // Verificar si es el día de la semana correcto
+      // getDay() devuelve 0-6, el frontend envía 1-6, coinciden directamente
       if (fecha.getDay() !== diaSemana) continue;
       
       // Calcular la posición del día en el mes
@@ -514,8 +543,14 @@ export const generarDisponibilidadesRecurrentes = async (odontologoId, tipoRecur
       }
       
       if (coincide) {
+        // Formatear fecha como YYYY-MM-DD en hora local
+        const year = fecha.getFullYear();
+        const month = String(fecha.getMonth() + 1).padStart(2, '0');
+        const day = String(fecha.getDate()).padStart(2, '0');
+        const fechaStr = `${year}-${month}-${day}`;
+        
         disponibilidades.push({
-          fecha: fecha.toISOString().split('T')[0],
+          fecha: fechaStr,
           horaInicio: horarioLaboral.horaInicio,
           horaFin: horarioLaboral.horaFin,
           tipo: TipoDisponibilidad.LABORAL,

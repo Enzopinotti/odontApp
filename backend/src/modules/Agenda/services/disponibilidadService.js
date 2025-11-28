@@ -208,9 +208,20 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
 export const generarDisponibilidadesRecurrentes = async (data, usuarioId) => {
   const { odontologoId, tipoRecurrencia, diasSemana, diaSemana, posicionMes, horaInicio, horaFin, fechaInicio, fechaFin } = data;
   
+  // Parsear fechas en zona horaria local (Argentina) para evitar problemas con UTC
+  // Si la fecha viene como string "YYYY-MM-DD", crear la fecha en hora local
+  const parsearFechaLocal = (fechaStr) => {
+    if (typeof fechaStr === 'string' && fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Formato YYYY-MM-DD: parsear como fecha local (no UTC)
+      const [year, month, day] = fechaStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // month es 0-indexed en Date
+    }
+    return new Date(fechaStr);
+  };
+  
   // Validar fechas
-  const fechaInicioObj = new Date(fechaInicio);
-  const fechaFinObj = new Date(fechaFin);
+  const fechaInicioObj = parsearFechaLocal(fechaInicio);
+  const fechaFinObj = parsearFechaLocal(fechaFin);
   
   if (fechaInicioObj >= fechaFinObj) {
     throw new ApiError('La fecha de inicio debe ser anterior a la fecha de fin', 400, null, 'FECHAS_INVALIDAS');

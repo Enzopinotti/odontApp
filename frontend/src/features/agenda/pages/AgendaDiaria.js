@@ -804,6 +804,22 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
     perPage: 1000 // Cargar muchos turnos para la semana
   });
   
+  // Cargar disponibilidades de la semana
+  const fechaInicioSemanaStr = useMemo(() => {
+    if (!semanaActual) return null;
+    return formatDate(semanaActual.inicioSemana);
+  }, [semanaActual]);
+  
+  const fechaFinSemanaStr = useMemo(() => {
+    if (!semanaActual) return null;
+    return formatDate(semanaActual.finSemana);
+  }, [semanaActual]);
+  
+  const { data: disponibilidadesSemana, isLoading: loadingDisponibilidadesSemana } = useDisponibilidadesSemanal(
+    fechaInicioSemanaStr,
+    fechaFinSemanaStr
+  );
+  
   // CU-AG01.5: Organizar turnos por día de la semana
   const turnosPorDia = useMemo(() => {
     if (vista !== 'semanal' || !semanaActual || !turnosSemanaData) return {};
@@ -1047,8 +1063,9 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
       );
     }
     
-    // Filtrar solo odontólogos con disponibilidad activa ese día
-    if (soloConDisponibilidad && disponibilidades) {
+    // Filtrar solo odontólogos con disponibilidad activa ese día - Solo en vista diaria
+    // En vista semanal, se muestran todos los odontólogos que tienen turnos o disponibilidades en la semana
+    if (vista === 'diaria' && soloConDisponibilidad && disponibilidades) {
       const fechaSeleccionadaStr = formatDate(fechaSeleccionada);
       const odontologosConDisponibilidad = new Set();
       
@@ -1064,7 +1081,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
     }
     
     return odontologosFiltrados;
-  }, [odontologosData, esOdontologo, user, filtroOdontologos, soloConDisponibilidad, disponibilidades, fechaSeleccionada]);
+  }, [odontologosData, esOdontologo, user, filtroOdontologos, soloConDisponibilidad, disponibilidades, fechaSeleccionada, vista]);
 
   // Extraer turnos del array y aplicar filtros
   const turnos = useMemo(() => {
@@ -1382,8 +1399,8 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
           onMesVistaChange={setMesVistaCalendario}
         />
         
-        {/* Checkbox para filtrar solo odontólogos con disponibilidad */}
-        {setSoloConDisponibilidad && (
+        {/* Checkbox para filtrar solo odontólogos con disponibilidad - Solo en vista diaria */}
+        {setSoloConDisponibilidad && vista === 'diaria' && (
           <div style={{ 
             background: 'white',
             borderRadius: '6px',
@@ -1628,17 +1645,14 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
       {/* CU-AG01.5: Vista semanal o diaria */}
       {vista === 'semanal' ? (
-        <div className="vista-semanal-container">
-          {/* Navegación de semana */}
-          <div className="controles-semana" style={{
-            display: 'flex',
-            justifyContent: 'space-between',
+        <div className="vista-semanal-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Navegación de semana - Mismo estilo que controles-fecha */}
+          <div className="controles-fecha" style={{ 
+            display: 'flex', 
+            gap: '0.5rem', 
             alignItems: 'center',
-            marginBottom: '1.5rem',
-            padding: '1rem',
-            background: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            marginBottom: '0.75rem',
+            flexWrap: 'wrap'
           }}>
             <button
               onClick={() => {
@@ -1648,33 +1662,23 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
               }}
               className="btn-nav"
             >
-              <FaChevronLeft /> Semana Anterior
+              <FaChevronLeft /> Ant
             </button>
             
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#2c3e50' }}>
-                {semanaActual.dias[0].toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} - 
-                {semanaActual.dias[6].toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </h2>
-              <button
-                onClick={() => {
-                  const hoy = new Date();
-                  setFechaSeleccionada(hoy);
-                }}
-                style={{
-                  marginTop: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  background: '#3498db',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
-                Esta Semana
-              </button>
+            <div className="fecha-selector">
+              {semanaActual.dias[0].toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} - 
+              {semanaActual.dias[6].toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
+            
+            <button
+              onClick={() => {
+                const hoy = new Date();
+                setFechaSeleccionada(hoy);
+              }}
+              className="btn-hoy"
+            >
+              Hoy
+            </button>
             
             <button
               onClick={() => {
@@ -1684,199 +1688,406 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
               }}
               className="btn-nav"
             >
-              Semana Siguiente <FaChevronRight />
+              Sig <FaChevronRight />
             </button>
           </div>
 
-          {/* Grid de 7 días */}
-          <div className="semana-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '1rem',
-            marginBottom: '2rem'
-          }}>
-            {semanaActual.dias.map((dia, index) => {
-              const diaStr = formatDate(dia);
-              const esHoyDia = diaStr === formatDate(new Date());
-              const turnosDelDia = turnosPorDia[index] || [];
-              const nombreDia = dia.toLocaleDateString('es-AR', { weekday: 'long' });
-              const numeroDia = dia.getDate();
-              const mes = dia.toLocaleDateString('es-AR', { month: 'short' });
+          {/* Tabla semanal tipo calendario */}
+          {/* En vista semanal, mostrar todos los odontólogos que tienen turnos o disponibilidades en la semana */}
+          {(() => {
+            // Para la vista semanal, obtener odontólogos que tienen actividad en la semana
+            let odontologosSemana = odontologos;
+            if (vista === 'semanal' && semanaActual) {
+              const odontologosConActividad = new Set();
               
-              return (
-                <div
-                  key={index}
-                  className={`dia-semana-card ${esHoyDia ? 'dia-hoy' : ''}`}
-                  style={{
-                    background: esHoyDia ? '#e3f2fd' : 'white',
-                    border: `2px solid ${esHoyDia ? '#2196f3' : '#e0e0e0'}`,
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    minHeight: '400px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  {/* Header del día */}
-                  <div style={{
-                    borderBottom: '2px solid #e0e0e0',
-                    paddingBottom: '0.75rem',
-                    marginBottom: '0.75rem'
-                  }}>
-                    <div style={{
-                      fontSize: '0.85rem',
-                      color: '#7f8c8d',
-                      textTransform: 'capitalize',
-                      marginBottom: '0.25rem'
-                    }}>
-                      {nombreDia}
-                    </div>
-                    <div style={{
-                      fontSize: '1.5rem',
-                      fontWeight: 'bold',
-                      color: esHoyDia ? '#2196f3' : '#2c3e50'
-                    }}>
-                      {numeroDia}
-                    </div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: '#95a5a6',
-                      textTransform: 'uppercase'
-                    }}>
-                      {mes}
-                    </div>
-                  </div>
-
-                  {/* Lista de turnos del día */}
-                  <div style={{
-                    maxHeight: '300px',
-                    overflowY: 'auto'
-                  }}>
-                    {loadingTurnosSemana ? (
-                      <div style={{ textAlign: 'center', color: '#7f8c8d', padding: '1rem' }}>
-                        Cargando...
-                      </div>
-                    ) : turnosDelDia.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: '#95a5a6', padding: '1rem', fontSize: '0.9rem' }}>
-                        Sin turnos
-                      </div>
-                    ) : (
-                      turnosDelDia.map((turno) => {
-                        const fechaTurno = new Date(turno.fechaHora);
-                        const horaStr = fechaTurno.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-                        
-                        // CU-AG01.5: Calcular indicadores de tiempo
-                        const ahora = new Date();
-                        const minutosHastaTurno = Math.floor((fechaTurno - ahora) / (1000 * 60));
-                        const minutosRetraso = Math.floor((ahora - fechaTurno) / (1000 * 60));
-                        const esProximo = minutosHastaTurno >= 0 && minutosHastaTurno <= 30;
-                        const tieneRetraso = minutosRetraso > 0 && turno.estado === 'PENDIENTE';
-                        
-                        return (
-                          <div
-                            key={turno.id}
-                            className={`turno-card-semanal ${esProximo ? 'turno-proximo' : ''} ${tieneRetraso ? 'turno-retraso' : ''}`}
-                            onClick={() => {
-                              setTurnoSeleccionado(turno);
-                              setModalAbierto(true);
-                            }}
-                            style={{
-                              background: esProximo ? '#fef3c7' : tieneRetraso ? '#fee2e2' : '#f8f9fa',
-                              border: `1px solid ${esProximo ? '#f59e0b' : tieneRetraso ? '#ef4444' : '#e0e0e0'}`,
-                              borderRadius: '6px',
-                              padding: '0.75rem',
-                              marginBottom: '0.5rem',
-                              cursor: 'pointer',
-                              transition: 'opacity 0.2s ease, box-shadow 0.2s ease',
-                              position: 'relative'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.opacity = '0.95';
-                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.opacity = '1';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            {/* Indicador de tiempo */}
-                            {(esProximo || tieneRetraso) && (
-                              <div style={{
-                                position: 'absolute',
-                                top: '0.25rem',
-                                right: '0.25rem',
-                                background: esProximo ? '#f59e0b' : '#ef4444',
-                                color: 'white',
-                                padding: '0.15rem 0.4rem',
-                                borderRadius: '4px',
-                                fontSize: '0.7rem',
-                                fontWeight: 'bold'
-                              }}>
-                                {esProximo ? `⏰ ${minutosHastaTurno} min` : `⚠️ ${minutosRetraso} min`}
-                              </div>
-                            )}
-                            
-                            {/* Hora */}
-                            <div style={{
-                              fontSize: '0.9rem',
-                              fontWeight: '600',
-                              color: '#2c3e50',
-                              marginBottom: '0.25rem'
+              // Agregar odontólogos con turnos en la semana
+              if (turnosSemanaData) {
+                let turnosList = [];
+                if (Array.isArray(turnosSemanaData)) {
+                  turnosList = turnosSemanaData;
+                } else if (turnosSemanaData.data) {
+                  turnosList = Array.isArray(turnosSemanaData.data) ? turnosSemanaData.data : [];
+                } else if (turnosSemanaData.rows) {
+                  turnosList = turnosSemanaData.rows || [];
+                }
+                
+                turnosList.forEach(turno => {
+                  if (turno.odontologoId) {
+                    odontologosConActividad.add(turno.odontologoId);
+                  }
+                });
+              }
+              
+              // Agregar odontólogos con disponibilidades en la semana
+              if (disponibilidadesSemana) {
+                disponibilidadesSemana.forEach(disp => {
+                  if (disp.tipo === 'LABORAL' && disp.odontologoId) {
+                    odontologosConActividad.add(disp.odontologoId);
+                  }
+                });
+              }
+              
+              // Filtrar odontólogos que tienen actividad en la semana
+              if (odontologosConActividad.size > 0) {
+                odontologosSemana = odontologos.filter(odonto => 
+                  odontologosConActividad.has(odonto.userId)
+                );
+              }
+            }
+            
+            return odontologosSemana;
+          })().length > 0 ? (
+            <div className="agenda-tabla-container" style={{ 
+              flex: 1, 
+              overflow: 'auto',
+              maxHeight: 'calc(100vh - 280px)'
+            }}>
+              <table className="agenda-tabla" style={{ fontSize: '0.85rem', width: '100%' }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
+                  <tr>
+                    <th className="col-hora" style={{ 
+                      padding: '0.5rem', 
+                      fontSize: '0.8rem',
+                      width: '60px',
+                      minWidth: '60px',
+                      color: '#1f2937',
+                      fontWeight: '600',
+                      background: '#f7f9fc',
+                      borderRight: '1px solid #e5e8ef'
+                    }}>Hora</th>
+                    {semanaActual.dias.map((dia, diaIndex) => {
+                      const diaStr = formatDate(dia);
+                      const esHoyDia = diaStr === formatDate(new Date());
+                      const nombreDia = dia.toLocaleDateString('es-AR', { weekday: 'short' });
+                      const numeroDia = dia.getDate();
+                      
+                      return (
+                        <th key={diaIndex} style={{ 
+                          padding: '0.5rem',
+                          minWidth: '200px',
+                          background: esHoyDia ? '#fef3c7' : '#f7f9fc',
+                          borderRight: '1px solid #e5e8ef',
+                          borderLeft: diaIndex === 0 ? '1px solid #e5e8ef' : 'none'
+                        }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}>
+                            <div style={{ 
+                              fontSize: '0.7rem', 
+                              color: '#667085',
+                              textTransform: 'uppercase',
+                              fontWeight: '500'
                             }}>
-                              {horaStr}
+                              {nombreDia}
                             </div>
-                            
-                            {/* Paciente */}
-                            <div style={{
-                              fontSize: '0.85rem',
-                              color: '#34495e',
-                              fontWeight: '500',
-                              marginBottom: '0.15rem'
+                            <div style={{ 
+                              fontSize: '1rem', 
+                              fontWeight: '700',
+                              color: esHoyDia ? '#92400e' : '#1c1c1e'
                             }}>
-                              {turno.Paciente?.nombre} {turno.Paciente?.apellido}
-                            </div>
-                            
-                            {/* Motivo */}
-                            <div style={{
-                              fontSize: '0.75rem',
-                              color: '#7f8c8d',
-                              marginBottom: '0.25rem',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              {turno.motivo}
-                            </div>
-                            
-                            {/* Estado */}
-                            <div style={{
-                              display: 'inline-block',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '12px',
-                              fontSize: '0.7rem',
-                              fontWeight: '600',
-                              background: turno.estado === 'PENDIENTE' ? '#fff3cd' :
-                                         turno.estado === 'ASISTIO' ? '#d4edda' :
-                                         turno.estado === 'AUSENTE' ? '#f8d7da' :
-                                         '#e2e3e5',
-                              color: turno.estado === 'PENDIENTE' ? '#856404' :
-                                    turno.estado === 'ASISTIO' ? '#155724' :
-                                    turno.estado === 'AUSENTE' ? '#721c24' :
-                                    '#383d41'
-                            }}>
-                              {turno.estado === 'PENDIENTE' && '⏳ Pendiente'}
-                              {turno.estado === 'ASISTIO' && '✓ Asistió'}
-                              {turno.estado === 'AUSENTE' && '✗ Ausente'}
-                              {turno.estado === 'CANCELADO' && '⊘ Cancelado'}
+                              {numeroDia}
                             </div>
                           </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {HORARIOS.map((hora) => (
+                    <tr key={hora} style={{ height: 'auto' }}>
+                      <td className="celda-hora" style={{ 
+                        padding: '0.4rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '500',
+                        textAlign: 'center',
+                        color: '#374151',
+                        background: '#f7f9fc',
+                        borderRight: '1px solid #e5e8ef',
+                        borderBottom: '1px solid #f0f0f0'
+                      }}>{hora}</td>
+                      {semanaActual.dias.map((dia, diaIndex) => {
+                        const diaStr = formatDate(dia);
+                        const esHoyDia = diaStr === formatDate(new Date());
+                        
+                        return (
+                          <td 
+                            key={diaIndex}
+                            style={{ 
+                              padding: '0.25rem',
+                              textAlign: 'center',
+                              verticalAlign: 'top',
+                              borderRight: '1px solid #f0f0f0',
+                              borderBottom: '1px solid #f0f0f0',
+                              background: esHoyDia ? '#fef3c7' : 'white',
+                              minHeight: '60px',
+                              position: 'relative'
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minHeight: '50px' }}>
+                              {/* Mostrar disponibilidades para cada odontólogo */}
+                              {(() => {
+                                // Para la vista semanal, obtener odontólogos que tienen actividad en la semana
+                                let odontologosSemana = odontologos;
+                                if (vista === 'semanal' && semanaActual) {
+                                  const odontologosConActividad = new Set();
+                                  
+                                  // Agregar odontólogos con turnos en la semana
+                                  if (turnosSemanaData) {
+                                    let turnosList = [];
+                                    if (Array.isArray(turnosSemanaData)) {
+                                      turnosList = turnosSemanaData;
+                                    } else if (turnosSemanaData.data) {
+                                      turnosList = Array.isArray(turnosSemanaData.data) ? turnosSemanaData.data : [];
+                                    } else if (turnosSemanaData.rows) {
+                                      turnosList = turnosSemanaData.rows || [];
+                                    }
+                                    
+                                    turnosList.forEach(turno => {
+                                      if (turno.odontologoId) {
+                                        odontologosConActividad.add(turno.odontologoId);
+                                      }
+                                    });
+                                  }
+                                  
+                                  // Agregar odontólogos con disponibilidades en la semana
+                                  if (disponibilidadesSemana) {
+                                    disponibilidadesSemana.forEach(disp => {
+                                      if (disp.tipo === 'LABORAL' && disp.odontologoId) {
+                                        odontologosConActividad.add(disp.odontologoId);
+                                      }
+                                    });
+                                  }
+                                  
+                                  // Filtrar odontólogos que tienen actividad en la semana
+                                  if (odontologosConActividad.size > 0) {
+                                    odontologosSemana = odontologos.filter(odonto => 
+                                      odontologosConActividad.has(odonto.userId)
+                                    );
+                                  }
+                                }
+                                
+                                return odontologosSemana;
+                              })().map((odontologo) => {
+                                // Buscar disponibilidad para este odontólogo, día y hora
+                                const disponibilidadesDelDia = disponibilidadesSemana?.filter(disp => 
+                                  disp.fecha === diaStr && 
+                                  disp.odontologoId === odontologo.userId &&
+                                  disp.tipo === 'LABORAL'
+                                ) || [];
+                                
+                                const estaDisponible = disponibilidadesDelDia.some(disp => {
+                                  const slotMin = horaStringToMinutes(hora);
+                                  const inicioMin = horaStringToMinutes(normalizarHora(disp.horaInicio));
+                                  const finMin = horaStringToMinutes(normalizarHora(disp.horaFin));
+                                  return slotMin >= inicioMin && slotMin < finMin;
+                                });
+                                
+                                // Buscar turno para este odontólogo, día y hora
+                                const turnosDelOdontologo = turnosPorDia[diaIndex]?.filter(t => 
+                                  t.odontologoId === odontologo.userId
+                                ) || [];
+                                
+                                const turnoEnHora = turnosDelOdontologo.find(t => {
+                                  const fechaTurno = new Date(t.fechaHora);
+                                  const turnoHora = getHoraStringArgentina(fechaTurno);
+                                  return turnoHora === hora;
+                                });
+                                
+                                if (turnoEnHora) {
+                                  const fechaTurno = new Date(turnoEnHora.fechaHora);
+                                  const horaInicioStr = getHoraStringArgentina(fechaTurno);
+                                  const turnoFecha = new Date(turnoEnHora.fechaHora);
+                                  const horaFinStr = getHoraStringArgentina(new Date(turnoFecha.getTime() + (turnoEnHora.duracion || 30) * 60000));
+                                  
+                                  // CU-AG01.5: Calcular indicadores de tiempo
+                                  const ahora = new Date();
+                                  const minutosHastaTurno = Math.floor((fechaTurno - ahora) / (1000 * 60));
+                                  const minutosRetraso = Math.floor((ahora - fechaTurno) / (1000 * 60));
+                                  const esProximo = minutosHastaTurno >= 0 && minutosHastaTurno <= 30;
+                                  const tieneRetraso = minutosRetraso > 0 && turnoEnHora.estado === 'PENDIENTE';
+                                  
+                                  return (
+                                    <div
+                                      key={odontologo.userId}
+                                      className={`turno-card-semanal ${esProximo ? 'turno-proximo' : ''} ${tieneRetraso ? 'turno-retraso' : ''}`}
+                                      onClick={() => {
+                                        setTurnoSeleccionado(turnoEnHora);
+                                        setModalAbierto(true);
+                                      }}
+                                      style={{
+                                        background: esProximo ? '#fef3c7' : tieneRetraso ? '#fee2e2' : coloresPorOdontologo[odontologo.userId]?.bg || '#dbeafe',
+                                        border: `2px solid ${esProximo ? '#f59e0b' : tieneRetraso ? '#ef4444' : coloresPorOdontologo[odontologo.userId]?.border || '#3b82f6'}`,
+                                        borderRadius: '4px',
+                                        padding: '0.3rem',
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        fontSize: '0.7rem',
+                                        marginBottom: '0.2rem'
+                                      }}
+                                    >
+                                      {/* Badge de estado */}
+                                      <span style={{
+                                        position: 'absolute',
+                                        top: '0.1rem',
+                                        right: '0.1rem',
+                                        fontSize: '0.6rem'
+                                      }}>
+                                        {turnoEnHora.estado === 'PENDIENTE' && '⏳'}
+                                        {turnoEnHora.estado === 'ASISTIO' && '✓'}
+                                        {turnoEnHora.estado === 'AUSENTE' && '✗'}
+                                        {turnoEnHora.estado === 'CANCELADO' && '⊘'}
+                                      </span>
+                                      
+                                      {/* Indicador de tiempo */}
+                                      {(esProximo || tieneRetraso) && (
+                                        <div style={{
+                                          position: 'absolute',
+                                          top: '0.1rem',
+                                          left: '0.1rem',
+                                          background: esProximo ? '#f59e0b' : '#ef4444',
+                                          color: 'white',
+                                          padding: '0.1rem 0.3rem',
+                                          borderRadius: '3px',
+                                          fontSize: '0.6rem',
+                                          fontWeight: 'bold'
+                                        }}>
+                                          {esProximo ? `${minutosHastaTurno}m` : `${minutosRetraso}m`}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Nombre del odontólogo */}
+                                      <div style={{ 
+                                        fontSize: '0.65rem', 
+                                        fontWeight: '600', 
+                                        color: '#1c1c1e',
+                                        marginBottom: '0.15rem',
+                                        opacity: 0.9
+                                      }}>
+                                        Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                                      </div>
+                                      
+                                      <div style={{ fontWeight: '600', marginBottom: '0.1rem', fontSize: '0.7rem' }}>
+                                        {turnoEnHora.Paciente?.nombre} {turnoEnHora.Paciente?.apellido}
+                                      </div>
+                                      <div style={{ fontSize: '0.65rem', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {turnoEnHora.motivo}
+                                      </div>
+                                      <div style={{ fontSize: '0.6rem', opacity: 0.75, marginTop: '0.1rem' }}>
+                                        {horaInicioStr} - {horaFinStr}
+                                      </div>
+                                    </div>
+                                  );
+                                } else if (estaDisponible) {
+                                  const disponibilidadDelDia = disponibilidadesDelDia.find(disp => {
+                                    const slotMin = horaStringToMinutes(hora);
+                                    const inicioMin = horaStringToMinutes(normalizarHora(disp.horaInicio));
+                                    const finMin = horaStringToMinutes(normalizarHora(disp.horaFin));
+                                    return slotMin >= inicioMin && slotMin < finMin;
+                                  });
+                                  
+                                  return (
+                                    <div
+                                      key={odontologo.userId}
+                                      style={{
+                                        background: '#d1fae5',
+                                        border: '1px dashed #10b981',
+                                        borderRadius: '4px',
+                                        padding: '0.3rem',
+                                        fontSize: '0.65rem',
+                                        color: '#065f46',
+                                        marginBottom: '0.2rem'
+                                      }}
+                                      title={disponibilidadDelDia ? `Disponible: ${disponibilidadDelDia.horaInicio} - ${disponibilidadDelDia.horaFin}` : 'Disponible'}
+                                    >
+                                      <div style={{ 
+                                        fontWeight: '600', 
+                                        marginBottom: '0.15rem',
+                                        fontSize: '0.7rem'
+                                      }}>
+                                        Dr. {odontologo.Usuario?.nombre} {odontologo.Usuario?.apellido}
+                                      </div>
+                                      <div style={{ 
+                                        fontSize: '0.65rem',
+                                        textAlign: 'center',
+                                        opacity: 0.9
+                                      }}>
+                                        ✓ Disponible
+                                      </div>
+                                      {disponibilidadDelDia && (
+                                        <div style={{ 
+                                          fontSize: '0.6rem',
+                                          opacity: 0.75,
+                                          marginTop: '0.1rem',
+                                          textAlign: 'center'
+                                        }}>
+                                          {disponibilidadDelDia.horaInicio} - {disponibilidadDelDia.horaFin}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                
+                                return null;
+                              })}
+                            </div>
+                          </td>
                         );
-                      })
-                    )}
-                  </div>
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '3rem',
+              background: 'white',
+              borderRadius: '6px',
+              boxShadow: '0 2px 6px rgba(170, 147, 147, 0.1)',
+              minHeight: '400px'
+            }}>
+              <div style={{
+                textAlign: 'center',
+                color: '#667085'
+              }}>
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '1rem',
+                  opacity: 0.5
+                }}>
+                  📅
                 </div>
-              );
-            })}
-          </div>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#1c1c1e',
+                  marginBottom: '0.5rem'
+                }}>
+                  No hay odontólogos disponibles
+                </h3>
+                <p style={{
+                  fontSize: '0.95rem',
+                  color: '#667085',
+                  margin: 0
+                }}>
+                  No hay odontólogos con disponibilidad activa para esta semana.
+                  {soloConDisponibilidad && (
+                    <span style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                      Desactiva el filtro "Disponibilidad activa" para ver todos los odontólogos.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div>
