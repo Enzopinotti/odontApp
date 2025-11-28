@@ -13,8 +13,15 @@ import useAuth from '../../../features/auth/hooks/useAuth';
 import { getHoraArgentina, getHoraStringArgentina } from '../utils/timezoneHelpers';
 import '../../../styles/agendaDiaria.scss';
 
-// Helper para formatear fecha
-const formatDate = (date) => date.toISOString().split('T')[0];
+// Helper para formatear fecha en zona horaria local (Argentina)
+const formatDate = (date) => {
+  if (!date) return '';
+  // Usar componentes locales para evitar problemas de UTC
+  const año = date.getFullYear();
+  const mes = String(date.getMonth() + 1).padStart(2, '0');
+  const dia = String(date.getDate()).padStart(2, '0');
+  return `${año}-${mes}-${dia}`;
+};
 
 const formatDateReadable = (date) => {
   const formatted = date.toLocaleDateString('es-AR', { 
@@ -1440,7 +1447,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
       {/* Contenido principal */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 
-      {/* Controles de navegación compactos */}
+      {/* Controles de navegación compactos - Se adaptan según la vista */}
       <div className="controles-fecha" style={{ 
         display: 'flex', 
         gap: '0.5rem', 
@@ -1448,21 +1455,64 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
         marginBottom: '0.75rem',
         flexWrap: 'wrap'
       }}>
-        <button className="btn-nav" onClick={irDiaAnterior}>
-          <FaChevronLeft /> Ant
-        </button>
-        
-        <div className="fecha-selector">
-          {formatDateReadable(fechaSeleccionada)}
-        </div>
-        
-        <button className="btn-hoy" onClick={irHoy}>
-          Hoy
-        </button>
-        
-        <button className="btn-nav" onClick={irDiaSiguiente}>
-          Sig <FaChevronRight />
-        </button>
+        {vista === 'semanal' ? (
+          <>
+            <button
+              onClick={() => {
+                const nuevaFecha = new Date(semanaActual.inicioSemana);
+                nuevaFecha.setDate(nuevaFecha.getDate() - 7);
+                setFechaSeleccionada(nuevaFecha);
+              }}
+              className="btn-nav"
+            >
+              <FaChevronLeft /> Ant
+            </button>
+            
+            <div className="fecha-selector">
+              {semanaActual?.dias[0]?.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} - 
+              {semanaActual?.dias[6]?.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+            
+            <button
+              onClick={() => {
+                const hoy = new Date();
+                setFechaSeleccionada(hoy);
+              }}
+              className="btn-hoy"
+            >
+              Hoy
+            </button>
+            
+            <button
+              onClick={() => {
+                const nuevaFecha = new Date(semanaActual.inicioSemana);
+                nuevaFecha.setDate(nuevaFecha.getDate() + 7);
+                setFechaSeleccionada(nuevaFecha);
+              }}
+              className="btn-nav"
+            >
+              Sig <FaChevronRight />
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="btn-nav" onClick={irDiaAnterior}>
+              <FaChevronLeft /> Ant
+            </button>
+            
+            <div className="fecha-selector">
+              {formatDateReadable(fechaSeleccionada)}
+            </div>
+            
+            <button className="btn-hoy" onClick={irHoy}>
+              Hoy
+            </button>
+            
+            <button className="btn-nav" onClick={irDiaSiguiente}>
+              Sig <FaChevronRight />
+            </button>
+          </>
+        )}
 
         {/* CU-AG01.5: Controles de vista y filtros */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '1rem' }}>
@@ -1645,53 +1695,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
       {/* CU-AG01.5: Vista semanal o diaria */}
       {vista === 'semanal' ? (
-        <div className="vista-semanal-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          {/* Navegación de semana - Mismo estilo que controles-fecha */}
-          <div className="controles-fecha" style={{ 
-            display: 'flex', 
-            gap: '0.5rem', 
-            alignItems: 'center',
-            marginBottom: '0.75rem',
-            flexWrap: 'wrap'
-          }}>
-            <button
-              onClick={() => {
-                const nuevaFecha = new Date(semanaActual.inicioSemana);
-                nuevaFecha.setDate(nuevaFecha.getDate() - 7);
-                setFechaSeleccionada(nuevaFecha);
-              }}
-              className="btn-nav"
-            >
-              <FaChevronLeft /> Ant
-            </button>
-            
-            <div className="fecha-selector">
-              {semanaActual.dias[0].toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} - 
-              {semanaActual.dias[6].toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-            
-            <button
-              onClick={() => {
-                const hoy = new Date();
-                setFechaSeleccionada(hoy);
-              }}
-              className="btn-hoy"
-            >
-              Hoy
-            </button>
-            
-            <button
-              onClick={() => {
-                const nuevaFecha = new Date(semanaActual.inicioSemana);
-                nuevaFecha.setDate(nuevaFecha.getDate() + 7);
-                setFechaSeleccionada(nuevaFecha);
-              }}
-              className="btn-nav"
-            >
-              Sig <FaChevronRight />
-            </button>
-          </div>
-
+        <div>
           {/* Tabla semanal tipo calendario */}
           {/* En vista semanal, mostrar todos los odontólogos que tienen turnos o disponibilidades en la semana */}
           {(() => {
@@ -1742,7 +1746,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
               overflow: 'auto',
               maxHeight: 'calc(100vh - 280px)'
             }}>
-              <table className="agenda-tabla" style={{ fontSize: '0.85rem', width: '100%' }}>
+              <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
                   <tr>
                     <th className="col-hora" style={{ 
