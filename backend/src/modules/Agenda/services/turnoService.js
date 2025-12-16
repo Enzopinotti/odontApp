@@ -9,6 +9,12 @@ import ApiError from '../../../utils/ApiError.js';
 import { EstadoTurno } from '../models/enums.js';
 import { registrarLog } from '../../Usuarios/services/auditService.js';
 
+// turnoService.js
+import TurnoSujeto from "../notifiers/turnoSujeto.js";
+import PacienteObserver from "../notifiers/pacienteObserver.js";
+import OdontologoObserver from "../notifiers/odontologoObserver.js";
+
+
 export const buscarConFiltros = async (filtros, page, perPage) => {
   const { rows, count } = await repo.findFiltered(filtros, page, perPage);
   return { data: rows, total: count };
@@ -126,7 +132,7 @@ export const crearTurno = async (data, recepcionistaId, ip = null) => {
       'SOLAPAMIENTO_TURNO'
     );
   }
-
+  
   // RN-AG02: Verificar que el turno esté dentro de un bloque laboral
   const fechaStr = fechaHora.toISOString().split('T')[0];
   
@@ -241,8 +247,25 @@ export const actualizarTurno = async (id, data, usuarioId) => {
       throw new ApiError('El nuevo horario se solapa con otro turno existente', 409, null, 'SOLAPAMIENTO_TURNO');
     }
   }
+  
+  // Actualizar el turno
+  const turnoActualizado = await repo.update(turno, data);
 
-  return await repo.update(turno, data);
+  // Armar mensaje de notificación según los cambios
+  let mensaje = '';
+  if (data.fechaHora || data.duracion) {
+    mensaje += `El turno se ha modificado a ${fechaHora.toLocaleString()} con duración de ${duracion} minutos. `;
+  }
+  if (data.odontologoId && data.odontologoId !== turno.odontologoId) {
+    mensaje += `Se asignó un nuevo odontólogo.`;
+  }
+
+  // Enviar notificación solo si hubo cambios importantes
+  if (mensaje) {
+    await NotificacionService.enviarNotificacionesTurno(turnoActualizado, mensaje);
+  }
+
+  return turnoActualizado;
 };
 
 export const eliminarTurno = async (id, usuarioId) => {
