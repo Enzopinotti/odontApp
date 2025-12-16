@@ -1,7 +1,6 @@
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+//import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Usuario } from '../modules/Usuarios/models/index.js';
-
 
 passport.use(
   new GoogleStrategy(
