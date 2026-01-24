@@ -281,7 +281,7 @@ export default function PacienteDetalle() {
           />
         </section>
 
-        {/* ESPACIO PARA MÁS INFO (Mencionado por usuario) */}
+        {/* ANTECEDENTES Y ALERTAS */}
         <section className="section-card">
           <div className="card-title">
             <h3><FaShieldAlt className="title-icon" /> Antecedentes y Alertas</h3>
@@ -309,8 +309,6 @@ export default function PacienteDetalle() {
               </div>
             )}
           </div>
-
-
         </section>
 
       </div>
@@ -326,6 +324,5 @@ export default function PacienteDetalle() {
         />
       )}
     </div>
-
   );
 }

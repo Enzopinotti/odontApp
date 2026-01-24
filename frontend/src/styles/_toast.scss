@@ -10,9 +10,11 @@
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
   animation: fade-in-out 3.5s forwards;
+  z-index: 10000; /* Mayor que el modal (9999) para aparecer por encima */
   &--error   { background:#dc3545; }
   &--success { background:#198754; }
   &--info    { background:#0d6efd; }
+  &--warning { background:#ffc107; color: #000; }
 }
 
 @keyframes fade-in-out {

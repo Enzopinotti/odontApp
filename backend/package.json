@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
+    "test:agenda": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/agenda.test.js",
+    "test:casos-uso": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/casos-uso.test.js",
+    "test:simple": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/simple.test.js"
   },
   "keywords": [],
   "author": "",
@@ -38,7 +43,10 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.10",
-    "sequelize-cli": "^6.6.3"
+    "sequelize-cli": "^6.6.3",
+    "supertest": "^7.1.4"
   }
 }
