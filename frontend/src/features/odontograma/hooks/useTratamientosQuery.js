@@ -7,8 +7,9 @@ export default function useTratamientosQuery() {
     queryKey: ['tratamientos'],
     queryFn: async () => {
       const res = await getTratamientos();
-      return res.data; // array de tratamientos (con config)
+      return res; // Retornamos el objeto completo { success, data, message }
     },
+
     staleTime: 1000 * 60 * 10,
   });
 }

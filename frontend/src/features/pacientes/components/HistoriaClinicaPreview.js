@@ -28,21 +28,17 @@ export default function HistoriaClinicaPreview({
         <h3>Historia clínica (reciente)</h3>
         <div className="actions-right">
           {canCrearHistoria && onCrear && (
-            <button
-              className="btn mini primary"
-              onClick={onCrear}
-              title="Nueva historia clínica"
-            >
-              <FaPlus style={{ marginRight: '0.3rem' }} /> Crear
+            <button className="btn-create-pro" onClick={onCrear} title="Nueva historia clínica">
+              <FaPlus /> Crear Entrada
             </button>
           )}
-          {canVerHistoria && !historiaDenied && (
-            <button className="link-btn" onClick={onVerTodo}>
-              Ver todo
-            </button>
+
+          {canVerHistoria && !historiaDenied && historia?.length > 0 && (
+            <button className="link-btn" onClick={onVerTodo}>Ver todo</button>
           )}
         </div>
       </div>
+
 
       {hcLoading && <p>Cargando...</p>}
 

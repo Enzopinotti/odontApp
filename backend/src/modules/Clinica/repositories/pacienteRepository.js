@@ -4,7 +4,7 @@ import {
   Contacto,
   Direccion,
   FirmaDigital,
-  AntecedenteMedico,
+  EstadoPaciente,
   HistoriaClinica,
 } from '../models/index.js';
 import { Op, Sequelize } from 'sequelize';
@@ -18,7 +18,7 @@ export const findById = (id) =>
         include: [Direccion],
       },
       FirmaDigital,
-      AntecedenteMedico,
+      { model: EstadoPaciente, as: 'Estado' },
     ],
   });
 
@@ -34,6 +34,7 @@ export const findPaginated = (page = 1, perPage = 20) => {
         model: Contacto,
         include: [Direccion],
       },
+      { model: EstadoPaciente, as: 'Estado' },
     ],
   });
 };
@@ -58,6 +59,7 @@ export const search = (query, page = 1, perPage = 20) => {
         model: Contacto,
         include: [Direccion],
       },
+      { model: EstadoPaciente, as: 'Estado' },
     ],
   });
 };
@@ -71,6 +73,7 @@ export const findByDNI = (dni) =>
         model: Contacto,
         include: [Direccion],
       },
+      { model: EstadoPaciente, as: 'Estado' },
     ],
   });
 
@@ -83,11 +86,6 @@ export const createWithContacto = async (data) => {
 
 /* ---------- Actualizar datos del paciente con creación automática de Contacto/Direccion ---------- */
 export const updateWithContacto = async (pacienteOrId, data) => {
-
-    // 🔍 DEBUG TEMPORAL - REMOVER DESPUÉS
-  console.log('🔍 updateWithContacto called with:');
-  console.log('  - pacienteOrId:', pacienteOrId);
-  console.log('  - data:', JSON.stringify(data, null, 2));
   let paciente;
 
   // Traer siempre el paciente con asociaciones
@@ -100,7 +98,11 @@ export const updateWithContacto = async (pacienteOrId, data) => {
   if (!paciente) throw new Error('Paciente no encontrado');
 
   // 🔧 SEPARAR datos del paciente de las asociaciones
-  const { Contacto: contactoData, ...pacienteData } = data;
+  const { Contacto: contactoData, Estado, ...pacienteData } = data;
+
+  // Si se pasa un estadoId explícito o un objeto Estado, actualizar estadoId
+  if (data.estadoId) pacienteData.estadoId = data.estadoId;
+  else if (Estado && Estado.id) pacienteData.estadoId = Estado.id;
 
   // ✅ Actualizar SOLO los datos que pertenecen al modelo Paciente
   if (Object.keys(pacienteData).length > 0) {
@@ -170,16 +172,23 @@ export const findFiltered = async (queryParams = {}, page = 1, perPage = 20) => 
         },
       ],
     },
+    { model: EstadoPaciente, as: 'Estado', required: false },
   ];
 
   const {
     q,
+    dni,
+    nombre,
+    apellido,
+    estadoId,
     telefono,
     obraSocial,
     direccion,
     turnoActual,
     desdeUltimaVisita,
     hastaUltimaVisita,
+    desdeRegistro,
+    hastaRegistro,
     orden = 'apellido',
   } = queryParams;
 
@@ -196,6 +205,12 @@ export const findFiltered = async (queryParams = {}, page = 1, perPage = 20) => 
     ];
   }
 
+  // Filtros explícitos
+  if (dni) where.dni = { [Op.like]: `%${dni}%` };
+  if (nombre) where.nombre = { [Op.like]: `%${nombre}%` };
+  if (apellido) where.apellido = { [Op.like]: `%${apellido}%` };
+  if (estadoId) where.estadoId = estadoId;
+
   if (obraSocial) where.obraSocial = { [Op.like]: `%${obraSocial}%` };
   if (telefono) {
     contactoWhere[Op.or] = [
@@ -210,6 +225,13 @@ export const findFiltered = async (queryParams = {}, page = 1, perPage = 20) => 
     ];
   }
 
+  if (desdeRegistro || hastaRegistro) {
+    where.createdAt = {
+      ...(desdeRegistro && { [Op.gte]: desdeRegistro }),
+      ...(hastaRegistro && { [Op.lte]: hastaRegistro }),
+    };
+  }
+
   if (turnoActual === 'true') {
     const hoy = new Date().toISOString().split('T')[0];
     include.push({
@@ -221,15 +243,10 @@ export const findFiltered = async (queryParams = {}, page = 1, perPage = 20) => 
   }
 
   if (desdeUltimaVisita || hastaUltimaVisita) {
-    include.push({
-      model: HistoriaClinica,
-      attributes: [],
-      required: true,
-      where: {
-        ...(desdeUltimaVisita && { fecha: { [Op.gte]: desdeUltimaVisita } }),
-        ...(hastaUltimaVisita && { fecha: { [Op.lte]: hastaUltimaVisita } }),
-      },
-    });
+    where.ultimaVisita = {
+      ...(desdeUltimaVisita && { [Op.gte]: desdeUltimaVisita }),
+      ...(hastaUltimaVisita && { [Op.lte]: hastaUltimaVisita }),
+    };
   }
 
   return Paciente.findAndCountAll({

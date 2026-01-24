@@ -1,4 +1,5 @@
-import { useContext, useMemo, useState, useCallback } from 'react';
+// frontend/src/features/odontograma/pages/PacienteOdontograma.js
+import { useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import BackBar from '../../../components/BackBar';
 import { AuthCtx } from '../../../context/AuthProvider';
@@ -7,166 +8,241 @@ import useToast from '../../../hooks/useToast';
 
 import useOdontogramaData from '../hooks/useOdontogramaData';
 import useCarasMutations from '../hooks/useCarasMutations';
+import useApplyTratamiento from '../hooks/useApplyTratamiento';
+import { useOdontologos } from '../../admin/hooks/useOdontologos';
 
 import OdontogramaGrid from '../components/OdontogramaGrid';
 import FaceMenu from '../components/FaceMenu';
 import OdontogramaLegend from '../components/OdontogramaLegend';
 import TreatmentPicker from '../components/TreatmentPicker';
+import OdontogramaHistory from '../components/OdontogramaHistory';
 
-import { COLORS } from '../constants';
+import { COLORS, FDI_ORDER } from '../constants';
 import { intToHex } from '../utils/color';
-
-function clamp(n, min, max) { return Math.max(min, Math.min(n, max)); }
 
 export default function PacienteOdontograma() {
   const { id } = useParams();
   const pid = Number(id);
   const { showToast } = useToast();
-  const { hasPermiso } = useContext(AuthCtx);
+  const { hasPermiso, user } = useContext(AuthCtx);
+  const { data: dentistsData } = useOdontologos();
+  const dentists = dentistsData?.data || [];
 
-  const canVerOdontograma    = hasPermiso?.('odontograma', 'ver') ?? true;
-  const canEditarOdontograma = hasPermiso?.('odontograma', 'editar') ?? true;
+  // Restricciones de rol
+  const isAdmin = user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+  const canVerOdontograma = hasPermiso?.('odontograma', 'ver') ?? true;
+  const canEditarOdontograma = (hasPermiso?.('odontograma', 'editar') ?? true) && !isAdmin;
 
   const { data: paciente } = usePaciente(pid, true);
-  const { data: odoBox, isLoading } = useOdontogramaData(pid, canVerOdontograma);
+  const { data: odoBox, isLoading, refetch } = useOdontogramaData(pid, canVerOdontograma);
   const odoDenied = !!odoBox?.denied;
   const odo = odoBox?.data;
 
   const { addCara, updateCara, delCara } = useCarasMutations(pid);
+  const { apply } = useApplyTratamiento(pid);
 
   const title = useMemo(() => {
     if (paciente) return `Odontograma · ${paciente.apellido || ''} ${paciente.nombre || ''}`.trim();
     return 'Odontograma';
   }, [paciente]);
 
-  // selección + popover
-  const [menu, setMenu] = useState({ open: false, x: 0, y: 0, diente: null, faceKey: null, current: null });
-  const [selectedTooth, setSelectedTooth] = useState(null);
-
-  // catálogo opcional
+  const [menu, setMenu] = useState({ open: false, dienteId: null, faceKey: null, fdi: null });
+  const [selectedFaces, setSelectedFaces] = useState([]);
   const [showPicker, setShowPicker] = useState(false);
+  const [pendingTreatment, setPendingTreatment] = useState(null);
+
+  // Profesional Responsable (ID)
+  const [clinicalUserId, setClinicalUserId] = useState('');
+
+  useEffect(() => {
+    if (user && !clinicalUserId) {
+      setClinicalUserId(user.id);
+    }
+  }, [user, clinicalUserId]);
 
   const openMenu = useCallback((e, diente, faceKey, currentCara) => {
-    if (!canEditarOdontograma) return;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const PAD = 8, MENU_W = 300, MENU_H = 220;
-    const x = clamp(e.clientX + PAD, 8, vw - MENU_W - 8);
-    const y = clamp(e.clientY + PAD, 8, vh - MENU_H - 8);
-    setMenu({ open: true, x, y, diente, faceKey, current: currentCara || null });
-    setSelectedTooth(diente);
-  }, [canEditarOdontograma]);
+    if (!canEditarOdontograma) {
+      if (isAdmin) showToast('Los administradores no pueden realizar cambios clínicos.', 'warning');
+      return;
+    }
+    setMenu({ open: true, dienteId: diente.id, faceKey, fdi: diente._fdi });
+    setSelectedFaces(faceKey && faceKey !== 'TODAS' ? [faceKey] : []);
+    setPendingTreatment(null);
+  }, [canEditarOdontograma, isAdmin, showToast]);
 
-  const closeMenu = useCallback(() => setMenu((m) => ({ ...m, open: false })), []);
-  const onOpenCatalogFromMenu = () => { setShowPicker(true); closeMenu(); };
+  // BUSCAR EL DIENTE ACTUALIZADO (Sincronización con odo.Dientes)
+  const currentToothData = useMemo(() => {
+    if (!menu.dienteId || !odo?.Dientes) return null;
+    const found = odo.Dientes.find(d => d.id === menu.dienteId);
+    if (!found) return null;
+    return { ...found, _fdi: menu.fdi }; // Preservar número FDI
+  }, [menu.dienteId, menu.fdi, odo]);
 
-  const onMenuAction = async ({ estado, color, tipoTrazo, remove }) => {
+  const closeMenu = useCallback(() => {
+    setMenu((m) => ({ ...m, open: false }));
+    setPendingTreatment(null);
+  }, []);
+
+  const onOpenCatalogFromMenu = (faces) => {
+    setSelectedFaces(faces || []);
+    setShowPicker(true);
+    setMenu(m => ({ ...m, open: false }));
+  };
+
+  const onHandlePickedTreatment = (t) => {
+    setPendingTreatment(t);
+    setShowPicker(false);
+    setMenu(m => ({ ...m, open: true }));
+  };
+
+  const onMenuAction = async ({ estado, color, tipoTrazo, remove, faces, targetId, isCara, fromCatalog }) => {
+    const finalUserId = clinicalUserId;
+    if (!finalUserId && !remove) {
+      showToast('Debes seleccionar un profesional responsable.', 'warning');
+      return;
+    }
+
     try {
-      const target = menu;
-      if (!target.diente || !target.faceKey) return;
+      if (!menu.dienteId) return;
 
-      const current = target.current;
-      const finalEstado = estado || current?.estadoCara || 'Planificado';
-      const finalColor  = color  || (current ? intToHex(current.colorEstado) : COLORS.planificado);
-      const finalTrazo  = tipoTrazo || current?.tipoTrazo || 'Continuo';
-
-      if (remove && current) {
-        await delCara.mutateAsync({ caraId: current.id });
-        showToast('Cara eliminada', 'success');
-      } else if (current) {
-        await updateCara.mutateAsync({
-          caraId: current.id,
-          simbolo: target.faceKey,
-          estadoCara: finalEstado,
-          colorHex: finalColor,
-          tipoTrazo: finalTrazo,
+      // CASO: REGISTRO DESDE CATALOGO
+      if (fromCatalog && pendingTreatment) {
+        await apply.mutateAsync({
+          dienteId: menu.dienteId,
+          payload: {
+            tratamientoId: pendingTreatment.id,
+            estado: pendingTreatment._estado,
+            color: pendingTreatment._color,
+            usuarioId: pendingTreatment._profesionalId || finalUserId,
+            caras: faces && faces.length > 0 ? faces : null
+          }
         });
-        showToast('Cara actualizada', 'success');
-      } else {
-        await addCara.mutateAsync({
-          dienteId: target.diente.id,
-          simbolo: target.faceKey,
-          estadoCara: finalEstado,
-          colorHex: finalColor,
-          tipoTrazo: finalTrazo,
-        });
-        showToast('Cara marcada', 'success');
+        showToast(`Tratamiento registrado correctamente`, 'success');
+        closeMenu();
+        refetch();
+        return;
       }
-    } catch {
-      showToast('No se pudo guardar la cara', 'error');
-    } finally {
-      closeMenu();
+
+      // CASO: ELIMINACIÓN
+      if (remove && targetId) {
+        const idNumeric = String(targetId).split('-')[1];
+        if (isCara) await delCara.mutateAsync({ caraId: idNumeric });
+        showToast('Intervención eliminada', 'success');
+        refetch();
+        return;
+      }
+
+      // CASO: MARCACIÓN RÁPIDA
+      const targetFaces = faces && faces.length > 0 ? faces : [menu.faceKey || 'TODAS'];
+
+      for (const face of targetFaces) {
+        const currentRecord = (currentToothData?.CaraTratadas || []).find(c => c.simbolo === face);
+        if (remove && currentRecord) {
+          await delCara.mutateAsync({ caraId: currentRecord.id });
+        } else if (currentRecord) {
+          await updateCara.mutateAsync({
+            caraId: currentRecord.id,
+            simbolo: face,
+            estadoCara: estado || currentRecord.estadoCara,
+            colorHex: color || intToHex(currentRecord.colorEstado),
+            tipoTrazo: tipoTrazo || currentRecord.tipoTrazo,
+            usuarioId: finalUserId
+          });
+        } else if (!remove) {
+          await addCara.mutateAsync({
+            dienteId: menu.dienteId,
+            simbolo: face,
+            estadoCara: estado || 'Planificado',
+            colorHex: color || '#ef4444',
+            tipoTrazo: tipoTrazo || 'Continuo',
+            usuarioId: finalUserId
+          });
+        }
+      }
+
+      showToast(remove ? 'Marca eliminada' : 'Cambios aplicados correctamente', 'success');
+      refetch();
+      if (!faces || faces.length <= 1) closeMenu();
+    } catch (err) {
+      console.error(err);
+      showToast('Error al procesar la operación', 'error');
     }
   };
 
-  const fechaBadge = (() => {
-    const f = odo?.fechaCreacion || odo?.createdAt;
-    return f ? new Date(f).toLocaleDateString() : '—';
-  })();
+  const fechaBadge = odo?.createdAt ? new Date(odo.createdAt).toLocaleDateString() : '—';
+  const [activeTab, setActiveTab] = useState('diagram');
 
   return (
     <div className="odo-page">
       <BackBar title={title} to={-1} />
 
-      {isLoading && (
-        <section className="card">
-          <div className="odo-loader">Cargando odontograma…</div>
-        </section>
-      )}
+      {isLoading ? (
+        <section className="card"><div className="odo-loader">Sincronizando expediente dental...</div></section>
+      ) : !canVerOdontograma || odoDenied ? (
+        <section className="card empty-odo"><h3>Acceso Restringido</h3><p className="muted">No tiene permisos para ver esta sección clínica.</p></section>
+      ) : odo === null ? (
+        <section className="card empty-odo"><h3>Ficha Inexistente</h3><p className="muted">El paciente no posee un odontograma base.</p></section>
+      ) : (
+        <section className="odo-main-container">
+          <header className="odo-premium-header">
+            <div className="title-area">
+              <h1>Odontograma Clínico</h1>
+              <div className="patient-tag">{paciente?.apellido}, {paciente?.nombre} • DNI: {paciente?.dni}</div>
+            </div>
+            <div className="meta-area">
+              <div className="odo-meta-badge">Última actualización: <strong>{fechaBadge}</strong></div>
+              {isAdmin && <div className="odo-warning-badge">Modo Lectura (Administración)</div>}
+            </div>
+          </header>
 
-      {!isLoading && !canVerOdontograma && (
-        <section className="card empty-odo">
-          <h3>Sin acceso</h3>
-          <p className="muted">Tu rol no puede ver el odontograma de este paciente.</p>
-        </section>
-      )}
+          <nav className="odo-tabs">
+            <button className={activeTab === 'diagram' ? 'active' : ''} onClick={() => setActiveTab('diagram')}>
+              Diagrama Dental
+            </button>
+            <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>
+              Historial de Intervenciones
+            </button>
+          </nav>
 
-      {!isLoading && canVerOdontograma && odoDenied && (
-        <section className="card empty-odo">
-          <h3>Sección oculta</h3>
-          <p className="muted">No tenés permisos para ver este odontograma.</p>
-        </section>
-      )}
-
-      {!isLoading && canVerOdontograma && !odoDenied && odo === null && (
-        <section className="card empty-odo">
-          <h3>Sin odontograma</h3>
-          <p className="muted">Este paciente aún no tiene odontograma.</p>
-        </section>
-      )}
-
-      {!isLoading && canVerOdontograma && !odoDenied && odo && (
-        <section className={`card odo-layout ${showPicker ? 'with-picker' : ''}`}>
-          <div className="odo-left">
-            <header className="odo-head">
-              <div className="badge">Creado: {fechaBadge}</div>
-              {odo.estadoGeneral && <div className="badge alt">{odo.estadoGeneral}</div>}
-            </header>
-
-            <OdontogramaGrid odo={odo} onOpenMenu={openMenu} />
-            <OdontogramaLegend />
-
-            <FaceMenu
-              open={menu.open}
-              x={menu.x}
-              y={menu.y}
-              diente={menu.diente}
-              faceKey={menu.faceKey}
-              current={menu.current}
-              onAction={onMenuAction}
-              onOpenCatalog={onOpenCatalogFromMenu}
-              onClose={closeMenu}
-            />
+          <div className="odo-tab-content">
+            {activeTab === 'diagram' ? (
+              <div className="diag-view animate-fade">
+                <div className="odo-layout-pro">
+                  <div className="odo-grid-wrapper">
+                    <OdontogramaGrid odo={odo} onOpenMenu={openMenu} />
+                  </div>
+                  <OdontogramaLegend />
+                </div>
+              </div>
+            ) : (
+              <div className="history-view animate-fade">
+                <OdontogramaHistory odo={odo} />
+              </div>
+            )}
           </div>
 
+          <FaceMenu
+            open={menu.open}
+            diente={currentToothData}
+            initialFaces={selectedFaces}
+            clinicalUserId={clinicalUserId}
+            dentists={dentists}
+            onUserChange={setClinicalUserId}
+            onAction={onMenuAction}
+            onOpenCatalog={onOpenCatalogFromMenu}
+            onClose={closeMenu}
+            pendingTreatment={pendingTreatment}
+            onClearPending={() => setPendingTreatment(null)}
+          />
+
           {showPicker && (
-            <div className="odo-right">
-              <TreatmentPicker
-                pacienteId={pid}
-                dienteSeleccionado={selectedTooth}
-                onApplied={() => { setShowPicker(false); showToast('Tratamiento aplicado', 'success'); }}
-                onClose={() => setShowPicker(false)}
-              />
-            </div>
+            <TreatmentPicker
+              pacienteId={pid}
+              dienteSeleccionado={currentToothData}
+              selectedFaces={selectedFaces}
+              onApplied={onHandlePickedTreatment}
+              onClose={() => { setShowPicker(false); setMenu(m => ({ ...m, open: true })); }}
+            />
           )}
         </section>
       )}

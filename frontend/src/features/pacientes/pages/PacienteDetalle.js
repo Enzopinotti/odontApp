@@ -1,23 +1,29 @@
-// frontend/src/features/pacientes/pages/PacienteDetalle.js
-import { useContext, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+
 import BackBar from '../../../components/BackBar';
 import { AuthCtx } from '../../../context/AuthProvider';
 import usePaciente from '../hooks/usePaciente';
 import usePacienteExtra from '../hooks/usePacienteExtra';
-import usePrefetchPaciente from '../hooks/usePrefetchPaciente';
 import useOdontoMut from '../../odontograma/hooks/useOdontogramaMutations';
 import useToast from '../../../hooks/useToast';
 import useModal from '../../../hooks/useModal';
 import useHistoriaClinica from '../hooks/useHistoriaClinica';
+import { useEstadosPacientes } from '../hooks/useEstadosPacientes';
+import usePacienteMutations from '../hooks/usePacienteMutations';
 import HistoriaClinicaForm from '../components/HistoriaClinicaForm';
-import HistoriaModal from '../components/HistoriaModal';
 import HistoriaClinicaPreview from '../components/HistoriaClinicaPreview';
-import '../../../styles/_historiaClinica.scss';
+import ModernSelect from '../../../components/ModernSelect';
+import AntecedentesModal from '../components/AntecedentesModal';
+import '../../../styles/_pacienteDetalle.scss';
+
+
 import { handleApiError } from '../../../utils/handleApiError';
 import {
-  FaEdit, FaHistory, FaImages,
-  FaPhone, FaEnvelope, FaMapMarkerAlt, FaCopy, FaExternalLinkAlt
+  FaEdit, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt,
+  FaCopy, FaExternalLinkAlt, FaCircle, FaNotesMedical, FaStethoscope,
+  FaShieldAlt, FaPlus
 } from 'react-icons/fa';
 
 function copy(text, showToast) {
@@ -26,59 +32,51 @@ function copy(text, showToast) {
   showToast('Copiado al portapapeles', 'success');
 }
 
-const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
-const buildWhatsApp = (tel) => {
-  const t = onlyDigits(tel);
-  if (!t) return null;
-  return `https://wa.me/${t}`;
-};
-const buildMaps = (dir) => {
-  if (!dir) return null;
-  const str = [dir.calle, dir.numero, dir.ciudad, dir.provincia, dir.pais].filter(Boolean).join(' ');
-  if (!str.trim()) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(str)}`;
-};
-
 export default function PacienteDetalle() {
   const { id } = useParams();
   const pacienteId = Number(id);
   const navigate = useNavigate();
-  const location = useLocation();
-  const preview = location.state?.pacientePreview;
-
-  const { hasPermiso } = useContext(AuthCtx);
+  const { hasPermiso, user } = useContext(AuthCtx);
   const { showToast } = useToast();
-  const { showModal, setModal } = useModal();
-  const prefetchPaciente = usePrefetchPaciente();
+  const { showModal } = useModal();
+  const qc = useQueryClient();
+
+  const [antModalOpen, setAntModalOpen] = useState(false);
+
   const { crear: crearOdonto } = useOdontoMut();
+  const { updatePaciente } = usePacienteMutations();
+  const { data: estadosData } = useEstadosPacientes();
+  const estados = useMemo(() => estadosData?.data || [], [estadosData]);
 
-  // --- Permisos ---
-  const canVerPaciente       = hasPermiso('pacientes', 'listar');
-  const canEditarPaciente    = hasPermiso('pacientes', 'editar');
-  const canVerOdontograma    = hasPermiso('odontograma', 'ver');
-  const canEditarOdontograma = hasPermiso('odontograma', 'editar');
-  const canVerHistoria       = hasPermiso('historia_clinica', 'ver');
-  const canCrearHistoria     = hasPermiso('historia_clinica', 'crear');
-  const canVerImagenes       = hasPermiso('imagenes', 'ver');
-  const canVerTratamientos   = hasPermiso('tratamientos', 'listar');
+  const optionsEstados = useMemo(() => estados.map(est => ({
+    id: est.id,
+    label: est.nombre,
+    icon: <FaCircle style={{ color: est.color }} />
+  })), [estados]);
 
-  // --- Paciente ---
+  // Permisos reforzados con detección de ADMIN
+  const isAdmin = useMemo(() => {
+    return user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+  }, [user]);
+
+  const canVerPaciente = hasPermiso('pacientes', 'listar') || isAdmin;
+  const canEditarPaciente = hasPermiso('pacientes', 'editar') || isAdmin;
+  const canVerOdontograma = hasPermiso('odontograma', 'ver') || isAdmin;
+  const canEditarOdontograma = (hasPermiso('odontograma', 'editar') || isAdmin) && !isAdmin;
+  const canVerHistoria = hasPermiso('historia_clinica', 'ver') || isAdmin;
+  const canCrearHistoria = hasPermiso('historia_clinica', 'crear') || isAdmin;
+  const canVerImagenes = hasPermiso('imagenes', 'ver') || isAdmin;
+  const canVerTratamientos = hasPermiso('tratamientos', 'listar') || isAdmin;
+
   const { data: paciente, isLoading, isError, error } = usePaciente(pacienteId, canVerPaciente);
-
-  // --- Extras (odontograma, historia, imágenes, tratamientos) ---
   const {
-    odontograma, odLoading, odoDenied,
+    odontograma,
     historia, hcLoading, historiaDenied,
-    imagenes, imgLoading, imagenesDenied,
-    tratamientos, trLoading, tratamientosDenied,
+    antecedentes,
   } = usePacienteExtra(pacienteId, {
-    canVerOdontograma,
-    canVerHistoria,
-    canVerImagenes,
-    canVerTratamientos,
+    canVerOdontograma, canVerHistoria, canVerImagenes, canVerTratamientos,
   });
 
-  // --- Mutación para crear historia clínica ---
   const { crear: crearHistoria } = useHistoriaClinica(pacienteId, false);
 
   useEffect(() => {
@@ -88,49 +86,33 @@ export default function PacienteDetalle() {
     }
   }, [canVerPaciente, isError, error, showToast, showModal, navigate]);
 
-  const title = useMemo(() => {
-    if (paciente) return `${paciente.apellido || ''} ${paciente.nombre || ''}`.trim() || 'Detalle del paciente';
-    if (preview)  return `${preview.apellido || ''} ${preview.nombre || ''}`.trim() || 'Detalle del paciente';
-    return 'Detalle del paciente';
-  }, [paciente, preview]);
+  const handleCambiarEstado = async (newEstadoId) => {
+    try {
+      await updatePaciente.mutateAsync({ id: pacienteId, data: { estadoId: newEstadoId } });
+      showToast('Estado actualizado correctamente', 'success');
+    } catch (err) {
+      handleApiError(err, showToast);
+    }
+  };
 
-  const tel   = paciente?.Contacto?.telefonoMovil || paciente?.Contacto?.telefonoFijo || null;
-  const email = paciente?.Contacto?.email || null;
-  const dir   = paciente?.Contacto?.Direccion || null;
-  const pref  = paciente?.Contacto?.preferenciaContacto || null;
-
-  const estadoGeneral = odontograma?.estadoGeneral || '—';
-  const fechaOdo = (() => {
-    const f = odontograma?.fechaCreacion || odontograma?.createdAt;
-    return f ? new Date(f).toLocaleDateString() : '—';
-  })();
-  const totalDientes = odontograma?.totalDientes ?? 0;
-  const ultimoTurno = paciente?.ultimaVisita ? new Date(paciente.ultimaVisita).toLocaleDateString() : '—';
-
-  const goEditar      = () =>
-    navigate(`/pacientes/${pacienteId}/editar`, {
-      state: { pacientePreview: { id: pacienteId, nombre: paciente?.nombre, apellido: paciente?.apellido }, backTo: location.pathname },
-    });
+  const goEditar = () => navigate(`/pacientes/${pacienteId}/editar`);
   const goOdontograma = () => navigate(`/pacientes/${pacienteId}/odontograma`);
-  const goHistoria    = () => navigate(`/pacientes/${pacienteId}/historia`);
-  const goImagenes    = () => navigate(`/pacientes/${pacienteId}/imagenes`);
+  const goHistoria = () => navigate(`/pacientes/${pacienteId}/historia`);
 
-  // --- MODAL HISTORIA CLINICA ---
   const handleSubmitHistoria = (values) => {
     crearHistoria.mutate(values, {
       onSuccess: () => {
-        showToast('Historia clínica creada con éxito', 'success');
+        showToast('Historia clínica registrada', 'success');
         showModal(null);
       },
-      onError: (err) => handleApiError(err, showToast, null, showModal),
+      onError: (err) => handleApiError(err, showToast),
     });
   };
 
   const handleCrearHistoria = () => {
     showModal({
       type: 'form',
-      title: 'Nueva historia clínica',
-      className: 'historia-modal-card', // Clase específica
+      title: 'Nueva Entrada de Historia',
       component: (
         <HistoriaClinicaForm
           pacienteId={pacienteId}
@@ -142,280 +124,208 @@ export default function PacienteDetalle() {
     });
   };
 
-  if (!canVerPaciente) {
-    return (
-      <div className="paciente-detalle-page">
-        <BackBar title={title} to="/pacientes" />
-        <section className="card">
-          <h3>Sin acceso</h3>
-          <p className="muted">Tu rol no tiene permiso para ver el detalle de este paciente.</p>
-        </section>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="paciente-detalle-page"><p>Cargando perfil...</p></div>;
 
   return (
     <div className="paciente-detalle-page">
-      <BackBar title={title} to="/pacientes"
+      <BackBar title="Perfil del Paciente" to="/pacientes"
         right={
           <div className="actions-right">
             {canEditarPaciente && (
-              <button className="btn ghost"
-                      onMouseEnter={() => prefetchPaciente(pacienteId)}
-                      onFocus={() => prefetchPaciente(pacienteId)}
-                      onClick={goEditar}
-                      aria-label="Editar paciente"
-                      title="Editar paciente">
-                <FaEdit /><span>Editar</span>
-              </button>
+              <button className="btn ghost" onClick={goEditar}><FaEdit /> Editar</button>
             )}
           </div>
         }
       />
 
-      {/* HEADER */}
-      <section className="card detalle-header">
-        {isLoading ? (
-          <div className="header-skeleton">
-            <div className="sk-avatar skeleton" />
-            <div className="sk-lines">
-              <div className="skeleton sk-line w180" />
-              <div className="skeleton sk-line w120" />
-              <div className="skeleton sk-line w240" />
+      {/* HEADER PREMIUM */}
+      <header className="detalle-header-pro">
+        <div className="perfil-main">
+          <div className="avatar-pro">
+            {paciente?.apellido?.[0]}{paciente?.nombre?.[0]}
+          </div>
+          <div className="info-pro">
+            <h2>{paciente?.apellido}, {paciente?.nombre}</h2>
+            <div className="dni-row">
+              DNI: <strong>{paciente?.dni}</strong>
+              <button className="copy-dni" onClick={() => copy(paciente?.dni, showToast)}><FaCopy /></button>
+            </div>
+            <div className="pills-row">
+              {paciente?.obraSocial && <span className="pill-pro">OS: {paciente.obraSocial}</span>}
+              {paciente?.nroAfiliado && <span className="pill-pro">Af: {paciente.nroAfiliado}</span>}
+              <span className="pill-pro">Reg: {new Date(paciente?.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
-        ) : (
-          <div className="header-grid">
-            <div className="identidad">
-              <div className="avatar" aria-hidden>
-                {paciente?.apellido?.[0]?.toUpperCase()}{paciente?.nombre?.[0]?.toUpperCase()}
-              </div>
-              <div className="id-text">
-                <h2>{paciente?.apellido}, {paciente?.nombre}</h2>
-                <p className="muted">
-                  DNI: <strong>{paciente?.dni}</strong>
-                  <button className="icon-btn" onClick={() => copy(paciente?.dni, showToast)} title="Copiar DNI" aria-label="Copiar DNI">
-                    <FaCopy />
-                  </button>
-                </p>
-                <div className="pills">
-                  {paciente?.obraSocial && <span className="pill">Obra Social: {paciente.obraSocial}</span>}
-                  {paciente?.nroAfiliado && <span className="pill">Afiliado: {paciente.nroAfiliado}</span>}
-                  <span className="pill">Últ. visita: {ultimoTurno}</span>
-                  {pref && <span className="pill pref">Pref.: {pref}</span>}
-                </div>
-              </div>
-            </div>
+        </div>
 
-            <div className="quick-actions">
-              {canVerHistoria && (
-                <button className="qa-btn" onClick={goHistoria} title="Historia clínica">
-                  <FaHistory /><span>Historia</span>
-                </button>
-              )}
-              {canVerImagenes && (
-                <button className="qa-btn" onClick={goImagenes} title="Imágenes">
-                  <FaImages /><span>Imágenes</span>
-                </button>
-              )}
+        <div className="status-management">
+          {paciente?.Estado && (
+            <div className="current-badge" style={{ backgroundColor: paciente.Estado.color }}>
+              <FaCircle className="dot" /> {paciente.Estado.nombre}
             </div>
-          </div>
-        )}
-      </section>
-
-      {/* GRID PRINCIPAL */}
-      <section className="grid-2">
-        {/* Contacto & Dirección */}
-        <article className="card">
-          <h3>Contacto</h3>
-          {isLoading ? (
-            <div className="skeleton-block">
-              <div className="skeleton sk-line" />
-              <div className="skeleton sk-line w200" />
-              <div className="skeleton sk-line w150" />
-            </div>
-          ) : (
-            <>
-              <div className="info-list">
-                <div className="info-row">
-                  <FaPhone />
-                  {tel ? (
-                    <>
-                      <a href={`tel:${tel}`}>{tel}</a>
-                      <button className="icon-btn" onClick={() => copy(tel, showToast)} title="Copiar teléfono" aria-label="Copiar teléfono"><FaCopy /></button>
-                    </>
-                  ) : <span className="muted">—</span>}
-                </div>
-                <div className="info-row">
-                  <FaEnvelope />
-                  {email ? (
-                    <>
-                      <a href={`mailto:${email}`}>{email}</a>
-                      <button className="icon-btn" onClick={() => copy(email, showToast)} title="Copiar email" aria-label="Copiar email"><FaCopy /></button>
-                    </>
-                  ) : <span className="muted">—</span>}
-                </div>
-                <div className="info-row">
-                  <FaMapMarkerAlt />
-                  {dir ? (
-                    <span>
-                      {dir.calle || ''} {dir.numero || ''}{dir.calle || dir.numero ? ', ' : ''}
-                      {dir.ciudad || ''}{dir.ciudad ? ', ' : ''}{dir.provincia || ''}{dir.provincia ? ', ' : ''}{dir.pais || ''}
-                    </span>
-                  ) : <span className="muted">—</span>}
-                </div>
-              </div>
-              {(buildWhatsApp(tel) || buildMaps(dir)) && (
-                <div className="contact-actions">
-                  {buildWhatsApp(tel) && <a className="btn mini ghost" href={buildWhatsApp(tel)} target="_blank" rel="noreferrer">WhatsApp</a>}
-                  {buildMaps(dir) && <a className="btn mini ghost" href={buildMaps(dir)} target="_blank" rel="noreferrer">Abrir mapa</a>}
-                </div>
-              )}
-            </>
           )}
-        </article>
+          {canEditarPaciente && (
+            <ModernSelect
+              options={optionsEstados}
+              value={paciente?.estadoId || ''}
+              onChange={(val) => handleCambiarEstado(parseInt(val))}
+              placeholder="Actualizar proceso..."
+              className="status-select-modern"
+              disabled={updatePaciente.isLoading}
+            />
+          )}
+        </div>
+      </header>
 
-        {/* Odontograma */}
-        {canVerOdontograma ? (
-          <article className="card">
-            <h3>Odontograma</h3>
+      {/* GRID DE SECCIONES */}
+      <div className="detalle-grid">
 
-            {odLoading ? (
-              <div className="skeleton-block">
-                <div className="skeleton sk-line w140" />
-                <div className="skeleton sk-line w120" />
-                <div className="skeleton sk-line w180" />
-              </div>
-            ) : odoDenied ? (
-              <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-            ) : odontograma === null ? (
-              <div className="empty-odo">
-                <p className="muted">Este paciente no tiene odontograma.</p>
-                {canEditarOdontograma && (
-                  <button
-                    className="btn primary"
-                    onClick={() => crearOdonto.mutate({ pacienteId, observaciones: '' })}
-                    disabled={crearOdonto.isLoading}
-                  >
-                    {crearOdonto.isLoading ? 'Creando…' : 'Crear odontograma'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="odo-resumen">
-                <div className={`badge estado ${String(estadoGeneral).toLowerCase().replace(/\s+/g,'_')}`}>{estadoGeneral}</div>
-                <p className="muted">Creado: {fechaOdo}</p>
-                <div className="stats">
-                  <div className="stat">
-                    <span className="stat-num">{totalDientes}</span>
-                    <span className="stat-label">Dientes</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-num">{odontograma?.carasTratadasCount ?? '—'}</span>
-                    <span className="stat-label">Caras tratadas</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-num">{odontograma?.pendientesCount ?? '—'}</span>
-                    <span className="stat-label">Pendientes</span>
-                  </div>
+        {/* CONTACTO */}
+        <section className="section-card">
+          <div className="card-title">
+            <h3><FaPhoneAlt className="title-icon" /> Información de Contacto</h3>
+          </div>
+          <div className="info-row-pro">
+            <div className="icon-box"><FaPhoneAlt /></div>
+            <div className="text-content">
+              <span>{paciente?.Contacto?.telefonoMovil || '—'}</span>
+              <small>Teléfono Móvil</small>
+            </div>
+            {paciente?.Contacto?.telefonoMovil && (
+              <a className="btn-mini-contact" href={`https://wa.me/${paciente.Contacto.telefonoMovil.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" title="WhatsApp">
+                <FaExternalLinkAlt />
+              </a>
+            )}
+          </div>
+          <div className="info-row-pro">
+            <div className="icon-box"><FaEnvelope /></div>
+            <div className="text-content">
+              <span>{paciente?.Contacto?.email || '—'}</span>
+              <small>Correo Electrónico</small>
+            </div>
+          </div>
+          <div className="info-row-pro">
+            <div className="icon-box"><FaMapMarkerAlt /></div>
+            <div className="text-content">
+              <span>
+                {paciente?.Contacto?.Direccion?.calle} {paciente?.Contacto?.Direccion?.numero}, {paciente?.Contacto?.Direccion?.ciudad}
+              </span>
+              <small>Dirección de Residencia</small>
+            </div>
+            {paciente?.Contacto?.Direccion?.calle && (
+              <a className="btn-mini-contact" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${paciente.Contacto.Direccion.calle} ${paciente.Contacto.Direccion.numero}, ${paciente.Contacto.Direccion.ciudad}`)}`} target="_blank" rel="noreferrer" title="Ver mapa">
+                <FaMapMarkerAlt />
+              </a>
+            )}
+          </div>
+
+        </section>
+
+        {/* ODONTOGRAMA RESUMEN */}
+        <section className="section-card">
+          <div className="card-title">
+            <h3><FaStethoscope className="title-icon" /> Resumen Clínico</h3>
+            {odontograma && (
+              <span className={`badge-status ${odontograma.estadoGeneral?.toLowerCase().replace(' ', '-')}`}>
+                {odontograma.estadoGeneral}
+              </span>
+            )}
+          </div>
+          {odontograma ? (
+            <>
+              <div className="odo-stats-pro">
+                <div className="stat-item">
+                  <span className="val">{odontograma.carasTratadasCount || 0}</span>
+                  <span className="lab">Caras</span>
                 </div>
-                <button className="link-btn" onClick={goOdontograma}>
-                  Abrir odontograma <FaExternalLinkAlt />
+                <div className="stat-item">
+                  <span className="val">{odontograma.pendientesCount || 0}</span>
+                  <span className="lab">Pendientes</span>
+                </div>
+                <div className="stat-item">
+                  <span className="val">32</span>
+                  <span className="lab">Dientes</span>
+                </div>
+              </div>
+              <div className="action-footer">
+                <button className="btn-action primary" onClick={goOdontograma}>
+                  Abrir Odontograma <FaExternalLinkAlt />
                 </button>
               </div>
-            )}
-          </article>
-        ) : (
-          <article className="card">
-            <h3>Odontograma</h3>
-            <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-          </article>
-        )}
-
-        {/* Historia Clínica */}   
-        <HistoriaClinicaPreview
-          historia={historia}
-          hcLoading={hcLoading}
-          historiaDenied={historiaDenied}
-          canVerHistoria={canVerHistoria}
-          canCrearHistoria={canCrearHistoria}
-          onVerTodo={goHistoria}
-          onCrear={canCrearHistoria ? handleCrearHistoria : undefined}       
-        />
-
-        {/* Imágenes recientes */}
-        {canVerImagenes ? (
-          <article className="card">
-            <div className="card-head">
-              <h3>Imágenes</h3>
-              {!imagenesDenied && <button className="link-btn" onClick={goImagenes}>Ver todas</button>}
+            </>
+          ) : (
+            <div className="empty-state">
+              <p className="muted">Sin registro dental activo.</p>
+              {canEditarOdontograma && (
+                <button className="btn-action primary" onClick={() => crearOdonto.mutate({ pacienteId, observaciones: '' })}>
+                  Crear Odontograma
+                </button>
+              )}
             </div>
-            {imgLoading ? (
-              <div className="skeleton-grid">
-                {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton sk-thumb" />)}
-              </div>
-            ) : imagenesDenied ? (
-              <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-            ) : imagenes?.length ? (
-              <div className="thumb-grid">
-                {imagenes.slice(0, 6).map((img) => (
-                  <a key={img.id} href={img.url} target="_blank" rel="noreferrer" className="thumb">
-                    <img src={img.url} alt={img.tipoImagen || 'Imagen clínica'} />
-                    <span className="thumb-caption">
-                      {img.tipoImagen || 'Imagen'} · {img.fechaCarga ? new Date(img.fechaCarga).toLocaleDateString() : '—'}
+          )}
+        </section>
+
+        {/* HISTORIA CLÍNICA RECIENTE */}
+        <section className="section-card span-2">
+          <div className="card-title">
+            <h3><FaNotesMedical className="title-icon" /> Evolución y Notas</h3>
+          </div>
+          <HistoriaClinicaPreview
+            historia={historia}
+            hcLoading={hcLoading}
+            historiaDenied={historiaDenied}
+            canVerHistoria={canVerHistoria}
+            canCrearHistoria={canCrearHistoria}
+            onVerTodo={goHistoria}
+            onCrear={handleCrearHistoria}
+          />
+        </section>
+
+        {/* ESPACIO PARA MÁS INFO (Mencionado por usuario) */}
+        <section className="section-card">
+          <div className="card-title">
+            <h3><FaShieldAlt className="title-icon" /> Antecedentes y Alertas</h3>
+            <button className="btn-create-pro" onClick={() => setAntModalOpen(true)}>
+              <FaPlus /> Configurar
+            </button>
+          </div>
+
+          <div className="alerts-body">
+            {antecedentes?.length > 0 ? (
+              <div className="ant-list-pro">
+                {antecedentes.map(a => (
+                  <div key={a.id} className="ant-item-mini">
+                    <span className={`ant-tag-pro ${a.tipoAntecedente.toLowerCase()}`}>
+                      {a.tipoAntecedente.replace('_', ' ')}
                     </span>
-                  </a>
+                    <p><strong>{a.descripcion}</strong></p>
+                    {a.observaciones && <small>{a.observaciones}</small>}
+                  </div>
                 ))}
               </div>
             ) : (
-              <p className="muted">Sin imágenes.</p>
-            )}
-          </article>
-        ) : (
-          <article className="card">
-            <div className="card-head"><h3>Imágenes</h3></div>
-            <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-          </article>
-        )}
-
-        {/* Tratamientos */}
-        {canVerTratamientos ? (
-          <article className="card">
-            <h3>Tratamientos</h3>
-            {trLoading ? (
-              <div className="skeleton-list">
-                <div className="skeleton sk-line" />
-                <div className="skeleton sk-line" />
+              <div className="alerts-empty">
+                <p className="muted">No se registran factores de riesgo o antecedentes sistémicos para este paciente.</p>
               </div>
-            ) : tratamientosDenied ? (
-              <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-            ) : tratamientos?.length ? (
-              <ul className="treat-list">
-                {tratamientos.slice(0, 6).map((t) => (
-                  <li key={t.id}>
-                    <div className="treat-name">{t.nombre || t.Tratamiento?.nombre || 'Tratamiento'}</div>
-                    <div className="muted small">
-                      {t.fecha ? new Date(t.fecha).toLocaleDateString() : '—'}
-                      {t.estado ? ` · ${t.estado}` : ''}
-                      {typeof t.precio === 'number' ? ` · $${t.precio.toFixed(2)}` : ''}
-                      {typeof t.duracionMin === 'number' ? ` · ${t.duracionMin} min` : ''}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">Sin tratamientos registrados.</p>
             )}
-          </article>
-        ) : (
-          <article className="card">
-            <h3>Tratamientos</h3>
-            <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
-          </article>
-        )}
-      </section>
+          </div>
 
-      {(isLoading || odLoading || hcLoading || imgLoading || trLoading) && <p className="muted">Cargando información…</p>}
+
+        </section>
+
+      </div>
+
+      {antModalOpen && (
+        <AntecedentesModal
+          pacienteId={pacienteId}
+          onClose={() => setAntModalOpen(false)}
+          onApplied={() => {
+            setAntModalOpen(false);
+            qc.invalidateQueries(['paciente', pacienteId, 'antecedentes']);
+          }}
+        />
+      )}
     </div>
+
   );
 }

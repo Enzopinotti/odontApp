@@ -1,12 +1,6 @@
 /**
- * Representación SVG de un diente con overlays clínicos.
- * Dibuja:
- *  - Caras (fill) tomadas de CaraTratadas
- *  - Overlays de Tratamientos por diente (cross/outline/rootLine/implant/fractureLine/connector)
- *
- * Admite distintos shapes de API para tratamientos de diente:
- *   diente.Tratamientos || diente.DienteTratamientos || diente.TratamientosAplicados
- * y también Tratamiento asociado dentro de CaraTratadas (por si el backend lo trae así).
+ * ToothCell.js - VERSIÓN PRO
+ * Representación SVG de un diente con overlays clínicos refinados.
  */
 
 import { intToHex } from '../utils/color';
@@ -16,26 +10,24 @@ function parseCfg(cfg) {
   catch { return {}; }
 }
 
-/** Normaliza color/estado/trazo desde distintos orígenes */
 function readStyleFrom(item, cfg) {
   const color =
     typeof item?.colorEstado === 'number' ? intToHex(item.colorEstado) :
-    typeof item?.color === 'string' ? item.color :
-    cfg?.colorRealizado || '#ef4444';
+      typeof item?.color === 'string' ? item.color :
+        cfg?.colorRealizado || '#1d4ed8';
   const dash =
     item?.tipoTrazo === 'Punteado' || cfg?.trazoSugerido === 'Punteado' ? '4 3' : '0';
   return { color, dash };
 }
 
-/** Número de líneas radiculares sugeridas por sigla */
 function rootCountBySigla(sigla) {
   if (!sigla) return 1;
-  if (/TC-3/i.test(sigla)) return 3;
-  if (/TC-2/i.test(sigla)) return 2;
+  const s = sigla.toUpperCase();
+  if (s.includes('TC3')) return 3;
+  if (s.includes('TC2')) return 2;
   return 1;
 }
 
-/** Extrae tratamientos a nivel diente desde varias posibles props */
 function collectToothTreatments(diente) {
   const pools = [
     diente?.Tratamientos,
@@ -55,25 +47,42 @@ function collectToothTreatments(diente) {
     .filter(({ cfg }) => cfg?.modoDibujo && cfg.modoDibujo !== 'fill' && cfg.modoDibujo !== 'none');
 }
 
-/**
- * @param {{ diente: any, onOpenMenu: (e:MouseEvent, diente:any, faceKey:'O'|'M'|'D'|'B'|'L', current?:any)=>void }} props
- */
 export default function ToothCell({ diente, onOpenMenu }) {
-  // Caras (fill)
   const facesByKey = {};
   (diente?.CaraTratadas || []).forEach((c) => {
     facesByKey[c?.simbolo?.toUpperCase()] = c;
   });
 
-  const fillFor = (key) => {
-    const c = facesByKey[key];
-    if (!c) return 'transparent';
-    if (typeof c.colorEstado === 'number') return intToHex(c.colorEstado);
-    if (typeof c.color === 'string') return c.color;
+  const getColorFrom = (target) => {
+    if (!target) return 'transparent';
+    if (target.colorHex) return target.colorHex;
+    if (typeof target.colorEstado === 'number') return intToHex(target.colorEstado);
+    if (typeof target.color === 'string') return target.color;
     return 'transparent';
   };
 
-  // Overlays a nivel diente
+  const fillFor = (key) => {
+    const specificFace = facesByKey[key];
+    if (specificFace) return getColorFrom(specificFace);
+
+    const globalFace = facesByKey['TODAS'];
+    if (globalFace) return getColorFrom(globalFace);
+
+    const toothTreatments = [
+      ...(diente?.DienteTratamientos || []),
+      ...(diente?.TratamientosAplicados || []),
+      ...(diente?.Tratamientos || [])
+    ];
+
+    for (const t of toothTreatments) {
+      const cfg = parseCfg(t.config);
+      if (!cfg.modoDibujo || cfg.modoDibujo === 'fill') {
+        return t.color || cfg.colorRealizado || cfg.colorPlanificado || '#1d4ed8';
+      }
+    }
+    return 'transparent';
+  };
+
   const overlays = collectToothTreatments(diente);
 
   const bind = (k) => ({
@@ -81,99 +90,111 @@ export default function ToothCell({ diente, onOpenMenu }) {
     onContextMenu: (e) => { e.preventDefault(); onOpenMenu(e, diente, k, facesByKey[k] || null); },
   });
 
+
+  const clipId = `toothClip-${diente?.id ?? diente?._fdi ?? Math.random()}`;
+  const TOOTH_PATH = `
+    M20,10 
+    Q50,2 80,10 
+    Q92,16 92,28 
+    L92,72 
+    Q92,90 50,92 
+    Q8,90 8,72 
+    L8,28 
+    Q8,16 20,10 
+    Z
+  `;
+
   return (
     <div className="tooth-cell" title={`FDI ${diente?._fdi ?? ''}`}>
       <svg viewBox="0 0 100 100" className="tooth-svg" aria-hidden>
-        {/* marco base */}
-        <rect x="3" y="3" width="94" height="94" rx="10"
-              fill="none" stroke="#d7dbe5" strokeWidth="2" pointerEvents="none"/>
+        <defs>
+          <clipPath id={clipId}>
+            <path d={TOOTH_PATH} />
+          </clipPath>
+        </defs>
 
-        {/* caras clicables */}
-        <path d="M35 6 L65 6 L65 35 L50 35 L35 35 Z"  fill={fillFor('B')} className="face area-b" {...bind('B')} />
-        <path d="M35 65 L50 65 L65 65 L65 94 L35 94 Z" fill={fillFor('L')} className="face area-l" {...bind('L')} />
-        <path d="M6 35 L35 35 L35 65 L6 65 Z"         fill={fillFor('M')} className="face area-m" {...bind('M')} />
-        <path d="M65 35 L94 35 L94 65 L65 65 Z"       fill={fillFor('D')} className="face area-d" {...bind('D')} />
-        <polygon points="50,35 65,50 50,65 35,50"    fill={fillFor('O')} className="face area-o" {...bind('O')} />
+        {/* FONDO Y SILUETA BASE */}
+        <path
+          d={TOOTH_PATH}
+          fill={facesByKey['TODAS'] ? fillFor('TODAS') : 'white'}
+          stroke={facesByKey['TODAS'] ? 'transparent' : '#e2e8f0'}
+          strokeWidth="1.6"
+          className="tooth-bg-click"
+          onClick={(e) => onOpenMenu(e, diente, 'TODAS', facesByKey['TODAS'])}
+        />
 
-        {/* líneas guía internas */}
-        <line x1="35" y1="35" x2="50" y2="50" stroke="#cfd3dd" strokeWidth="1.2" pointerEvents="none"/>
-        <line x1="65" y1="35" x2="50" y2="50" stroke="#cfd3dd" strokeWidth="1.2" pointerEvents="none"/>
-        <line x1="35" y1="65" x2="50" y2="50" stroke="#cfd3dd" strokeWidth="1.2" pointerEvents="none"/>
-        <line x1="65" y1="65" x2="50" y2="50" stroke="#cfd3dd" strokeWidth="1.2" pointerEvents="none"/>
+        {/* CONTENIDO CLÍNICO RECORTADO */}
+        <g clipPath={`url(#${clipId})`}>
+          <path d="M30 5 L70 5 L70 30 L50 30 L30 30 Z" fill={fillFor('B')} className="face area-b" {...bind('B')} />
+          <path d="M30 70 L50 70 L70 70 L70 95 L30 95 Z" fill={fillFor('L')} className="face area-l" {...bind('L')} />
+          <path d="M5 30 L30 30 L30 70 L5 70 Z" fill={fillFor('M')} className="face area-m" {...bind('M')} />
+          <path d="M70 30 L95 30 L95 70 L70 70 Z" fill={fillFor('D')} className="face area-d" {...bind('D')} />
+          <rect x="30" y="30" width="40" height="40" fill={fillFor('O')} className="face area-o" {...bind('O')} />
 
-        {/* -------- overlays por tratamiento (modoDibujo) -------- */}
-        {overlays.map(({ cfg, raw }, i) => {
-          const { color, dash } = readStyleFrom(raw, cfg);
+          {/* LÍNEAS DIVISORIAS PERMANENTES (GRILLA COMPLETA) */}
+          <g fill="none" stroke="#e2e8f0" strokeWidth="0.8" pointerEvents="none">
+            <line x1="30" y1="0" x2="30" y2="100" />
+            <line x1="70" y1="0" x2="70" y2="100" />
+            <line x1="0" y1="30" x2="100" y2="30" />
+            <line x1="0" y1="70" x2="100" y2="70" />
+          </g>
 
-          // 1) EXTRACCIÓN (X)
-          if (cfg.modoDibujo === 'cross') {
-            return (
-              <g key={`x-${i}`} pointerEvents="none">
-                <line x1="10" y1="10" x2="90" y2="90" stroke={color} strokeWidth="7" strokeLinecap="round" strokeDasharray={dash}/>
-                <line x1="90" y1="10" x2="10" y2="90" stroke={color} strokeWidth="7" strokeLinecap="round" strokeDasharray={dash}/>
-              </g>
-            );
-          }
 
-          // 2) CORONA COMPLETA (contorno grueso)
-          if (cfg.modoDibujo === 'outline') {
-            return (
-              <rect key={`ol-${i}`} x="8" y="8" width="84" height="84" rx="10"
-                    fill="none" stroke={color} strokeWidth="6" strokeDasharray={dash} pointerEvents="none" />
-            );
-          }
+          {/* -------- overlays refinados -------- */}
 
-          // 3) ENDODONCIA (líneas radiculares)
-          if (cfg.modoDibujo === 'rootLine') {
-            const n = rootCountBySigla(raw?.sigla);
-            const offsets = (n === 1 ? [0] : n === 2 ? [-8, 8] : [-10, 0, 10]);
-            return (
-              <g key={`rt-${i}`} pointerEvents="none">
-                {offsets.map((ox, j) => (
-                  <line key={j}
-                        x1={50+ox} y1="15" x2={50+ox} y2="85"
-                        stroke={color} strokeWidth="5" strokeLinecap="round" strokeDasharray={dash}/>
-                ))}
-              </g>
-            );
-          }
+          {overlays.map(({ cfg, raw }, i) => {
+            const { color, dash } = readStyleFrom(raw, cfg);
 
-          // 4) IMPLANTE (poste con roscas estilizadas)
-          if (cfg.modoDibujo === 'implant') {
-            return (
-              <g key={`imp-${i}`} pointerEvents="none">
-                <line x1="50" y1="18" x2="50" y2="82" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray={dash}/>
-                {/* roscas (pequeños hachazos diagonales) */}
-                {[28,38,48,58,68].map((y, k) => (
-                  <line key={k} x1="46" y1={y} x2="54" y2={y+6} stroke={color} strokeWidth="3" strokeLinecap="round" />
-                ))}
-              </g>
-            );
-          }
+            if (cfg.modoDibujo === 'cross') {
+              return (
+                <g key={i}>
+                  <line x1="15" y1="15" x2="85" y2="85" stroke={color} strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} opacity="0.8" />
+                  <line x1="85" y1="15" x2="15" y2="85" stroke={color} strokeWidth="5" strokeLinecap="round" strokeDasharray={dash} opacity="0.8" />
+                </g>
+              );
+            }
 
-          // 5) FRACTURA (zig-zag diagonal en corona)
-          if (cfg.modoDibujo === 'fractureLine') {
-            return (
-              <polyline key={`fx-${i}`}
-                        points="20,30 35,42 50,34 65,46 80,38"
-                        fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
-                        strokeLinejoin="round" strokeDasharray={dash} pointerEvents="none" />
-            );
-          }
+            if (cfg.modoDibujo === 'outline') {
+              return <rect key={i} x="6" y="6" width="88" height="88" rx="8" fill="none" stroke={color} strokeWidth="4" strokeDasharray={dash} />;
+            }
 
-          // 6) CONECTOR (puente/ferulización) – barra horizontal media
-          if (cfg.modoDibujo === 'connector') {
-            return (
-              <line key={`cn-${i}`}
-                    x1="15" y1="50" x2="85" y2="50"
-                    stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray={dash} pointerEvents="none" />
-            );
-          }
+            if (cfg.modoDibujo === 'rootLine') {
+              const n = rootCountBySigla(cfg.sigla || raw.sigla);
+              const xOff = n === 1 ? [50] : n === 2 ? [42, 58] : [38, 50, 62];
+              return (
+                <g key={i}>
+                  {xOff.map((x, j) => <line key={j} x1={x} y1="10" x2={x} y2="90" stroke={color} strokeWidth="4" strokeLinecap="round" strokeDasharray={dash} />)}
+                </g>
+              );
+            }
 
-          return null;
-        })}
+            if (cfg.modoDibujo === 'implant') {
+              return (
+                <g key={i}>
+                  <rect x="44" y="15" width="12" height="70" rx="3" fill={color} />
+                  {[30, 45, 60].map(y => <line key={y} x1="40" y1={y} x2="60" y2={y + 5} stroke="white" strokeWidth="2" />)}
+                </g>
+              );
+            }
+
+            if (cfg.modoDibujo === 'fractureLine') {
+              return <path key={i} d="M20 40 L40 60 L60 40 L80 60" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />;
+            }
+
+            if (cfg.modoDibujo === 'connector') {
+              return <line key={i} x1="0" y1="50" x2="100" y2="50" stroke={color} strokeWidth="9" opacity="0.5" />;
+            }
+
+            return null;
+          })}
+        </g>
+
+        {/* LÍNEA DE COSTURA INTERNA (REFINAMIENTO VISUAL) */}
+        <path d={TOOTH_PATH} fill="none" stroke="#dbe4ee" strokeWidth="0.8" pointerEvents="none" />
       </svg>
       <div className="tooth-num">{diente?._fdi ?? ''}</div>
     </div>
   );
+
+
 }

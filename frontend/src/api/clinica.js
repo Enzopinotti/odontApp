@@ -12,8 +12,26 @@ export function sanitizePacientePayload(form) {
   // normalizar date-only
   out.ultimaVisita = out.ultimaVisita ? out.ultimaVisita : null;
 
+  // normalizar estadoId: vacío → null, pero preservar valores válidos
+  if ('estadoId' in out) {
+    if (out.estadoId === '' || out.estadoId === null || out.estadoId === undefined) {
+      // Solo convertir a null si es explícitamente vacío
+      out.estadoId = null;
+    } else if (typeof out.estadoId === 'string') {
+      // Si es string, parsear a número
+      const parsed = parseInt(out.estadoId, 10);
+      out.estadoId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    } else if (typeof out.estadoId === 'number') {
+      // Si ya es número, validar que sea positivo
+      out.estadoId = out.estadoId > 0 ? out.estadoId : null;
+    } else {
+      // Cualquier otro caso, null
+      out.estadoId = null;
+    }
+  }
+
   // trims
-  ['nombre','apellido','dni','obraSocial','nroAfiliado'].forEach(k => {
+  ['nombre', 'apellido', 'dni', 'obraSocial', 'nroAfiliado'].forEach(k => {
     if (typeof out[k] === 'string') out[k] = out[k].trim();
   });
 
@@ -24,12 +42,12 @@ export function sanitizePacientePayload(form) {
 
   // Normalizamos vacíos a null
   const c = out.Contacto;
-  c.email         = toNullIfEmpty(c.email);
+  c.email = toNullIfEmpty(c.email);
   c.telefonoMovil = toNullIfEmpty(c.telefonoMovil);
-  c.telefonoFijo  = toNullIfEmpty(c.telefonoFijo);
+  c.telefonoFijo = toNullIfEmpty(c.telefonoFijo);
 
   const d = c.Direccion;
-  ['calle','numero','detalle','codigoPostal','ciudad','provincia','pais'].forEach(k=>{
+  ['calle', 'numero', 'detalle', 'codigoPostal', 'ciudad', 'provincia', 'pais'].forEach(k => {
     d[k] = toNullIfEmpty(d[k]);
   });
 
@@ -57,6 +75,7 @@ export function sanitizePacientePayload(form) {
 
   return out;
 }
+
 
 /** Pacientes --------------------------------------------------- */
 export async function crearPaciente(data) {
@@ -93,7 +112,13 @@ export async function eliminarPaciente(id) {
   return res.data;
 }
 
+export async function getEstadosPacientes() {
+  const res = await api.get('/clinica/pacientes/estados');
+  return res.data;
+}
+
 /** Odontograma / Tratamientos ---------------- */
+
 export async function getOdontograma(pacienteId) {
   const res = await api.get(`/clinica/odontograma/${pacienteId}`);
   return res.data;
@@ -169,9 +194,10 @@ export async function subirImagenClinica(historiaClinicaId, formData) {
 }
 
 export async function getImagenesPaciente(pacienteId) {
-  const res = await api.get(`/clinica/historia/${pacienteId}/imagenes`);
+  const res = await api.get(`/clinica/historia/paciente/${pacienteId}/imagenes`);
   return res.data;
 }
+
 
 export async function eliminarImagenClinica(imagenId) {
   const res = await api.delete(`/clinica/historia/imagen/${imagenId}`);
@@ -183,3 +209,20 @@ export async function aplicarTratamientoADiente(dienteId, payload) {
   const res = await api.post(`/clinica/odontograma/diente/${dienteId}/aplicar-tratamiento`, payload);
   return res.data;
 }
+
+/** Antecedentes Médicos */
+export async function getAntecedentesPaciente(pacienteId) {
+  const res = await api.get(`/clinica/pacientes/${pacienteId}/antecedentes`);
+  return res.data;
+}
+
+export async function crearAntecedenteMedico(pacienteId, data) {
+  const res = await api.post(`/clinica/pacientes/${pacienteId}/antecedentes`, data);
+  return res.data;
+}
+
+export async function eliminarAntecedenteMedico(id) {
+  const res = await api.delete(`/clinica/pacientes/antecedentes/${id}`);
+  return res.data;
+}
+

@@ -23,6 +23,10 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    estadoId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Permitir null temporalmente para migración, luego se puede poner false
+    },
   }, {
     tableName: 'pacientes',
     timestamps: true,
