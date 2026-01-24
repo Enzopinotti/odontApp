@@ -115,6 +115,8 @@ export default function PacienteDetalle() {
   const goHistoria    = () => navigate(`/pacientes/${pacienteId}/historia`);
   const goImagenes    = () => navigate(`/pacientes/${pacienteId}/imagenes`);
 
+  // const waLink   = buildWhatsApp(tel);
+  // const mapsLink = buildMaps(dir);
   // --- MODAL HISTORIA CLINICA ---
   const handleSubmitHistoria = (values) => {
     crearHistoria.mutate(values, {

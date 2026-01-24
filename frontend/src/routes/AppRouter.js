@@ -20,6 +20,13 @@ import PacienteEditar from '../features/pacientes/pages/PacienteEditar';
 import PacienteDetalle from '../features/pacientes/pages/PacienteDetalle'; 
 import PacienteOdontograma from '../features/odontograma/pages/PacienteOdontograma';
 
+import Agenda from '../features/agenda/pages/Agenda';
+import AgendaDiaria from '../features/agenda/pages/AgendaDiaria';
+import NuevoTurnoPaso1 from '../features/agenda/pages/NuevoTurnoPaso1';
+import NuevoTurnoPaso2 from '../features/agenda/pages/NuevoTurnoPaso2';
+import NuevoTurnoPaso3 from '../features/agenda/pages/NuevoTurnoPaso3';
+import GestionDisponibilidades from '../features/agenda/pages/GestionDisponibilidades';
+
 function AppRouter() {
   return (
     <Routes>
@@ -55,6 +62,14 @@ function AppRouter() {
           <Route path=":id/editar" element={<PacienteEditar />} />
           <Route path=":id/odontograma" element={<PacienteOdontograma />} />
           <Route path=":id" element={<PacienteDetalle />} /> 
+        </Route>
+        <Route path="agenda">
+          <Route index element={<Agenda />} />
+          <Route path="diaria" element={<AgendaDiaria />} />
+          <Route path="disponibilidades" element={<GestionDisponibilidades />} />
+          <Route path="turnos/nuevo" element={<NuevoTurnoPaso1 />} />
+          <Route path="turnos/nuevo/paso2" element={<NuevoTurnoPaso2 />} />
+          <Route path="turnos/nuevo/paso3" element={<NuevoTurnoPaso3 />} />
         </Route>
       </Route>
 

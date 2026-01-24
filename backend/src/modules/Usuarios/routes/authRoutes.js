@@ -102,6 +102,20 @@ router.post('/logout', c.logout);
 
 /**
  * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Renovar token de acceso
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Token renovado
+ *       401:
+ *         description: Token de refresh inválido
+ */
+router.post('/refresh', c.refreshToken);
+
+/**
+ * @swagger
  * /auth/forgot-password:
  *   post:
  *     summary: Enviar correo de recuperación

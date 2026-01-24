@@ -11,6 +11,18 @@ import ToastProvider from './context/ToastProvider';
 import ModalProvider from './context/ModalProvider';
 import ReactQueryProvider from './context/ReactQueryProvider'; 
 
+// Silenciar el error de ResizeObserver que no afecta la funcionalidad
+const resizeObserverErrorHandler = (e) => {
+  if (e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+      e.message === 'ResizeObserver loop limit exceeded') {
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+    return true;
+  }
+};
+
+window.addEventListener('error', resizeObserverErrorHandler);
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

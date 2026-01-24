@@ -51,6 +51,9 @@ export const crear = async (data) => {
   return repo.createWithContacto(data);
 };
 
+// Alias requerido por otros módulos (ej. Agenda)
+export const crearPaciente = crear;
+
 /* ---------- ACTUALIZAR PACIENTE ---------- */
 export const actualizar = async (id, data) => {
   // 🔧 Normalizar la estructura de datos
