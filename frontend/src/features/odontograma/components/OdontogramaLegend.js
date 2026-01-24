@@ -1,11 +1,22 @@
-import { COLORS } from '../constants';
+import { FaCheckCircle, FaHourglassHalf, FaHistory } from 'react-icons/fa';
+
 
 export default function OdontogramaLegend() {
   return (
-    <footer className="odo-legend">
-      <span className="dot" style={{ background: COLORS.realizado }} /> Realizado
-      <span className="dot" style={{ background: COLORS.planificado }} /> A realizar
-      <span className="dot" style={{ background: COLORS.antiguo }} /> Antiguo
-    </footer>
+    <div className="odo-legend-chips">
+      <div className="legend-chip realizado">
+        <FaCheckCircle />
+        <span>Tratamiento Realizado</span>
+      </div>
+      <div className="legend-chip planificado">
+        <FaHourglassHalf />
+        <span>A Realizar (Planificado)</span>
+      </div>
+      <div className="legend-chip antiguo">
+        <FaHistory />
+        <span>Pre-existente / Antiguo</span>
+      </div>
+    </div>
   );
 }
+

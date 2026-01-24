@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
+import useAuth from '../../features/auth/hooks/useAuth';
 import {
   FaUser,
   FaCalendarAlt,
@@ -7,11 +8,13 @@ import {
   FaFileInvoiceDollar,
   FaReceipt,
   FaChartBar,
-  FaCog
+  FaCog,
+  FaUserShield
 } from 'react-icons/fa';
 
 export default function SideBar() {
   const [open, setOpen] = useState(false);
+  const { hasPermiso } = useAuth();
 
   return (
     <>
@@ -38,6 +41,12 @@ export default function SideBar() {
           </div>
 
           <div className="nav-footer">
+            {hasPermiso('usuarios', 'listar') && (
+              <NavLink to="/admin" title="Administración del Sistema">
+                <FaUserShield /> <span>Admin</span>
+              </NavLink>
+            )}
+
             <NavLink to="/profile" title="Perfil y configuración">
               <FaUser /> <span>Perfil</span>
             </NavLink>
@@ -50,3 +59,4 @@ export default function SideBar() {
     </>
   );
 }
+

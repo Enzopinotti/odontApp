@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import * as pacienteCtrl from '../controllers/pacienteController.js';
+import * as estadoCtrl from '../controllers/estadoPacienteController.js';
+import * as antCtrl from '../controllers/antecedenteController.js';
+
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
 import { vCrearPaciente, vActualizarPaciente } from '../validators/pacienteValidator.js';
 import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
@@ -7,6 +10,9 @@ import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 const router = Router();
 
 router.use(requireAuth);
+
+router.get('/estados', requirePermiso('pacientes', 'listar'), estadoCtrl.listarEstados);
+
 
 /**
  * @swagger
@@ -148,4 +154,10 @@ router.delete(
   pacienteCtrl.eliminarPaciente
 );
 
+/* --- ANTECEDENTES MEDICOS --- */
+router.get('/:pacienteId/antecedentes', requirePermiso('historia_clinica', 'ver'), antCtrl.listarPorPaciente);
+router.post('/:pacienteId/antecedentes', requirePermiso('historia_clinica', 'crear'), antCtrl.crear);
+router.delete('/antecedentes/:id', requirePermiso('historia_clinica', 'eliminar'), antCtrl.eliminar);
+
 export default router;
+

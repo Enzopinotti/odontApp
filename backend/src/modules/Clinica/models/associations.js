@@ -13,7 +13,12 @@ export default (models) => {
     CaraTratada,
     Tratamiento,
     AntecedenteMedico,
+    EstadoPaciente,
   } = models;
+
+  /* ---------- Paciente y su Estado ---------- */
+  EstadoPaciente.hasMany(Paciente, { foreignKey: 'estadoId' });
+  Paciente.belongsTo(EstadoPaciente, { foreignKey: 'estadoId', as: 'Estado' });
 
   /* ---------- Paciente y datos de contacto ---------- */
   Paciente.hasOne(Contacto, { foreignKey: 'pacienteId', onDelete: 'CASCADE', hooks: true });

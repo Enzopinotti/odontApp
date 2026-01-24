@@ -48,6 +48,7 @@ export const crear = async (data) => {
     );
   }
 
+  // Si no viene estadoId, se usará el default del modelo (ACTIVO)
   return repo.createWithContacto(data);
 };
 
@@ -58,13 +59,13 @@ export const crearPaciente = crear;
 export const actualizar = async (id, data) => {
   // 🔧 Normalizar la estructura de datos
   const dataNormalizada = { ...data };
-  
+
   // Si viene 'contacto' en minúscula, convertir a 'Contacto'
   if (data.contacto) {
     dataNormalizada.Contacto = data.contacto;
     delete dataNormalizada.contacto;
   }
-  
+
   // Si viene 'direccion' dentro de Contacto, convertir a 'Direccion'
   if (dataNormalizada.Contacto && dataNormalizada.Contacto.direccion) {
     dataNormalizada.Contacto.Direccion = dataNormalizada.Contacto.direccion;

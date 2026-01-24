@@ -1,23 +1,17 @@
 'use strict';
 
 /**
- * Catálogo base de tratamientos (adultos)
- * - Precios en ARS con dólar de referencia 1300 ARS/USD
- * - `config` guía el dibujo en el odontograma y la UX:
+ * Catálogo base de tratamientos (adultos) - VERSIÓN SUPER PRO
+ * - config guía el dibujo en el odontograma y la UX:
  *    - alcance: 'cara' | 'diente' | 'multi' | 'cuadrante' | 'arcada' | 'boca' | 'noRender'
- *    - carasPorDefecto: ['O','M','D','B','L'] (si aplica)
- *    - colorRealizado / colorPlanificado: Hex
+ *    - carasPorDefecto: ['O','M','D','B','L']
+ *    - colorRealizado / colorPlanificado: Colores clínicos estándar
  *    - trazoSugerido: 'Continuo' | 'Punteado'
  *    - modoDibujo: 'fill' | 'outline' | 'cross' | 'rootLine' | 'implant' | 'fractureLine' | 'connector' | 'none'
- *    - sigla: abreviatura clínica (ej: TC, CR, IMP, SE)
- *    - planificable: bool (si permite estado planificado)
- *    - aplicaMultiplesPiezas: bool (puente, ferulización)
- *    - precioUSD (referencia), para auditorías futuras
  */
 
 const now = new Date();
 
-// 👇 clave: para bulkInsert en MySQL/MariaDB serializamos el JSON
 const T = (nombre, descripcion, precioARS, duracionMin, config) => ({
   nombre,
   descripcion,
@@ -28,215 +22,106 @@ const T = (nombre, descripcion, precioARS, duracionMin, config) => ({
   updatedAt: now,
 });
 
-// Paleta estandarizada (convención clínica)
-const BLUE = '#2563eb';   // realizado/instalado
-const RED  = '#ef4444';   // patología/pendiente
-const YEL  = '#f59e0b';   // preventivo
-const GRN  = '#22c55e';   // temporal/en observación
+// Paleta clínica premium
+const CLINIC_BLUE = '#1d4ed8'; // Realizado sólido
+const CLINIC_RED = '#dc2626'; // Patología / A realizar
+const CLINIC_GOLD = '#d97706'; // Preventivo / Sellador
+const CLINIC_GREY = '#4b5563'; // Antiguos/Provisorios
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    // Primero limpiamos los anteriores para evitar duplicados si se corre de nuevo
+    await queryInterface.bulkDelete('tratamientos', null, {});
+
     await queryInterface.bulkInsert('tratamientos', [
       // === Diagnóstico / Imagen ===
-      T('Consulta y diagnóstico', 'Evaluación clínica y planificación', 26000, 20, {
-        alcance: 'noRender', modoDibujo: 'none', sigla: 'CONS', planificable: false, precioUSD: 20
+      T('Consulta y Diagnóstico', 'Evaluación clínica completa y planificación inicial', 35000, 30, {
+        alcance: 'noRender', modoDibujo: 'none', sigla: 'CONS', planificable: false
       }),
-      T('Radiografía periapical', 'Rx intraoral por pieza', 19500, 10, {
-        alcance: 'noRender', modoDibujo: 'none', sigla: 'RX', planificable: false, precioUSD: 15
-      }),
-      T('Radiografía panorámica (OPG)', 'Ortopantomografía', 78000, 10, {
-        alcance: 'noRender', modoDibujo: 'none', sigla: 'OPG', planificable: false, precioUSD: 60
+      T('Radiografía Periapical Digital', 'Imagen intraoral de alta definición', 22000, 10, {
+        alcance: 'noRender', modoDibujo: 'none', sigla: 'RX', planificable: false
       }),
 
-      // === Preventivo ===
-      T('Limpieza (profilaxis)', 'Profilaxis con ultrasonido y pulido', 52000, 30, {
-        alcance: 'arcada', modoDibujo: 'none', sigla: 'PRO', colorRealizado: BLUE, planificable: true, precioUSD: 40
-      }),
-      T('Fluoración tópica', 'Aplicación de flúor', 32500, 15, {
-        alcance: 'arcada', modoDibujo: 'none', sigla: 'FLR', colorRealizado: YEL, planificable: true, precioUSD: 25
-      }),
-      T('Sellante de fosas y fisuras (por pieza)', 'Sellado preventivo en cara oclusal', 32500, 20, {
-        alcance: 'cara', carasPorDefecto: ['O'], modoDibujo: 'fill',
-        colorRealizado: YEL, colorPlanificado: YEL, trazoSugerido: 'Continuo',
-        sigla: 'SE', planificable: true, precioUSD: 25
-      }),
-
-      // === Operatoria (Resinas) ===
-      T('Obturación resina 1 cara', 'Restauración en una superficie', 91000, 40, {
+      // === Operatoria (Resinas) - ESTILO LÍNEAS PROFESIONALES ===
+      T('Caries / Obturación (1 cara)', 'Restauración con resina microhíbrida de alta estética', 95000, 40, {
         alcance: 'cara', carasPorDefecto: [], modoDibujo: 'fill',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'R1', planificable: true, precioUSD: 70
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'OB1'
       }),
-      T('Obturación resina 2 caras (MO/DO)', 'Restauración en dos superficies', 130000, 60, {
-        alcance: 'cara', carasPorDefecto: ['M','O'], modoDibujo: 'fill',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'R2', planificable: true, precioUSD: 100
-      }),
-      T('Obturación resina 3 caras (MOD)', 'Restauración en tres superficies', 169000, 75, {
-        alcance: 'cara', carasPorDefecto: ['M','O','D'], modoDibujo: 'fill',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'R3', planificable: true, precioUSD: 130
-      }),
-      T('Tratamiento de fractura coronal con resina', 'Reconstrucción estética por fractura', 156000, 60, {
-        alcance: 'cara', carasPorDefecto: [], modoDibujo: 'fractureLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'FR', planificable: true, precioUSD: 120
-      }),
-      T('Incrustación / inlay / onlay', 'Restauración indirecta parcial', 455000, 90, {
+      T('Caries / Obturación (2 caras)', 'Restauración compleja (MO/DO)', 135000, 60, {
         alcance: 'cara', carasPorDefecto: ['O'], modoDibujo: 'fill',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'IN', planificable: true, precioUSD: 350
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'OB2'
+      }),
+      T('Caries / Obturación (3 caras)', 'Reconstrucción MOD con técnica estratificada', 175000, 75, {
+        alcance: 'cara', carasPorDefecto: ['M', 'O', 'D'], modoDibujo: 'fill',
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'OB3'
+      }),
+      T('Sellador de Fosas y Fisuras', 'Prevención con sellantes fotopolimerizables', 35000, 20, {
+        alcance: 'cara', carasPorDefecto: ['O'], modoDibujo: 'fill',
+        colorRealizado: CLINIC_GOLD, colorPlanificado: CLINIC_GOLD, trazoSugerido: 'Continuo',
+        sigla: 'SE'
       }),
 
       // === Endodoncia ===
-      T('Endodoncia unirradicular (incisivo/canino)', 'Tratamiento de conducto pieza unirradicular', 234000, 90, {
+      T('Tratamiento de Conducto (Uni)', 'Endodoncia en piezas de 1 conducto', 250000, 90, {
         alcance: 'diente', modoDibujo: 'rootLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'TC-1', planificable: true, precioUSD: 180
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'TC1'
       }),
-      T('Endodoncia birradicular (premolar)', 'Tratamiento de conducto pieza birradicular', 299000, 110, {
+      T('Tratamiento de Conducto (Multi)', 'Endodoncia en molares (3+ conductos)', 410000, 130, {
         alcance: 'diente', modoDibujo: 'rootLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'TC-2', planificable: true, precioUSD: 230
-      }),
-      T('Endodoncia multirradicular (molar)', 'Tratamiento de conducto pieza multirradicular', 390000, 130, {
-        alcance: 'diente', modoDibujo: 'rootLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'TC-3', planificable: true, precioUSD: 300
-      }),
-      T('Retratamiento endodóntico', 'Retratamiento de conductos', 364000, 130, {
-        alcance: 'diente', modoDibujo: 'rootLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Punteado',
-        sigla: 'RTC', planificable: true, precioUSD: 280
-      }),
-      T('Poste y núcleo', 'Colocación de poste con reconstrucción de núcleo', 156000, 60, {
-        alcance: 'diente', modoDibujo: 'rootLine',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'PN', planificable: true, precioUSD: 120
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'TC3'
       }),
 
-      // === Prótesis fija / estética ===
-      T('Corona metal-porcelana', 'Funda ceramo-metálica', 585000, 90, {
+      // === Rehabilitación / Prótesis Fija ===
+      T('Corona de Zirconio Pura', 'Prótesis fija CAD-CAM libre de metal', 890000, 90, {
         alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'CR-MP', planificable: true, precioUSD: 450
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'ZIRC'
       }),
-      T('Corona totalmente cerámica (zirconio/porcelana)', 'Funda libre de metal', 845000, 90, {
-        alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'CR-CER', planificable: true, precioUSD: 650
+      T('Perno y Reconstrucción', 'Poste de fibra de vidrio y núcleo de resina', 160000, 60, {
+        alcance: 'diente', modoDibujo: 'rootLine',
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'PYR'
       }),
-      T('Corona provisional', 'Funda provisoria', 78000, 30, {
-        alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: GRN, colorPlanificado: RED, trazoSugerido: 'Punteado',
-        sigla: 'CR-PROV', planificable: true, precioUSD: 60
-      }),
-      T('Carilla de porcelana (veneer)', 'Lámina estética anterior', 715000, 90, {
-        alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'VEN', planificable: true, precioUSD: 550
-      }),
-      T('Puente (por unidad)', 'Precio por diente en puente fijo', 585000, 90, {
+      T('Puente Fijo (tramo)', 'Unidad de puente cerámico', 600000, 90, {
         alcance: 'multi', aplicaMultiplesPiezas: true, modoDibujo: 'connector',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'PU', planificable: true, precioUSD: 450
-      }),
-      T('Recementado de corona', 'Retiro y recementado de corona', 65000, 20, {
-        alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'RC', planificable: true, precioUSD: 50
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'PT'
       }),
 
       // === Implantes ===
-      T('Implante (colocación del implante)', 'Colocación de fixture (sin prótesis)', 1170000, 90, {
+      T('Implante Dental (Fase 1)', 'Colocación quirúrgica de fixture de titanio', 1250000, 90, {
         alcance: 'diente', modoDibujo: 'implant',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'IMP', planificable: true, precioUSD: 900
-      }),
-      T('Pilar + corona sobre implante', 'Rehabilitación del implante', 910000, 90, {
-        alcance: 'diente', modoDibujo: 'outline',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'ABT+CR', planificable: true, precioUSD: 700
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'IMP'
       }),
 
       // === Cirugía ===
-      T('Extracción simple', 'Exodoncia simple', 104000, 30, {
+      T('Exodoncia Simple', 'Extracción dental atraumática', 110000, 30, {
         alcance: 'diente', modoDibujo: 'cross',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'EX', planificable: true, precioUSD: 80
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'EXT'
       }),
-      T('Extracción quirúrgica / tercer molar', 'Exodoncia con colgajo/osteotomía', 260000, 60, {
+      T('Exodoncia Quirúrgica / Tercer Molar', 'Extracción compleja de tercer molar', 280000, 60, {
         alcance: 'diente', modoDibujo: 'cross',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'EXQ', planificable: true, precioUSD: 200
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'EXTQ'
       }),
 
-      // === Periodoncia ===
-      T('Raspado y alisado radicular (por cuadrante)', 'SRP por cuadrante', 195000, 60, {
-        alcance: 'cuadrante', modoDibujo: 'none',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Punteado',
-        sigla: 'SRP', planificable: true, precioUSD: 150
-      }),
-      T('Ferulización periodontal', 'Férula de contención en sector anterior', 234000, 60, {
-        alcance: 'multi', aplicaMultiplesPiezas: true, modoDibujo: 'connector',
-        colorRealizado: BLUE, colorPlanificado: RED, trazoSugerido: 'Continuo',
-        sigla: 'FER', planificable: true, precioUSD: 180
-      }),
-
-      // === Estética / Oclusión ===
-      T('Blanqueamiento en consultorio', 'Peróxido en consultorio', 325000, 60, {
-        alcance: 'arcada', modoDibujo: 'none', sigla: 'BLQ',
-        colorRealizado: BLUE, planificable: true, precioUSD: 250
-      }),
-      T('Placa de bruxismo (férula)', 'Placa Michigan o similar', 286000, 60, {
-        alcance: 'arcada', modoDibujo: 'none', sigla: 'FERU',
-        colorRealizado: BLUE, planificable: true, precioUSD: 220
-      }),
-      T('Protector dental deportivo', 'Protección termoformada', 208000, 45, {
-        alcance: 'arcada', modoDibujo: 'none', sigla: 'PROT',
-        colorRealizado: BLUE, planificable: true, precioUSD: 160
+      // === Rehabilitación / Estética ===
+      T('Carilla E-Max', 'Lámina de porcelana inyectada de alta estética', 750000, 90, {
+        alcance: 'diente', modoDibujo: 'outline',
+        colorRealizado: CLINIC_BLUE, colorPlanificado: CLINIC_RED, trazoSugerido: 'Continuo',
+        sigla: 'VEN'
       }),
     ], {});
   },
 
   async down(queryInterface, Sequelize) {
-    const Op = Sequelize.Op;
-    await queryInterface.bulkDelete('tratamientos', {
-      nombre: {
-        [Op.in]: [
-          'Consulta y diagnóstico',
-          'Radiografía periapical',
-          'Radiografía panorámica (OPG)',
-          'Limpieza (profilaxis)',
-          'Fluoración tópica',
-          'Sellante de fosas y fisuras (por pieza)',
-          'Obturación resina 1 cara',
-          'Obturación resina 2 caras (MO/DO)',
-          'Obturación resina 3 caras (MOD)',
-          'Tratamiento de fractura coronal con resina',
-          'Incrustación / inlay / onlay',
-          'Endodoncia unirradicular (incisivo/canino)',
-          'Endodoncia birradicular (premolar)',
-          'Endodoncia multirradicular (molar)',
-          'Retratamiento endodóntico',
-          'Poste y núcleo',
-          'Corona metal-porcelana',
-          'Corona totalmente cerámica (zirconio/porcelana)',
-          'Corona provisional',
-          'Carilla de porcelana (veneer)',
-          'Puente (por unidad)',
-          'Recementado de corona',
-          'Implante (colocación del implante)',
-          'Pilar + corona sobre implante',
-          'Extracción simple',
-          'Extracción quirúrgica / tercer molar',
-          'Raspado y alisado radicular (por cuadrante)',
-          'Ferulización periodontal',
-          'Blanqueamiento en consultorio',
-          'Placa de bruxismo (férula)',
-          'Protector dental deportivo',
-        ],
-      },
-    }, {});
+    await queryInterface.bulkDelete('tratamientos', null, {});
   },
 };
