@@ -21,15 +21,16 @@ import PacienteDetalle from '../features/pacientes/pages/PacienteDetalle';
 import PacienteOdontograma from '../features/odontograma/pages/PacienteOdontograma';
 import AdminPage from '../features/admin/pages/AdminPage';
 
-
-
-
 import Agenda from '../features/agenda/pages/Agenda';
 import AgendaDiaria from '../features/agenda/pages/AgendaDiaria';
 import NuevoTurnoPaso1 from '../features/agenda/pages/NuevoTurnoPaso1';
 import NuevoTurnoPaso2 from '../features/agenda/pages/NuevoTurnoPaso2';
 import NuevoTurnoPaso3 from '../features/agenda/pages/NuevoTurnoPaso3';
 import GestionDisponibilidades from '../features/agenda/pages/GestionDisponibilidades';
+
+// 👇 IMPORTACIONES DE FINANZAS
+import CajaPage from '../features/finanzas/pages/CajaPage';
+import FinancePage from '../features/finanzas/pages/FinancePage'; // ✅ La nueva página
 
 function AppRouter() {
   return (
@@ -62,7 +63,6 @@ function AppRouter() {
         <Route path="admin" element={<AdminPage />} />
         <Route path="cambiar-password" element={<ChangePassword />} />
 
-
         <Route path="pacientes">
           <Route index element={<Pacientes />} />
           <Route path="nuevo" element={<PacienteNuevo />} />
@@ -70,6 +70,7 @@ function AppRouter() {
           <Route path=":id/odontograma" element={<PacienteOdontograma />} />
           <Route path=":id" element={<PacienteDetalle />} />
         </Route>
+
         <Route path="agenda">
           <Route index element={<Agenda />} />
           <Route path="diaria" element={<AgendaDiaria />} />
@@ -78,8 +79,14 @@ function AppRouter() {
           <Route path="turnos/nuevo/paso2" element={<NuevoTurnoPaso2 />} />
           <Route path="turnos/nuevo/paso3" element={<NuevoTurnoPaso3 />} />
         </Route>
-      </Route>
 
+        <Route path="finanzas">
+           <Route index element={<FinancePage />} /> 
+           <Route path="caja" element={<CajaPage />} /> 
+        </Route>
+
+      </Route>
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

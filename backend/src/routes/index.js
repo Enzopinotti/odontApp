@@ -3,6 +3,7 @@ import usuarioRoutes from '../modules/Usuarios/routes/usuarioRoutes.js';
 import authRoutes from '../modules/Usuarios/routes/authRoutes.js';
 import clinicaRoutes from '../modules/Clinica/routes/index.js';
 import agendaRoutes from '../modules/Agenda/routes/index.js';
+import finanzasRoutes from '../modules/Finanzas/routes/index.js';
 
 const router = Router();
 
@@ -10,5 +11,6 @@ router.use('/usuarios', usuarioRoutes);
 router.use('/auth', authRoutes);
 router.use('/clinica', clinicaRoutes);
 router.use('/agenda', agendaRoutes); 
+router.use('/finanzas', finanzasRoutes);
 
 export default router;

@@ -1,0 +1,44 @@
+/* --- ESTILOS DE IMPRESIÓN --- */
+@media print {
+  /* Ocultar todo lo que tenga la clase no-print */
+  .no-print, 
+  .finance-controls, 
+  .finance-header, 
+  .sidebar, /* Si tu sidebar tiene esta clase */
+  .back-bar,
+  .finance-history {
+    display: none !important;
+  }
+
+  /* Resetear el layout grid para que ocupe el 100% */
+  .finance-page-container, 
+  .finance-modal-wrapper,
+  .finance-layout {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    width: 100% !important;
+  }
+
+  /* La hoja de papel debe ocupar toda la hoja real */
+  .finance-preview, .invoice-paper {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* Mostrar firma solo al imprimir */
+  .section-print-only {
+    display: block !important;
+  }
+
+  /* Ajustar tamaño de letra para papel */
+  body {
+    font-size: 12pt;
+    color: black;
+  }
+}
