@@ -34,7 +34,7 @@ export const register = async (data) => {
     throw new ApiError('El correo ya está en uso', 409, null, 'EMAIL_DUPLICADO');
   }
 
-  const user = await userRepo.create({ ...data, RolId: 4 });
+  const user = await userRepo.create({ ...data, RolId: 5 });
   await sendConfirmation(user);
 
   return { user };
@@ -200,7 +200,7 @@ export const changePassword = async (userId, actual, nueva) => {
   if (!user) throw new ApiError('Usuario inexistente', 404, null, 'USUARIO_INEXISTENTE');
 
   const ok = await bcrypt.compare(actual, user.password);
-  if (!ok)   throw new ApiError('Contraseña actual incorrecta', 401, null, 'PWD_ACTUAL_INCORRECTA');
+  if (!ok) throw new ApiError('Contraseña actual incorrecta', 401, null, 'PWD_ACTUAL_INCORRECTA');
 
   if (!passwordIsStrong(nueva))
     throw new ApiError('Contraseña débil', 400, null, 'PASSWORD_DEBIL');

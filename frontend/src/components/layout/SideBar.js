@@ -21,6 +21,11 @@ export default function SideBar() {
     return rolName === 'ADMIN' || rolName === 'ADMINISTRADOR';
   }, [user]);
 
+  const isPaciente = useMemo(() => {
+    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
+    return rolName === 'PACIENTE';
+  }, [user]);
+
   return (
     <>
       <button className="burger" onClick={() => setOpen(!open)}>☰</button>
@@ -28,21 +33,27 @@ export default function SideBar() {
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <nav>
           <div className="nav-section">
-            <NavLink to="/pacientes" title="Pacientes">
-              <FaUsers /> <span>Pacientes</span>
-            </NavLink>
+            {!isPaciente && (
+              <NavLink to="/pacientes" title="Pacientes">
+                <FaUsers /> <span>Pacientes</span>
+              </NavLink>
+            )}
             <NavLink to="/agenda" title="Agenda">
               <FaCalendarAlt /> <span>Agenda</span>
             </NavLink>
-            <NavLink to="/facturacion" title="Facturación">
-              <FaFileInvoiceDollar /> <span>Facturación</span>
-            </NavLink>
-            <NavLink to="/recetas" title="Recetas">
-              <FaReceipt /> <span>Recetas</span>
-            </NavLink>
-            <NavLink to="/reportes" title="Reportes">
-              <FaChartBar /> <span>Reportes</span>
-            </NavLink>
+            {!isPaciente && (
+              <>
+                <NavLink to="/facturacion" title="Facturación">
+                  <FaFileInvoiceDollar /> <span>Facturación</span>
+                </NavLink>
+                <NavLink to="/recetas" title="Recetas">
+                  <FaReceipt /> <span>Recetas</span>
+                </NavLink>
+                <NavLink to="/reportes" title="Reportes">
+                  <FaChartBar /> <span>Reportes</span>
+                </NavLink>
+              </>
+            )}
           </div>
 
           <div className="nav-footer">

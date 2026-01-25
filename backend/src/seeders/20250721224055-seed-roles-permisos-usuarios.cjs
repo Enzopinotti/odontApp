@@ -11,6 +11,7 @@ module.exports = {
       { id: 2, nombre: 'Odontólogo' },
       { id: 3, nombre: 'Asistente' },
       { id: 4, nombre: 'Recepcionista' },
+      { id: 5, nombre: 'Paciente' },
     ].filter(r => !rolesExistentes.some(re => re.id === r.id));
 
     if (rolesParaInsertar.length > 0) {
@@ -48,6 +49,14 @@ module.exports = {
       { recurso: 'notificaciones', accion: 'listar' },
       { recurso: 'reportes', accion: 'ver' },
       { recurso: 'reportes', accion: 'generar' },
+      { recurso: 'turnos', accion: 'ver' },
+      { recurso: 'turnos', accion: 'crear' },
+      { recurso: 'turnos', accion: 'editar' },
+      { recurso: 'turnos', accion: 'cancelar' },
+      { recurso: 'turnos', accion: 'reprogramar' },
+      { recurso: 'turnos', accion: 'marcar_asistencia' },
+      { recurso: 'turnos', accion: 'marcar_ausencia' },
+      { recurso: 'turnos', accion: 'eliminar' },
     ];
 
     const permisosParaInsertar = todosLosPermisos.filter(p =>
@@ -82,6 +91,20 @@ module.exports = {
       ['historia_clinica', 'ver'], ['historia_clinica', 'crear'],
       ['reportes', 'ver'],
     ].forEach(([r, a]) => safeAdd(2, permId(r, a)));
+
+    // PACIENTE: Solo ver agenda (para sacar turnos)
+    [
+      ['agenda', 'ver'],
+    ].forEach(([r, a]) => safeAdd(5, permId(r, a)));
+
+    // RECEPCIONISTA: Agenda (turnos) y pacientes
+    [
+      ['pacientes', 'listar'], ['pacientes', 'ver'], ['pacientes', 'crear'], ['pacientes', 'editar'],
+      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'], 
+      ['turnos', 'cancelar'], ['turnos', 'reprogramar'],
+      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'],
+      ['agenda', 'ver'], ['agenda', 'gestionar'],
+    ].forEach(([r, a]) => safeAdd(4, permId(r, a)));
 
     if (rolPermisosNuevos.length > 0) {
       await queryInterface.bulkInsert('rol_permisos', rolPermisosNuevos, {});

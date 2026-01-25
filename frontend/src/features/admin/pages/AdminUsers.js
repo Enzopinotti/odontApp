@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminUsers } from '../hooks/useAdminUsers';
-import { updateUsuario } from '../../../api/admin';
+import { updateUsuario, deleteUsuario } from '../../../api/admin';
 import useToast from '../../../hooks/useToast';
 import {
     FaUserPlus, FaUserShield, FaEnvelope, FaPhone,
@@ -38,6 +38,22 @@ export default function AdminUsers() {
 
     const handleToggleStatus = (u) => {
         toggleStatusMut.mutate({ id: u.id, activo: u.activo });
+    };
+
+    const deleteMut = useMutation({
+        mutationFn: (id) => deleteUsuario(id),
+        onSuccess: () => {
+            showToast('Usuario eliminado correctamente', 'success');
+            qc.invalidateQueries(['admin', 'users']);
+            setOpenMenuId(null);
+        },
+        onError: () => showToast('Error al eliminar usuario', 'error')
+    });
+
+    const handleDelete = (u) => {
+        if (window.confirm(`¿Estás seguro de eliminar a ${u.nombre} ${u.apellido}? Esta acción no se puede deshacer.`)) {
+            deleteMut.mutate(u.id);
+        }
     };
 
     useEffect(() => {
@@ -102,7 +118,13 @@ export default function AdminUsers() {
                                                 {u.activo ? 'Suspender' : 'Activar'}
                                             </button>
 
-                                            <button className="menu-item danger"><FaTrashAlt /> Eliminar</button>
+                                            <button
+                                                className="menu-item danger"
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(u); }}
+                                                disabled={deleteMut.isLoading}
+                                            >
+                                                <FaTrashAlt /> Eliminar
+                                            </button>
                                         </div>
                                     )}
                                 </div>

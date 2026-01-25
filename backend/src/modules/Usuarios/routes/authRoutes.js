@@ -13,17 +13,18 @@ import * as authSvc from '../services/authService.js';
 import * as twoFA from '../controllers/2faController.js';
 import passport from '../../../config/passport.js';
 import jwt from 'jsonwebtoken';
+import { registrarLog } from '../services/auditService.js';
 
 const router = Router();
 
 const isProd = process.env.NODE_ENV === 'production';
 
 const cookieOpts = {
-  httpOnly : true,
-  secure   : isProd,                     // 🔒 true en prod, false en local
-  sameSite : isProd ? 'none' : 'lax',    // ✅ 'none' en prod para cross-domain, 'lax' en local
-  domain   : isProd ? 'odontapp.com' : undefined, // solo setea dominio en prod
-  path     : '/',
+  httpOnly: true,
+  secure: isProd,                     // 🔒 true en prod, false en local
+  sameSite: isProd ? 'none' : 'lax',    // ✅ 'none' en prod para cross-domain, 'lax' en local
+  domain: isProd ? 'odontapp.com' : undefined, // solo setea dominio en prod
+  path: '/',
 };
 
 /**
@@ -218,6 +219,16 @@ router.get(
   async (req, res) => {
     const user = req.user;
 
+    // Actualizar ultimoLogin
+    await user.update({ ultimoLogin: new Date() });
+
+    // Registrar en auditoría
+    try {
+      await registrarLog(user.id, 'auth', 'login_success_google', req.ip);
+    } catch (error) {
+      console.error('Error al registrar auditoría de Google login:', error);
+    }
+
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, roleId: user.RolId },
       process.env.JWT_SECRET,
@@ -231,9 +242,9 @@ router.get(
     );
 
     res
-      .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
+      .cookie('accessToken', accessToken, { ...cookieOpts, maxAge: 1000 * 60 * 15 })
       .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
-      .redirect(`${process.env.FRONTEND_URL}/`); // o devuelve JSON si tu front es SPA
+      .redirect(`${process.env.FRONTEND_URL}/`);
   }
 );
 
