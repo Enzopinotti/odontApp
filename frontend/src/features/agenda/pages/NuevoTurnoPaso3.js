@@ -6,20 +6,23 @@ import useToast from '../../../hooks/useToast';
 import { handleApiError } from '../../../utils/handleApiError';
 import BackBar from '../../../components/BackBar';
 import ConflictoTurnoModal from '../components/ConflictoTurnoModal';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
+import { FaCheck } from 'react-icons/fa';
 import '../../../styles/agenda.scss';
 
 export default function NuevoTurnoPaso3() {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
+
   const { fechaHora, tratamiento, odontologoId, duracion: duracionInicial, paciente, datosPaciente } = location.state || {};
-  
+
   const [motivo, setMotivo] = useState(tratamiento?.nombre || '');
-  const [duracion, setDuracion] = useState(duracionInicial || 30);
+  const [duracion, setDuracion] = useState(Number(duracionInicial) || 30);
   const [conflicto, setConflicto] = useState(null);
   const [mostrarModalConflicto, setMostrarModalConflicto] = useState(false);
-  
+
   const crearTurno = useCrearTurno();
 
   // Si no hay datos de los pasos anteriores, redirigir
@@ -46,20 +49,20 @@ export default function NuevoTurnoPaso3() {
       showToast('La duración solo puede ser de 30 o 60 minutos', 'error');
       return;
     }
-    
+
     // Validar motivo (1-255 caracteres)
     if (!motivo || motivo.trim().length === 0 || motivo.length > 255) {
       showToast('El motivo es requerido y debe tener entre 1 y 255 caracteres', 'error');
       return;
     }
-    
+
     // Log de datos a enviar
     const fechaHoraObj = new Date(fechaHora);
     const fechaStr = fechaHoraObj.toISOString().split('T')[0];
     const horaInicioStr = fechaHoraObj.toTimeString().slice(0, 5);
     const fechaFinObj = new Date(fechaHoraObj.getTime() + duracion * 60000);
     const horaFinStr = fechaFinObj.toTimeString().slice(0, 5);
-    
+
     console.log('[NuevoTurnoPaso3] Datos a enviar al backend:', {
       fechaHora,
       fechaHoraObj,
@@ -71,7 +74,7 @@ export default function NuevoTurnoPaso3() {
       pacienteId: paciente.id,
       motivo: motivo.trim()
     });
-    
+
     try {
       await crearTurno.mutateAsync({
         fechaHora: fechaHora,
@@ -81,7 +84,7 @@ export default function NuevoTurnoPaso3() {
         odontologoId: odontologoId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
       });
-      
+
       showToast('Turno creado exitosamente', 'success');
       navigate('/agenda');
     } catch (error) {
@@ -89,7 +92,7 @@ export default function NuevoTurnoPaso3() {
       const res = error?.response;
       if (res?.status === 409) {
         const { code, message, metadata } = res.data || {};
-        
+
         // Si el error es de horario no disponible, es un error crítico
         // porque solo mostramos horarios disponibles
         if (code === 'HORARIO_NO_DISPONIBLE') {
@@ -108,7 +111,7 @@ export default function NuevoTurnoPaso3() {
           }, 2000);
           return;
         }
-        
+
         if (code === 'SOLAPAMIENTO_TURNO' && metadata) {
           console.error('[NuevoTurnoPaso3] ERROR CRÍTICO: Solapamiento aunque se validó:', {
             fechaHora,
@@ -127,7 +130,7 @@ export default function NuevoTurnoPaso3() {
           return;
         }
       }
-      
+
       // Otros errores se manejan normalmente
       handleApiError(error, showToast);
     }
@@ -143,7 +146,7 @@ export default function NuevoTurnoPaso3() {
         odontologoId: nuevoOdontologo.userId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
       });
-      
+
       showToast('Turno creado exitosamente con el odontólogo alternativo', 'success');
       navigate('/agenda');
     } catch (error) {
@@ -161,7 +164,7 @@ export default function NuevoTurnoPaso3() {
         odontologoId: odontologoId,
         generarRecordatorio: datosPaciente?.generarRecordatorio || false,
       });
-      
+
       showToast('Turno creado exitosamente en el nuevo horario', 'success');
       navigate('/agenda');
     } catch (error) {
@@ -171,30 +174,30 @@ export default function NuevoTurnoPaso3() {
 
   return (
     <div className="nuevo-turno-container">
-      <BackBar 
-        title="Nuevo turno" 
-        subtitle="Visualización de datos" 
-        to="/agenda/turnos/nuevo/paso2" 
+      <BackBar
+        title="Nuevo turno"
+        subtitle="Visualización de datos"
+        to="/agenda/turnos/nuevo/paso2"
       />
-      
+
       <div className="nuevo-turno-steps">
-        <div className="step completed">
-          <div className="step-circle completed">✓</div>
+        <div className="step-item completed">
+          <div className="step-circle completed"><FaCheck /></div>
           <div className="step-label">Fecha y Tratamiento</div>
         </div>
-        <div className="step completed">
-          <div className="step-circle completed">✓</div>
+        <div className="step-item completed">
+          <div className="step-circle completed"><FaCheck /></div>
           <div className="step-label">Datos</div>
         </div>
-        <div className="step active">
-          <div className="step-circle active">3</div>
+        <div className="step-item active">
+          <div className="step-circle active"><FaCheck /></div>
           <div className="step-label active">Confirmar</div>
         </div>
       </div>
 
       <div className="nuevo-turno-form">
         <h2>Confirmar turno</h2>
-        
+
         {/* CU-AG01.2: Campos editables para motivo y duración */}
         <div className="form-section" style={{ marginBottom: '2rem' }}>
           <label className="form-label">
@@ -213,7 +216,7 @@ export default function NuevoTurnoPaso3() {
             {motivo.length}/255 caracteres
           </div>
         </div>
-        
+
         <div className="form-section" style={{ marginBottom: '2rem' }}>
           <label className="form-label">
             Duración (minutos) <span style={{ color: 'red' }}>*</span>
@@ -231,7 +234,7 @@ export default function NuevoTurnoPaso3() {
             Solo se permiten turnos de 30 o 60 minutos
           </div>
         </div>
-        
+
         <div className="resumen-turno">
           <div className="resumen-card">
             <div className="resumen-title">Datos de la atención</div>
@@ -305,6 +308,7 @@ export default function NuevoTurnoPaso3() {
         <button
           className="btn-secondary"
           onClick={() => navigate('/agenda/turnos/nuevo/paso2')}
+          disabled={crearTurno.isLoading}
         >
           Volver
         </button>
@@ -313,9 +317,31 @@ export default function NuevoTurnoPaso3() {
           onClick={handleConfirmar}
           disabled={crearTurno.isLoading}
         >
-          {crearTurno.isLoading ? 'Creando...' : 'Confirmar'}
+          {crearTurno.isLoading ? 'Confirmando...' : 'Confirmar'}
         </button>
       </div>
+
+      {crearTurno.isLoading && (
+        <div className="pacientes-loader" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.8)',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <Lottie animationData={loadingAnim} loop autoplay style={{ width: 200 }} />
+          <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63', fontSize: '1.2rem' }}>
+            Agendando turno...
+          </p>
+        </div>
+      )}
 
       {/* CU-AG01.2: Modal de conflicto de horario */}
       <ConflictoTurnoModal

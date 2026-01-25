@@ -386,11 +386,32 @@
 
   .loading-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    font-size: 0.9rem;
-    color: #555;
+    font-size: 1.1rem;
+    font-weight: 850;
+    color: v.$color-primary;
+    gap: 1.5rem;
+  }
+
+  .pacientes-loader {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    width: 100%;
+    min-height: 300px;
+    background: transparent;
+
+    p {
+      margin-top: 1rem;
+      font-weight: 850;
+      color: v.$color-primary;
+      font-size: 1.1rem;
+    }
   }
 
   // Línea de hora actual (solo visible cuando es HOY)
@@ -426,11 +447,10 @@
       left: 0;
       width: 100%;
       height: 3px;
-      background: linear-gradient(90deg, 
-        #ef4444 0%, 
-        #ef4444 50%, 
-        transparent 100%
-      );
+      background: linear-gradient(90deg,
+          #ef4444 0%,
+          #ef4444 50%,
+          transparent 100%);
       box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
       z-index: 101;
       animation: slideIn 0.5s ease-out;
@@ -450,10 +470,13 @@
   }
 
   @keyframes pulseIndicator {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: scale(1);
       box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
     }
+
     50% {
       transform: scale(1.05);
       box-shadow: 0 3px 12px rgba(239, 68, 68, 0.6);
@@ -465,6 +488,7 @@
       transform: scaleX(0);
       opacity: 0;
     }
+
     to {
       transform: scaleX(1);
       opacity: 1;
@@ -475,7 +499,7 @@
 // Modal de detalles del turno
 .modal-detalles-turno {
   background-color: v.$color-white;
-    border-radius: v.$radius;
+  border-radius: v.$radius;
   max-width: 700px;
   width: 90%;
   max-height: 90vh;
@@ -739,6 +763,7 @@
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -755,18 +780,24 @@
 }
 
 @keyframes pulse-amarillo {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
   }
 }
 
 @keyframes pulse-rojo {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
   }
@@ -783,9 +814,7 @@
   padding: 1rem;
 }
 
-.controles-semana {
-  // Los estilos de .btn-nav ya están definidos arriba en el bloque principal
-}
+
 
 .dia-semana-card {
   transition: box-shadow 0.2s ease, opacity 0.2s ease;
@@ -801,9 +830,12 @@
 }
 
 @keyframes pulse-hoy {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
   }
+
   50% {
     box-shadow: 0 4px 12px rgba(33, 150, 243, 0.5);
   }
@@ -811,7 +843,7 @@
 
 .turno-card-semanal {
   transition: background 0.15s;
-  
+
   &:hover {
     background: rgba(v.$color-primary, 0.04);
   }
@@ -836,11 +868,11 @@
   .semana-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-  
+
   .controles-semana {
     flex-direction: column;
     gap: 1rem;
-    
+
     .btn-nav {
       width: 100%;
       justify-content: center;
@@ -921,4 +953,3 @@
     grid-template-columns: 1fr !important;
   }
 }
-
