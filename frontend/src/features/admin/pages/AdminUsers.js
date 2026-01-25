@@ -11,6 +11,7 @@ import {
 import avatarDefecto from '../../../assets/img/avatarDefecto.webp';
 import UserRoleModal from '../components/UserRoleModal';
 import UserFormModal from '../components/UserFormModal';
+import DeleteUserModal from '../components/DeleteUserModal';
 import '../../../styles/_adminUsers.scss';
 
 export default function AdminUsers() {
@@ -21,6 +22,7 @@ export default function AdminUsers() {
     const [roleTarget, setRoleTarget] = useState(null);
     const [editingUser, setEditingUser] = useState(null);
     const [registerModalOpen, setRegisterModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
 
     const { data: usersData, isLoading } = useAdminUsers(params);
 
@@ -51,8 +53,14 @@ export default function AdminUsers() {
     });
 
     const handleDelete = (u) => {
-        if (window.confirm(`¿Estás seguro de eliminar a ${u.nombre} ${u.apellido}? Esta acción no se puede deshacer.`)) {
-            deleteMut.mutate(u.id);
+        setUserToDelete(u);
+        setOpenMenuId(null);
+    };
+
+    const confirmDelete = () => {
+        if (userToDelete) {
+            deleteMut.mutate(userToDelete.id);
+            setUserToDelete(null);
         }
     };
 
@@ -177,6 +185,16 @@ export default function AdminUsers() {
                     }}
                 />
             )}
+
+            {userToDelete && (
+                <DeleteUserModal
+                    user={userToDelete}
+                    onClose={() => setUserToDelete(null)}
+                    onConfirm={confirmDelete}
+                    isDeleting={deleteMut.isLoading}
+                />
+            )}
         </div>
     );
 }
+
