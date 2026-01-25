@@ -105,7 +105,10 @@ export default function PacienteDetalle() {
   })), [estados]);
 
   // Definición de roles y permisos
-  const isAdmin = useMemo(() => user?.Rol?.nombre?.toUpperCase() === 'ADMIN', [user]);
+  const isAdmin = useMemo(() => {
+    const rol = user?.Rol?.nombre?.toUpperCase() || '';
+    return rol === 'ADMIN' || rol === 'ADMINISTRADOR';
+  }, [user]);
   const userEsOdontologo = useMemo(() => user?.Rol?.nombre?.toUpperCase() === 'ODONTÓLOGO', [user]);
 
   const canVerPaciente = hasPermiso('pacientes', 'listar') || isAdmin;

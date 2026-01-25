@@ -89,7 +89,12 @@ module.exports = {
 
     /* 4️⃣  USUARIO ADMIN -------------------------------------- */
     const [adminExistente] = await queryInterface.sequelize.query("SELECT id FROM usuarios WHERE email = 'admin@odontapp.com'");
-    if (adminExistente.length === 0) {
+
+    if (adminExistente.length > 0) {
+      // Si existe, aseguramos que tenga el ROL de admin y esté activo
+      await queryInterface.sequelize.query(`UPDATE usuarios SET RolId = 1, activo = 1 WHERE email = 'admin@odontapp.com'`);
+    } else {
+      // Si no existe, lo creamos de cero
       await queryInterface.bulkInsert('usuarios', [{
         nombre: 'Admin',
         apellido: 'Sistema',

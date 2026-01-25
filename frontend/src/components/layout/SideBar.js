@@ -17,7 +17,8 @@ export default function SideBar() {
   const { hasPermiso, user } = useAuth();
 
   const isAdmin = useMemo(() => {
-    return user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
+    return rolName === 'ADMIN' || rolName === 'ADMINISTRADOR';
   }, [user]);
 
   return (

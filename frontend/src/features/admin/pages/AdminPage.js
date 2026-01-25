@@ -15,7 +15,8 @@ export default function AdminPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    const isAdmin = user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
+    const isAdmin = rolName === 'ADMIN' || rolName === 'ADMINISTRADOR';
 
     useEffect(() => {
         if (!isAdmin) {
