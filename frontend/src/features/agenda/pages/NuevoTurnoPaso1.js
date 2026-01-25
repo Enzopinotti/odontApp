@@ -25,7 +25,7 @@ export default function NuevoTurnoPaso1() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const { pacientePreseleccionado } = location.state || {};
+  const { pacientePreseleccionado, fechaHoraPreseleccionada, odontologoIdPreseleccionado } = location.state || {};
 
   // CU-AG01.5: Proteger ruta - Solo recepcionista puede crear turnos
   useEffect(() => {
@@ -34,11 +34,41 @@ export default function NuevoTurnoPaso1() {
       navigate('/agenda/diaria');
     }
   }, [user, navigate]);
-  const [mesActual, setMesActual] = useState(new Date());
-  const [fecha, setFecha] = useState(null);
+
+  // Parsear fecha y hora preseleccionadas si vienen desde la agenda
+  const fechaInicial = useMemo(() => {
+    if (fechaHoraPreseleccionada) {
+      const fechaObj = new Date(fechaHoraPreseleccionada);
+      const año = fechaObj.getFullYear();
+      const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+      const dia = String(fechaObj.getDate()).padStart(2, '0');
+      return `${año}-${mes}-${dia}`;
+    }
+    return null;
+  }, [fechaHoraPreseleccionada]);
+
+  const horarioInicial = useMemo(() => {
+    if (fechaHoraPreseleccionada) {
+      const fechaObj = new Date(fechaHoraPreseleccionada);
+      const hora = String(fechaObj.getHours()).padStart(2, '0');
+      const minutos = String(fechaObj.getMinutes()).padStart(2, '0');
+      return `${hora}:${minutos}`;
+    }
+    return null;
+  }, [fechaHoraPreseleccionada]);
+
+  const [mesActual, setMesActual] = useState(() => {
+    // Si hay fecha preseleccionada, arrancar en ese mes
+    if (fechaInicial) {
+      const [año, mes] = fechaInicial.split('-');
+      return new Date(parseInt(año), parseInt(mes) - 1, 1);
+    }
+    return new Date();
+  });
+  const [fecha, setFecha] = useState(fechaInicial);
   const [tratamientoSeleccionado, setTratamientoSeleccionado] = useState(null);
-  const [odontologoId, setOdontologoId] = useState(null);
-  const [horarioSeleccionado, setHorarioSeleccionado] = useState(null);
+  const [odontologoId, setOdontologoId] = useState(odontologoIdPreseleccionado || null);
+  const [horarioSeleccionado, setHorarioSeleccionado] = useState(horarioInicial);
   const [busquedaOdontologo, setBusquedaOdontologo] = useState('');
   const [mostrarListaOdontologos, setMostrarListaOdontologos] = useState(false);
   const odontologoInputRef = useRef(null);
@@ -530,17 +560,22 @@ export default function NuevoTurnoPaso1() {
     return disponibles.sort((a, b) => horaStringToMinutes(a.inicio) - horaStringToMinutes(b.inicio));
   }, [slotsFiltrados, horariosOcupados, tratamientoSeleccionado, fecha, odontologoId, franjasDisponibilidad]);
 
-  // Reset fecha y horario cuando cambia el odontólogo
+  // Reset fecha y horario cuando cambia el odontólogo (pero no si vienen precargados)
   useEffect(() => {
-    setFecha(null);
-    setHorarioSeleccionado(null);
-    setTratamientoSeleccionado(null);
-  }, [odontologoId]);
+    // Solo resetear si no hay valores preseleccionados desde la agenda
+    if (!fechaHoraPreseleccionada && !odontologoIdPreseleccionado) {
+      setFecha(null);
+      setHorarioSeleccionado(null);
+      setTratamientoSeleccionado(null);
+    }
+  }, [odontologoId, fechaHoraPreseleccionada, odontologoIdPreseleccionado]);
 
-  // Reset horario cuando cambia la fecha o el tratamiento
+  // Reset horario cuando cambia la fecha o el tratamiento (pero no si viene precargado)
   useEffect(() => {
-    setHorarioSeleccionado(null);
-  }, [fecha, tratamientoSeleccionado]);
+    if (!horarioInicial) {
+      setHorarioSeleccionado(null);
+    }
+  }, [fecha, tratamientoSeleccionado, horarioInicial]);
 
   // Generar días del mes para el calendario
   const diasDelMes = useMemo(() => {
