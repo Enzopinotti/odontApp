@@ -5,6 +5,8 @@ import { useReprogramarTurno, useSlotsDisponibles, useCancelarTurno, useTurnosPo
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
 import useToast from '../../../hooks/useToast';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import { handleApiError } from '../../../utils/handleApiError';
 import ConflictoTurnoModal from './ConflictoTurnoModal';
 
@@ -23,7 +25,7 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
   const [fecha, setFecha] = useState('');
   const [horaSeleccionada, setHoraSeleccionada] = useState('');
   const [odontologoId, setOdontologoId] = useState(turno?.odontologoId || '');
-  
+
   // CU-AG01.3: Estado para manejar conflictos y opción "Paciente no acepta"
   const [conflicto, setConflicto] = useState(null);
   const [mostrarModalConflicto, setMostrarModalConflicto] = useState(false);
@@ -94,7 +96,7 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
       const mesStr = String(mes + 1).padStart(2, '0');
       const diaStr = String(dia).padStart(2, '0');
       const fechaStr = `${añoStr}-${mesStr}-${diaStr}`;
-      const esPasado = fechaCompleta < new Date(new Date().setHours(0,0,0,0));
+      const esPasado = fechaCompleta < new Date(new Date().setHours(0, 0, 0, 0));
 
       dias.push({
         numero: dia,
@@ -162,24 +164,24 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
   }, [turno]);
 
   const formatearHora = (hora) => {
-  if (!hora || typeof hora !== 'string') return '';
-  return hora.substring(0, 5); // HH:MM
+    if (!hora || typeof hora !== 'string') return '';
+    return hora.substring(0, 5); // HH:MM
   };
 
-function horaStringToMinutes(hora) {
-  if (!hora) return 0;
-  const [h, m] = hora.split(':');
-  return parseInt(h, 10) * 60 + parseInt(m, 10);
-}
+  function horaStringToMinutes(hora) {
+    if (!hora) return 0;
+    const [h, m] = hora.split(':');
+    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  }
 
-function parseFechaSinTZ(fechaStr) {
-  if (!fechaStr || typeof fechaStr !== 'string') return null;
-  const partes = fechaStr.split('-');
-  if (partes.length !== 3) return null;
-  const [anio, mes, dia] = partes.map(Number);
-  if (Number.isNaN(anio) || Number.isNaN(mes) || Number.isNaN(dia)) return null;
-  return new Date(anio, mes - 1, dia, 12, 0, 0, 0);
-}
+  function parseFechaSinTZ(fechaStr) {
+    if (!fechaStr || typeof fechaStr !== 'string') return null;
+    const partes = fechaStr.split('-');
+    if (partes.length !== 3) return null;
+    const [anio, mes, dia] = partes.map(Number);
+    if (Number.isNaN(anio) || Number.isNaN(mes) || Number.isNaN(dia)) return null;
+    return new Date(anio, mes - 1, dia, 12, 0, 0, 0);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -214,7 +216,7 @@ function parseFechaSinTZ(fechaStr) {
           return;
         }
       }
-      
+
       // Otros errores se manejan normalmente
       handleApiError(error, showToast);
     }
@@ -229,7 +231,7 @@ function parseFechaSinTZ(fechaStr) {
 
     try {
       const nuevaFechaHora = `${fecha}T${horaSeleccionada}:00`;
-      
+
       // Reprogramar con el nuevo odontólogo
       await reprogramarTurno.mutateAsync({
         id: turno.id,
@@ -305,8 +307,8 @@ function parseFechaSinTZ(fechaStr) {
       <div className="modal-content modal-reprogramar" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
-          <h2>
-            <FaCalendarAlt /> Reprogramar Turno
+          <h2 style={{ fontWeight: '850' }}>
+            <FaCalendarAlt style={{ marginRight: '0.5rem' }} /> Reprogramar Turno
           </h2>
           <button className="btn-close" onClick={onClose}>
             <FaTimes />
@@ -441,7 +443,12 @@ function parseFechaSinTZ(fechaStr) {
                   {!fecha ? (
                     <p style={{ color: '#6b7280' }}>Selecciona primero una fecha en el calendario.</p>
                   ) : loadingSlots ? (
-                    <p className="loading-text">Cargando horarios...</p>
+                    <div className="pacientes-loader" style={{ padding: '1rem', minHeight: '150px' }}>
+                      <Lottie animationData={loadingAnim} loop autoplay style={{ width: 100 }} />
+                      <p style={{ marginTop: '0.5rem', fontWeight: '850', color: '#145c63', fontSize: '0.9rem' }}>
+                        Cargando horarios...
+                      </p>
+                    </div>
                   ) : slotsDisponibles.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.5rem' }}>
                       {slotsDisponibles.map((slot, idx) => (
@@ -536,6 +543,26 @@ function parseFechaSinTZ(fechaStr) {
         fechaHoraOriginal={turno?.fechaHora}
         duracion={turno?.duracion || 30}
       />
+
+      {(reprogramarTurno.isPending || cancelarTurno.isPending) && (
+        <div className="pacientes-loader" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.7)',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <Lottie animationData={loadingAnim} loop autoplay style={{ width: 180 }} />
+          <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63' }}>Procesando...</p>
+        </div>
+      )}
     </div>
   );
 }

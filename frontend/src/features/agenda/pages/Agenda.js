@@ -1,5 +1,5 @@
 // src/features/agenda/pages/Agenda.js
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import useAuth from '../../../features/auth/hooks/useAuth';
@@ -7,22 +7,26 @@ import { FaCalendarPlus, FaCalendarAlt, FaSearch, FaSyncAlt } from 'react-icons/
 import BuscarTurnosModal from '../components/BuscarTurnosModal';
 import DetallesTurnoModal from '../components/DetallesTurnoModal';
 import AgendaDiaria from './AgendaDiaria';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import '../../../styles/agenda.scss';
 
 export default function Agenda() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasPermiso } = useAuth();
   const queryClient = useQueryClient();
-  
+
   // CU-AG01.5: Verificar si el usuario es odontólogo
-  const esOdontologo = user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
-  
+  const esOdontologo = useMemo(() => {
+    return user?.Rol?.nombre?.toUpperCase() === 'ODONTÓLOGO';
+  }, [user]);
+
   const [modalBusquedaAbierto, setModalBusquedaAbierto] = useState(false);
   const [turnoSeleccionado, setTurnoSeleccionado] = useState(null);
   const [modalDetallesAbierto, setModalDetallesAbierto] = useState(false);
   const [isRecargando, setIsRecargando] = useState(false);
   const [soloConDisponibilidad, setSoloConDisponibilidad] = useState(true); // Checkbox activado por defecto
-  
+
   // Función para recargar todos los datos de la agenda
   const handleRecargar = async () => {
     setIsRecargando(true);
@@ -51,7 +55,7 @@ export default function Agenda() {
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             {/* CU-AG01.5: Solo recepcionista puede crear turnos */}
             {!esOdontologo && (
-              <button 
+              <button
                 className="btn-primary"
                 onClick={() => navigate('/agenda/turnos/nuevo')}
               >
@@ -61,7 +65,7 @@ export default function Agenda() {
             )}
             {/* CU-AG01.5: Solo recepcionista puede gestionar disponibilidades */}
             {!esOdontologo && (
-              <button 
+              <button
                 className="btn-secondary"
                 onClick={() => navigate('/agenda/disponibilidades')}
               >
@@ -69,21 +73,21 @@ export default function Agenda() {
                 Gestionar disponibilidades
               </button>
             )}
-            <button 
+            <button
               className="btn-secondary"
               onClick={() => setModalBusquedaAbierto(true)}
             >
               <FaSearch style={{ marginRight: '0.5rem' }} />
               Buscar turno
             </button>
-            <button 
+            <button
               className="btn-secondary"
               onClick={handleRecargar}
               disabled={isRecargando}
             >
-              <FaSyncAlt 
-                style={{ marginRight: '0.5rem' }} 
-                className={isRecargando ? 'rotating' : ''} 
+              <FaSyncAlt
+                style={{ marginRight: '0.5rem' }}
+                className={isRecargando ? 'rotating' : ''}
               />
               {isRecargando ? 'Recargando...' : 'Recargar'}
             </button>
@@ -91,9 +95,29 @@ export default function Agenda() {
         </div>
       </header>
 
+      {isRecargando && (
+        <div className="pacientes-loader" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.7)',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <Lottie animationData={loadingAnim} loop autoplay style={{ width: 180 }} />
+          <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63' }}>Actualizando agenda...</p>
+        </div>
+      )}
+
       {/* Agenda del día como contenido principal */}
       <AgendaDiaria soloConDisponibilidad={soloConDisponibilidad} setSoloConDisponibilidad={setSoloConDisponibilidad} />
-      
+
       {/* Modal de búsqueda de turnos */}
       <BuscarTurnosModal
         isOpen={modalBusquedaAbierto}
@@ -104,7 +128,7 @@ export default function Agenda() {
           setModalDetallesAbierto(true);
         }}
       />
-      
+
       {/* Modal de detalles del turno */}
       {modalDetallesAbierto && turnoSeleccionado && (
         <DetallesTurnoModal

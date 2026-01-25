@@ -1,5 +1,6 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AuthCtx } from '../../../context/AuthProvider';
+import { useEffect } from 'react';
 import AdminUsers from './AdminUsers';
 import AdminTreatments from './AdminTreatments';
 import AdminAudit from './AdminAudit';
@@ -12,12 +13,20 @@ import { useContext } from 'react';
 export default function AdminPage() {
     const { hasPermiso, user } = useContext(AuthCtx);
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+
+    const isAdmin = user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+
+    useEffect(() => {
+        if (!isAdmin) {
+            navigate('/pacientes', { replace: true });
+        }
+    }, [isAdmin, navigate]);
 
     // Almacena tab en URL para persistencia
     const activeTab = searchParams.get('tab') || 'usuarios';
     const setActiveTab = (tab) => setSearchParams({ tab });
 
-    const isAdmin = user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
 
     const tabs = [
         { id: 'usuarios', label: 'Personal', icon: <FaUsers />, permiso: ['usuarios', 'listar'] },

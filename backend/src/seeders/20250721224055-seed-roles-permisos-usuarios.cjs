@@ -6,18 +6,27 @@ const bcrypt = require('bcrypt');
 module.exports = {
   async up(queryInterface) {
     /* 1️⃣  ROLES ------------------------------------------------ */
-    await queryInterface.bulkInsert(
-      'roles',
-      [
-        { id: 1, nombre: 'Administrador' },
-        { id: 2, nombre: 'Odontólogo' },
-        { id: 3, nombre: 'Asistente' },
-        { id: 4, nombre: 'Recepcionista' },
-      ],
-      {}
+    // Verificar qué roles existen ya
+    const [rolesExistentes] = await queryInterface.sequelize.query(
+      'SELECT id, nombre FROM roles'
     );
 
+    const rolesParaInsertar = [
+      { id: 1, nombre: 'Administrador' },
+      { id: 2, nombre: 'Odontólogo' },
+      { id: 3, nombre: 'Asistente' },
+      { id: 4, nombre: 'Recepcionista' },
+    ].filter(r => !rolesExistentes.some(re => re.id === r.id || re.nombre === r.nombre));
+
+    if (rolesParaInsertar.length > 0) {
+      await queryInterface.bulkInsert('roles', rolesParaInsertar, {});
+    }
+
     /* 2️⃣ PERMISOS --------------------------------------------- */
+    const [permisosExistentes] = await queryInterface.sequelize.query(
+      'SELECT recurso, accion FROM permisos'
+    );
+
     const permisos = [
       // usuarios
       { recurso: 'usuarios', accion: 'crear' },
@@ -69,9 +78,15 @@ module.exports = {
       { recurso: 'reportes', accion: 'generar' },
     ];
 
-    await queryInterface.bulkInsert('permisos', permisos, {});
+    const permisosNuevos = permisos.filter(p =>
+      !permisosExistentes.some(pe => pe.recurso === p.recurso && pe.accion === p.accion)
+    );
 
-    /* Helper: obtener id de permiso por (recurso, accion) */
+    if (permisosNuevos.length > 0) {
+      await queryInterface.bulkInsert('permisos', permisosNuevos, {});
+    }
+
+    /* Helper: obtener todos los permisos actualizados */
     const [rows] = await queryInterface.sequelize.query(
       'SELECT id, recurso, accion FROM permisos'
     );
@@ -85,10 +100,20 @@ module.exports = {
     };
 
     /* 3️⃣  RELACIONES ROL-PERMISO ------------------------------ */
-    const rolPermisos = [];
+    const [rolPermisosExistentes] = await queryInterface.sequelize.query(
+      'SELECT RolId, PermisoId FROM rol_permisos'
+    );
+
+    const rolPermisosNuevos = [];
+
+    const addRolPermiso = (rolId, permIdValue) => {
+      if (!rolPermisosExistentes.some(rp => rp.RolId === rolId && rp.PermisoId === permIdValue)) {
+        rolPermisosNuevos.push({ RolId: rolId, PermisoId: permIdValue });
+      }
+    };
 
     // --- ADMIN: todos los permisos
-    rows.forEach((p) => rolPermisos.push({ RolId: 1, PermisoId: p.id }));
+    rows.forEach((p) => addRolPermiso(1, p.id));
 
     // --- ODONTÓLOGO ------------------------------------------
     [
@@ -123,7 +148,7 @@ module.exports = {
       ['notificaciones', 'listar'],
       ['reportes', 'ver'],
       ['reportes', 'generar'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 2, PermisoId: permId(r, a) }));
+    ].forEach(([r, a]) => addRolPermiso(2, permId(r, a)));
 
     // --- ASISTENTE -------------------------------------------
     [
@@ -145,7 +170,7 @@ module.exports = {
       ['tratamientos', 'aplicar'],
       ['presupuestos', 'ver'],
       ['notificaciones', 'listar'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 3, PermisoId: permId(r, a) }));
+    ].forEach(([r, a]) => addRolPermiso(3, permId(r, a)));
 
     // --- RECEPCIONISTA ---------------------------------------
     [
@@ -159,27 +184,35 @@ module.exports = {
       ['tratamientos', 'listar'],
       ['presupuestos', 'ver'],
       ['notificaciones', 'listar'],
-    ].forEach(([r, a]) => rolPermisos.push({ RolId: 4, PermisoId: permId(r, a) }));
+    ].forEach(([r, a]) => addRolPermiso(4, permId(r, a)));
 
-    await queryInterface.bulkInsert('rol_permisos', rolPermisos, {});
+    if (rolPermisosNuevos.length > 0) {
+      await queryInterface.bulkInsert('rol_permisos', rolPermisosNuevos, {});
+    }
 
     /* 4️⃣  Usuario administrador ----------------------------- */
-    await queryInterface.bulkInsert(
-      'usuarios',
-      [
-        {
-          nombre: 'Admin',
-          apellido: 'Sistema',
-          email: 'admin@odontapp.com',
-          password: await bcrypt.hash('admin123', 10),
-          RolId: 1,
-          activo: true,
-          telefono: '1123456789',
-          fechaAlta: new Date(),
-        },
-      ],
-      {}
+    const [adminExistente] = await queryInterface.sequelize.query(
+      "SELECT id FROM usuarios WHERE email = 'admin@odontapp.com'"
     );
+
+    if (adminExistente.length === 0) {
+      await queryInterface.bulkInsert(
+        'usuarios',
+        [
+          {
+            nombre: 'Admin',
+            apellido: 'Sistema',
+            email: 'admin@odontapp.com',
+            password: await bcrypt.hash('admin123', 10),
+            RolId: 1,
+            activo: true,
+            telefono: '1123456789',
+            fechaAlta: new Date(),
+          },
+        ],
+        {}
+      );
+    }
   },
 
   async down(queryInterface) {

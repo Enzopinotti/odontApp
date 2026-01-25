@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import useAuth from '../../features/auth/hooks/useAuth';
 import {
   FaUser,
@@ -14,7 +14,11 @@ import {
 
 export default function SideBar() {
   const [open, setOpen] = useState(false);
-  const { hasPermiso } = useAuth();
+  const { hasPermiso, user } = useAuth();
+
+  const isAdmin = useMemo(() => {
+    return user?.Rol?.nombre?.toUpperCase() === 'ADMIN';
+  }, [user]);
 
   return (
     <>
@@ -41,7 +45,7 @@ export default function SideBar() {
           </div>
 
           <div className="nav-footer">
-            {hasPermiso('usuarios', 'listar') && (
+            {isAdmin && (
               <NavLink to="/admin" title="Administración del Sistema">
                 <FaUserShield /> <span>Admin</span>
               </NavLink>

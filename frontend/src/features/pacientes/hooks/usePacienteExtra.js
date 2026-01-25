@@ -128,6 +128,7 @@ export default function usePacienteExtra(pacienteId, perms = {}) {
       } catch (err) {
         const status = err?.response?.status;
         const code = err?.response?.data?.code;
+        if (status === 404) return { data: [], denied: false };
         if (status === 403 || code === 'PERMISO_DENEGADO') return { data: undefined, denied: true };
         throw err;
       }

@@ -144,7 +144,7 @@ export const aplicarTratamiento = async (dienteId, { tratamientoId, estado = 'Pl
 /* ---------- Historial de tratamientos por paciente ---------- */
 export const historialPorPaciente = async (pacienteId) => {
   const odontograma = await Odontograma.findOne({ where: { pacienteId } });
-  if (!odontograma) throw new ApiError('Paciente sin odontograma registrado', 404, null, 'ODONTOGRAMA_NO_EXISTE');
+  if (!odontograma) return []; // Retornar vacío si no hay odontograma, en lugar de 404
 
   const dientes = await Diente.findAll({
     where: { odontogramaId: odontograma.id },

@@ -1,8 +1,12 @@
 // src/features/agenda/pages/NuevoTurnoPaso2.js
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useBuscarPacientes, useCrearPacienteRapido } from '../hooks/useBuscarPacientes';
+import { useBuscarPacientes } from '../hooks/useBuscarPacientes';
+import { usePacientes } from '../../pacientes/hooks/usePacientes';
 import useToast from '../../../hooks/useToast';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
+import { FaUser, FaSearch, FaTimes, FaIdCard, FaPhone, FaEnvelope, FaCheck } from 'react-icons/fa';
 import BackBar from '../../../components/BackBar';
 import '../../../styles/agenda.scss';
 
@@ -20,16 +24,22 @@ export default function NuevoTurnoPaso2() {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
-  const { fechaHora, tratamiento, odontologoId, duracion } = location.state || {};
-  
-  const [busqueda, setBusqueda] = useState('');
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
-  const [modo, setModo] = useState('buscar'); // 'buscar' | 'nuevo'
-  const [formData, setFormData] = useState(EMPTY_PACIENTE);
-  
-  const { data: pacientes, isLoading: buscando } = useBuscarPacientes(busqueda, modo === 'buscar');
-  const crearPaciente = useCrearPacienteRapido();
+
+  const { fechaHora, tratamiento, odontologoId, duracion, pacientePreseleccionado } = location.state || {};
+
+  const [busqueda, setBusqueda] = useState(pacientePreseleccionado ? `${pacientePreseleccionado.nombre} ${pacientePreseleccionado.apellido}` : '');
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(pacientePreseleccionado || null);
+  const [mostrarLista, setMostrarLista] = useState(false);
+
+  // Lista inicial de pacientes
+  const { data: dataPacientesInicial, isLoading: cargandoInicial } = usePacientes({ perPage: 10 });
+  const pacientesIniciales = dataPacientesInicial?.data || [];
+
+  const { data: pacientesBuscados, isLoading: buscando } = useBuscarPacientes(busqueda);
+
+  const mostrarIniciales = !busqueda || busqueda.length < 2;
+  const listaParaMostrar = mostrarIniciales ? pacientesIniciales : (pacientesBuscados || []);
+  const isLoading = mostrarIniciales ? cargandoInicial : buscando;
 
   // Si no hay datos del paso anterior, redirigir
   useEffect(() => {
@@ -38,57 +48,15 @@ export default function NuevoTurnoPaso2() {
     }
   }, [fechaHora, tratamiento, odontologoId, navigate]);
 
-  const handleBuscarPaciente = (e) => {
-    setBusqueda(e.target.value);
-    setModo('buscar');
-    setPacienteSeleccionado(null);
-  };
-
   const handleSeleccionarPaciente = (paciente) => {
     setPacienteSeleccionado(paciente);
-    setFormData({
-      nombre: paciente.nombre,
-      apellido: paciente.apellido,
-      dni: paciente.dni,
-      email: paciente.Contacto?.email || '',
-      telefono: paciente.Contacto?.telefonoMovil || '',
-      seguro: paciente.obraSocial || '',
-      generarRecordatorio: false,
-    });
-    setModo('buscar');
-  };
-
-  const handleCrearPaciente = async () => {
-    try {
-      const nuevoPaciente = await crearPaciente.mutateAsync({
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        dni: formData.dni,
-        Contacto: {
-          email: formData.email || null,
-          telefonoMovil: formData.telefono || null,
-        },
-        obraSocial: formData.seguro || null,
-      });
-      
-      setPacienteSeleccionado(nuevoPaciente);
-      showToast('Paciente creado exitosamente', 'success');
-    } catch (error) {
-      showToast('Error al crear paciente', 'error');
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setBusqueda(`${paciente.nombre} ${paciente.apellido}`);
+    setMostrarLista(false);
   };
 
   const handleSiguiente = () => {
     if (!pacienteSeleccionado) {
-      showToast('Debes seleccionar o crear un paciente', 'error');
+      showToast('Debes seleccionar un paciente', 'error');
       return;
     }
 
@@ -98,8 +66,7 @@ export default function NuevoTurnoPaso2() {
         tratamiento,
         odontologoId,
         duracion,
-        paciente: pacienteSeleccionado,
-        datosPaciente: formData,
+        paciente: pacienteSeleccionado
       },
     });
   };
@@ -110,22 +77,22 @@ export default function NuevoTurnoPaso2() {
 
   return (
     <div className="nuevo-turno-container">
-      <BackBar 
-        title="Nuevo turno" 
-        subtitle="Agregar datos" 
-        to="/agenda/turnos/nuevo" 
+      <BackBar
+        title="Nuevo turno"
+        subtitle="Seleccionar paciente"
+        to="/agenda/turnos/nuevo"
       />
-      
+
       <div className="nuevo-turno-steps">
-        <div className="step completed">
-          <div className="step-circle completed">✓</div>
+        <div className="step-item completed">
+          <div className="step-circle completed"><FaCheck /></div>
           <div className="step-label">Fecha y Tratamiento</div>
         </div>
-        <div className="step active">
-          <div className="step-circle active">2</div>
+        <div className="step-item active">
+          <div className="step-circle active"><FaCheck /></div>
           <div className="step-label active">Datos</div>
         </div>
-        <div className="step">
+        <div className="step-item">
           <div className="step-circle">3</div>
           <div className="step-label">Confirmar</div>
         </div>
@@ -133,154 +100,193 @@ export default function NuevoTurnoPaso2() {
 
       <div className="nuevo-turno-form">
         <div className="form-section">
-          <label className="form-label">Buscar paciente</label>
-          <input
-            type="text"
-            value={busqueda}
-            onChange={handleBuscarPaciente}
-            placeholder="Buscar por nombre, apellido o DNI..."
-            className="form-input"
-          />
-          
-          {modo === 'buscar' && busqueda.length >= 2 && (
-            <div className="pacientes-resultados">
-              {buscando ? (
-                <div>Cargando...</div>
-              ) : pacientes?.length > 0 ? (
-                <div className="pacientes-list">
-                  {pacientes.map(paciente => (
-                    <div
-                      key={paciente.id}
-                      className="paciente-item"
-                      onClick={() => handleSeleccionarPaciente(paciente)}
-                    >
-                      <div>
-                        <strong>{paciente.nombre} {paciente.apellido}</strong>
-                        <div>DNI: {paciente.dni}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">No se encontraron pacientes</div>
+          <label className="form-label">Buscar paciente <span style={{ color: 'red' }}>*</span></label>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
+              <FaSearch style={{
+                position: 'absolute',
+                left: '0.75rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#6b7280',
+                pointerEvents: 'none',
+                zIndex: 1
+              }} />
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value);
+                  setMostrarLista(true);
+                  if (pacienteSeleccionado) setPacienteSeleccionado(null);
+                }}
+                onFocus={() => setMostrarLista(true)}
+                placeholder="Nombre, apellido o DNI del paciente..."
+                className="form-input"
+                style={{
+                  fontSize: '1rem',
+                  padding: '0.75rem 0.75rem 0.75rem 2.5rem',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {busqueda && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBusqueda('');
+                    setPacienteSeleccionado(null);
+                    setMostrarLista(false);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#6b7280',
+                    padding: '0.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1
+                  }}
+                >
+                  <FaTimes />
+                </button>
               )}
             </div>
-          )}
-        </div>
 
-        <div className="form-section">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setModo(modo === 'buscar' ? 'nuevo' : 'buscar')}
-          >
-            {modo === 'buscar' ? 'Crear nuevo paciente' : 'Buscar paciente existente'}
-          </button>
-        </div>
+            {mostrarLista && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: '0.25rem',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                maxHeight: '350px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                padding: '0.5rem'
+              }}>
+                {mostrarIniciales && (
+                  <div style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.025em' }}>
+                    Pacientes recientes
+                  </div>
+                )}
 
-        {modo === 'nuevo' && (
-          <div className="form-section">
-            <h3>Datos del paciente</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Nombre</label>
-                <input
-                  type="text"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleChange}
-                  className="form-input"
-                />
+                {isLoading ? (
+                  <div className="pacientes-loader" style={{ padding: '2rem' }}>
+                    <Lottie animationData={loadingAnim} loop autoplay style={{ width: 120 }} />
+                  </div>
+                ) : listaParaMostrar.length > 0 ? (
+                  listaParaMostrar.map(paciente => (
+                    <div
+                      key={paciente.id}
+                      onClick={() => handleSeleccionarPaciente(paciente)}
+                      style={{
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                        marginBottom: '0.25rem',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: pacienteSeleccionado?.id === paciente.id ? '#f1f5f9' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (pacienteSeleccionado?.id !== paciente.id) {
+                          e.currentTarget.style.backgroundColor = '#f8fafc';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (pacienteSeleccionado?.id !== paciente.id) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: '#e0f2f1',
+                        color: '#145c63',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: '700',
+                        fontSize: '0.9rem'
+                      }}>
+                        {paciente.nombre[0]}{paciente.apellido[0]}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.95rem' }}>
+                          {paciente.nombre} {paciente.apellido}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ background: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>DNI: {paciente.dni}</span>
+                          {paciente.obraSocial && <span>• {paciente.obraSocial}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                    {busqueda ? 'No se encontraron pacientes para tu búsqueda' : 'No hay pacientes registrados en el sistema'}
+                  </div>
+                )}
               </div>
-              <div className="form-group">
-                <label>Apellido</label>
-                <input
-                  type="text"
-                  name="apellido"
-                  value={formData.apellido}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>DNI</label>
-                <input
-                  type="text"
-                  name="dni"
-                  value={formData.dni}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Número de teléfono</label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Seguro</label>
-                <input
-                  type="text"
-                  name="seguro"
-                  value={formData.seguro}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>
-                <input
-                  type="checkbox"
-                  name="generarRecordatorio"
-                  checked={formData.generarRecordatorio}
-                  onChange={handleChange}
-                />
-                Generar recordatorio
-              </label>
-            </div>
-
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleCrearPaciente}
-              disabled={!formData.nombre || !formData.apellido || !formData.dni}
-            >
-              Crear paciente
-            </button>
+            )}
           </div>
-        )}
+        </div>
 
         {pacienteSeleccionado && (
-          <div className="form-section">
-            <div className="paciente-seleccionado">
-              <h3>Paciente seleccionado:</h3>
-              <p><strong>{pacienteSeleccionado.nombre} {pacienteSeleccionado.apellido}</strong></p>
-              <p>DNI: {pacienteSeleccionado.dni}</p>
-              {formData.telefono && <p>Tel: {formData.telefono}</p>}
-              {formData.email && <p>Email: {formData.email}</p>}
+          <div className="form-section" style={{ marginTop: '2rem' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#145c63' }}>Ficha técnica del paciente</h3>
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                  <FaUser style={{ marginRight: '0.5rem' }} /> Nombre completo
+                </div>
+                <div style={{ fontWeight: '600' }}>{pacienteSeleccionado.nombre} {pacienteSeleccionado.apellido}</div>
+              </div>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                  <FaIdCard style={{ marginRight: '0.5rem' }} /> DNI / Identificación
+                </div>
+                <div style={{ fontWeight: '600' }}>{pacienteSeleccionado.dni}</div>
+              </div>
+              {pacienteSeleccionado.Contacto?.telefonoMovil && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                    <FaPhone style={{ marginRight: '0.5rem' }} /> Teléfono
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{pacienteSeleccionado.Contacto.telefonoMovil}</div>
+                </div>
+              )}
+              {pacienteSeleccionado.Contacto?.email && (
+                <div>
+                  <div style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+                    <FaEnvelope style={{ marginRight: '0.5rem' }} /> Email
+                  </div>
+                  <div style={{ fontWeight: '600' }}>{pacienteSeleccionado.Contacto.email}</div>
+                </div>
+              )}
             </div>
           </div>
         )}

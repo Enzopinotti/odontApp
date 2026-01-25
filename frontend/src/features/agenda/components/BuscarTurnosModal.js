@@ -7,20 +7,22 @@ import useAuth from '../../../features/auth/hooks/useAuth';
 import * as agendaApi from '../../../api/agenda';
 import { useQuery } from '@tanstack/react-query';
 import useToast from '../../../hooks/useToast';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import '../../../styles/agenda.scss';
 
 export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const { showToast } = useToast();
   const { user } = useAuth();
-  
+
   // CU-AG01.5: Verificar si el usuario es odontólogo
   const esOdontologo = useMemo(() => {
-    return user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+    return user?.Rol?.nombre?.toUpperCase() === 'ODONTÓLOGO';
   }, [user]);
-  
+
   // Estados de filtros
   const [filtroOdontologo, setFiltroOdontologo] = useState('');
-  
+
   // CU-AG01.5: Si es odontólogo, pre-seleccionar automáticamente su odontologoId
   useEffect(() => {
     if (esOdontologo && user?.id && !filtroOdontologo) {
@@ -34,10 +36,10 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const [filtroPacienteTexto, setFiltroPacienteTexto] = useState('');
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [mostrarSugerenciasPacientes, setMostrarSugerenciasPacientes] = useState(false);
-  
+
   // Cargar odontólogos
   const { data: odontologosData = [] } = useOdontologosPorEspecialidad();
-  
+
   // Búsqueda de pacientes
   const { data: pacientesSugeridos = [] } = useQuery({
     queryKey: ['buscar-pacientes', filtroPacienteTexto],
@@ -49,7 +51,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
     enabled: filtroPacienteTexto.length >= 2,
     staleTime: 1000 * 60,
   });
-  
+
   // Construir parámetros de búsqueda
   const paramsBusqueda = {};
   // CU-AG01.5: Si es odontólogo, siempre filtrar por su odontologoId
@@ -66,7 +68,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   }
   if (filtroEstado) paramsBusqueda.estado = filtroEstado;
   if (pacienteSeleccionado?.id) paramsBusqueda.pacienteId = pacienteSeleccionado.id;
-  
+
   // Query de búsqueda (se ejecuta si hay filtros del backend o texto de paciente)
   // Si hay texto de paciente sin seleccionar, se ejecuta la query sin filtro de pacienteId y se filtra en el frontend
   // CU-AG01.5: Si es odontólogo, siempre tiene filtro de odontologoId
@@ -74,21 +76,21 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const tieneFiltros = tieneFiltrosBackend || !!filtroPacienteTexto;
   const queryParams = tieneFiltros ? paramsBusqueda : {};
   const { data: turnosData, isLoading: loadingTurnos } = useTurnos(queryParams, { enabled: tieneFiltros });
-  
+
   // Procesar turnos
   const turnos = turnosData?.data || turnosData || [];
-  
+
   // Filtrar por tratamiento/motivo y texto de paciente en el frontend
   const turnosFiltrados = useMemo(() => {
     let filtrados = turnos;
-    
+
     // Filtrar por tratamiento/motivo
     if (filtroTratamiento) {
-      filtrados = filtrados.filter(t => 
+      filtrados = filtrados.filter(t =>
         t.motivo?.toLowerCase().includes(filtroTratamiento.toLowerCase())
       );
     }
-    
+
     // Si hay texto de paciente pero no se seleccionó un paciente, filtrar por texto
     if (filtroPacienteTexto && !pacienteSeleccionado) {
       const textoBusqueda = filtroPacienteTexto.toLowerCase();
@@ -96,15 +98,15 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
         const nombre = t.Paciente?.nombre?.toLowerCase() || '';
         const apellido = t.Paciente?.apellido?.toLowerCase() || '';
         const dni = t.Paciente?.dni || '';
-        return nombre.includes(textoBusqueda) || 
-               apellido.includes(textoBusqueda) || 
-               dni.includes(textoBusqueda);
+        return nombre.includes(textoBusqueda) ||
+          apellido.includes(textoBusqueda) ||
+          dni.includes(textoBusqueda);
       });
     }
-    
+
     return filtrados;
   }, [turnos, filtroTratamiento, filtroPacienteTexto, pacienteSeleccionado]);
-  
+
   const handleLimpiarFiltros = () => {
     setFiltroOdontologo('');
     setFiltroFechaInicio('');
@@ -114,19 +116,19 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
     setFiltroPacienteTexto('');
     setPacienteSeleccionado(null);
   };
-  
+
   const handleSeleccionarPaciente = (paciente) => {
     setPacienteSeleccionado(paciente);
     setFiltroPacienteTexto(`${paciente.nombre} ${paciente.apellido}${paciente.dni ? ` (DNI: ${paciente.dni})` : ''}`);
     setMostrarSugerenciasPacientes(false);
   };
-  
+
   const handleCambiarTextoPaciente = (texto) => {
     setFiltroPacienteTexto(texto);
     setPacienteSeleccionado(null);
     setMostrarSugerenciasPacientes(texto.length >= 2);
   };
-  
+
   // Cerrar sugerencias al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -134,13 +136,13 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
         setMostrarSugerenciasPacientes(false);
       }
     };
-    
+
     if (mostrarSugerenciasPacientes) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [mostrarSugerenciasPacientes]);
-  
+
   const formatearFechaHora = (fechaHora) => {
     if (!fechaHora) return '';
     const fecha = new Date(fechaHora);
@@ -152,7 +154,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
       minute: '2-digit'
     });
   };
-  
+
   const getEstadoIcon = (estado) => {
     switch (estado) {
       case 'PENDIENTE':
@@ -167,7 +169,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
         return null;
     }
   };
-  
+
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'PENDIENTE':
@@ -182,21 +184,21 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
         return '#7f8c8d';
     }
   };
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content buscar-turnos-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', width: '90%', maxHeight: '90vh' }}>
         <div className="modal-header">
-          <h2>
-            <FaSearch /> Buscar Turnos
+          <h2 style={{ fontWeight: '850' }}>
+            <FaSearch style={{ marginRight: '0.5rem' }} /> Buscar Turnos
           </h2>
           <button className="btn-close" onClick={onClose}>
             <FaTimes />
           </button>
         </div>
-        
+
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
           {/* Filtros */}
           <div className="filtros-busqueda" style={{
@@ -234,7 +236,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 </select>
               </div>
             )}
-            
+
             {/* CU-AG01.5: Información para odontólogos (filtro automático) */}
             {esOdontologo && (
               <div className="form-group">
@@ -254,7 +256,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 </div>
               </div>
             )}
-            
+
             {/* Filtro Paciente */}
             <div className="form-group" style={{ position: 'relative' }}>
               <label htmlFor="filtro-paciente" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -350,7 +352,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 </small>
               )}
             </div>
-            
+
             {/* Filtro Fecha Inicio */}
             <div className="form-group">
               <label htmlFor="filtro-fecha-inicio" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -369,7 +371,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 }}
               />
             </div>
-            
+
             {/* Filtro Fecha Fin */}
             <div className="form-group">
               <label htmlFor="filtro-fecha-fin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -388,7 +390,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 }}
               />
             </div>
-            
+
             {/* Filtro Estado */}
             <div className="form-group">
               <label htmlFor="filtro-estado" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -412,7 +414,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 <option value="CANCELADO">Cancelado</option>
               </select>
             </div>
-            
+
             {/* Filtro Tratamiento */}
             <div className="form-group">
               <label htmlFor="filtro-tratamiento" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -433,7 +435,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
               />
             </div>
           </div>
-          
+
           {/* Botón limpiar filtros */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button
@@ -445,7 +447,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
               Limpiar Filtros
             </button>
           </div>
-          
+
           {/* Resultados */}
           <div className="resultados-busqueda" style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
             {!tieneFiltros ? (
@@ -454,8 +456,9 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                 <p>Selecciona al menos un filtro para buscar turnos</p>
               </div>
             ) : loadingTurnos ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <p>Cargando turnos...</p>
+              <div className="pacientes-loader" style={{ padding: '2rem' }}>
+                <Lottie animationData={loadingAnim} loop autoplay style={{ width: 120 }} />
+                <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63' }}>Cargando turnos...</p>
               </div>
             ) : turnosFiltrados.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#7f8c8d' }}>
@@ -508,7 +511,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                           {turno.estado}
                         </span>
                       </div>
-                      
+
                       {/* Información principal */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -535,7 +538,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Duración */}
                       <div style={{ textAlign: 'right', fontSize: '0.9rem', color: '#7f8c8d' }}>
                         {turno.duracion || 30} min
@@ -547,7 +550,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
             )}
           </div>
         </div>
-        
+
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>
             Cerrar

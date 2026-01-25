@@ -16,13 +16,16 @@ export function useDisponibilidades(filtros = {}) {
   });
 }
 
-// Obtener disponibilidades por rango de fechas para todos los odontólogos
-export function useDisponibilidadesSemanal(fechaInicio, fechaFin) {
+// Obtener disponibilidades por rango de fechas, opcionalmente filtradas por odontólogo
+export function useDisponibilidadesSemanal(fechaInicio, fechaFin, odontologoId = null) {
   return useQuery({
-    queryKey: ['disponibilidades-semanal', fechaInicio, fechaFin],
+    queryKey: ['disponibilidades-semanal', fechaInicio, fechaFin, odontologoId],
     queryFn: async () => {
-      const res = await agendaApi.getDisponibilidades({ fechaInicio, fechaFin });
-      
+      const params = { fechaInicio, fechaFin, perPage: 1000 }; // Aumentar perPage para calendario mensual
+      if (odontologoId) params.odontologoId = odontologoId;
+
+      const res = await agendaApi.getDisponibilidades(params);
+
       // Manejar respuesta paginada o directa
       if (res.data?.data && Array.isArray(res.data.data)) {
         return res.data.data;
@@ -31,7 +34,7 @@ export function useDisponibilidadesSemanal(fechaInicio, fechaFin) {
       } else if (Array.isArray(res)) {
         return res;
       }
-      
+
       return [];
     },
     enabled: !!fechaInicio && !!fechaFin,
@@ -57,7 +60,7 @@ export function useDisponibilidadesPorOdontologo(odontologoId, filtros = {}) {
 // Crear disponibilidad
 export function useCrearDisponibilidad() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data) => {
       const res = await agendaApi.crearDisponibilidad(data);
@@ -74,7 +77,7 @@ export function useCrearDisponibilidad() {
 // Actualizar disponibilidad
 export function useActualizarDisponibilidad() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }) => {
       const res = await agendaApi.actualizarDisponibilidad(id, data);
@@ -91,7 +94,7 @@ export function useActualizarDisponibilidad() {
 // Eliminar disponibilidad
 export function useEliminarDisponibilidad() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id) => {
       const res = await agendaApi.eliminarDisponibilidad(id);
@@ -108,7 +111,7 @@ export function useEliminarDisponibilidad() {
 // Generar disponibilidades automáticas
 export function useGenerarDisponibilidadesAutomaticas() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data) => {
       const res = await agendaApi.generarDisponibilidadesAutomaticas(data);
@@ -141,7 +144,7 @@ export function useValidarDisponibilidad() {
 // Generar disponibilidades recurrentes (semanal o mensual)
 export function useGenerarDisponibilidadesRecurrentes() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data) => {
       const res = await agendaApi.generarDisponibilidadesRecurrentes(data);

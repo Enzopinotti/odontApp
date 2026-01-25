@@ -2,7 +2,13 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.bulkInsert('estados_pacientes', [
+        // Verificar estados ya existentes
+        const [existentes] = await queryInterface.sequelize.query(
+            "SELECT nombre FROM estados_pacientes"
+        );
+        const nombresExistentes = existentes.map(e => e.nombre);
+
+        const estados = [
             {
                 nombre: 'ACTIVO',
                 color: '#22c55e', // Verde
@@ -43,7 +49,13 @@ module.exports = {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
-        ], {});
+        ];
+
+        const estadosParaInsertar = estados.filter(e => !nombresExistentes.includes(e.nombre));
+
+        if (estadosParaInsertar.length > 0) {
+            await queryInterface.bulkInsert('estados_pacientes', estadosParaInsertar, {});
+        }
     },
 
     async down(queryInterface, Sequelize) {

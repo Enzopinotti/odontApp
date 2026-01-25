@@ -7,15 +7,19 @@ import useAuth from '../../../features/auth/hooks/useAuth';
 import { handleApiError } from '../../../utils/handleApiError';
 import ReprogramarTurnoModal from './ReprogramarTurnoModal';
 import EditarTurnoModal from './EditarTurnoModal';
+import Lottie from 'lottie-react';
+import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import * as agendaApi from '../../../api/agenda';
+import { useNavigate } from 'react-router-dom';
 
 export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
-  
+
   // CU-AG01.5: Verificar si el usuario es odontólogo
   const esOdontologo = useMemo(() => {
-    return user?.rol?.id === 2 || user?.RolId === 2 || user?.rol?.nombre === 'Odontólogo';
+    return user?.Rol?.nombre?.toUpperCase() === 'ODONTÓLOGO';
   }, [user]);
   const [mostrandoConfirmacion, setMostrandoConfirmacion] = useState(null); // 'asistencia', 'ausencia', 'cancelar', 'nota'
   const [mostrandoModal, setMostrandoModal] = useState(null); // 'reprogramar', 'editar'
@@ -126,8 +130,8 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
       <div className="modal-detalles-turno" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
-          <h2>
-            <FaInfoCircle /> Detalles del Turno
+          <h2 style={{ fontWeight: '850' }}>
+            <FaInfoCircle style={{ marginRight: '0.5rem' }} /> Detalles del Turno
           </h2>
           <button className="btn-close" onClick={onClose}>
             <FaTimes />
@@ -140,19 +144,19 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           <div className="modal-acciones-principales">
             <div className="acciones-botones">
               <div className="acciones-fila-1">
-                <button 
+                <button
                   className="btn-accion btn-asistencia"
                   onClick={() => setMostrandoConfirmacion('asistencia')}
                 >
                   <FaCheck /> Marcar Asistencia
                 </button>
-                <button 
+                <button
                   className="btn-accion btn-ausencia"
                   onClick={() => setMostrandoConfirmacion('ausencia')}
                 >
                   <FaTimesCircle /> Marcar Ausencia
                 </button>
-                <button 
+                <button
                   className="btn-accion btn-cancelar-turno"
                   onClick={() => setMostrandoConfirmacion('cancelar')}
                 >
@@ -160,19 +164,19 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                 </button>
               </div>
               <div className="acciones-fila-2">
-                <button 
+                <button
                   className="btn-accion btn-reprogramar"
                   onClick={() => setMostrandoModal('reprogramar')}
                 >
                   <FaCalendarAlt /> Reprogramar
                 </button>
-                <button 
+                <button
                   className="btn-accion btn-editar"
                   onClick={() => setMostrandoModal('editar')}
                 >
                   <FaEdit /> Editar Detalles
                 </button>
-                <button 
+                <button
                   className="btn-accion btn-nota"
                   onClick={() => setMostrandoConfirmacion('nota')}
                 >
@@ -242,9 +246,9 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           {turno.Paciente?.id && (
             <div className="info-section">
               <h3>Historial de Turnos</h3>
-              <div style={{ 
-                maxHeight: '200px', 
-                overflowY: 'auto', 
+              <div style={{
+                maxHeight: '200px',
+                overflowY: 'auto',
                 padding: '0.5rem',
                 background: '#f8f9fa',
                 borderRadius: '6px',
@@ -258,7 +262,7 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                     <strong>Notas del turno:</strong>
                     <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
                       {turno.Notas.map((nota, idx) => {
-                        const autorNombre = nota.Usuario 
+                        const autorNombre = nota.Usuario
                           ? `${nota.Usuario.nombre} ${nota.Usuario.apellido}`
                           : 'Usuario desconocido';
                         const fechaNota = new Date(nota.createdAt);
@@ -269,14 +273,14 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                           hour: '2-digit',
                           minute: '2-digit'
                         });
-                        
+
                         return (
                           <li key={idx} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: idx < turno.Notas.length - 1 ? '1px solid #e0e0e0' : 'none' }}>
                             <div style={{ color: '#2c3e50', marginBottom: '0.25rem' }}>
                               {nota.descripcion}
                             </div>
-                            <div style={{ 
-                              color: '#7f8c8d', 
+                            <div style={{
+                              color: '#7f8c8d',
                               fontSize: '0.8rem',
                               display: 'flex',
                               gap: '0.5rem',
@@ -299,7 +303,7 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           {/* CU-AG01.5: Documentos */}
           <div className="info-section">
             <h3>Documentos</h3>
-            <div style={{ 
+            <div style={{
               padding: '0.5rem',
               background: '#f8f9fa',
               borderRadius: '6px',
@@ -311,21 +315,18 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
               {turno.Paciente?.id && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => window.location.href = `/pacientes/${turno.Paciente.id}/historia-clinica`}
+                    onClick={() => navigate(`/pacientes/${turno.Paciente.id}`)}
+                    className="btn-secondary"
                     style={{
                       padding: '0.5rem 1rem',
-                      background: '#3498db',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
                       fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem'
+                      gap: '0.5rem',
+                      fontWeight: '600'
                     }}
                   >
-                    📋 Ver Historia Clínica
+                    📋 Ver Ficha del Paciente
                   </button>
                 </div>
               )}
@@ -451,7 +452,7 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
         {esPendiente && esOdontologo && (
           <div className="modal-footer-info">
             <p style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
-              Como odontólogo, puedes ver los detalles del turno pero no puedes modificarlo. 
+              Como odontólogo, puedes ver los detalles del turno pero no puedes modificarlo.
               Contacta a recepción para realizar cambios.
             </p>
           </div>
@@ -462,13 +463,33 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
             <p>Este turno ya no está pendiente y no puede ser modificado.</p>
           </div>
         )}
-        
+
         {!esPendiente && esOdontologo && (
           <div className="modal-footer-info">
             <p>Este turno ya no está pendiente.</p>
           </div>
         )}
       </div>
+
+      {(marcarAsistencia.isLoading || marcarAusencia.isLoading || cancelarTurno.isLoading) && (
+        <div className="pacientes-loader" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.7)',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <Lottie animationData={loadingAnim} loop autoplay style={{ width: 180 }} />
+          <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63' }}>Actualizando...</p>
+        </div>
+      )}
     </div>
   );
 }
