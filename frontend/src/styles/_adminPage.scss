@@ -1,0 +1,245 @@
+// frontend/src/styles/_adminPage.scss
+@use 'variables' as *;
+
+.admin-root-page {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s ease-out;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+        gap: 1.5rem;
+    }
+}
+
+.admin-main-head {
+    background: white;
+    border-radius: 24px;
+    padding: 2rem 2.5rem 0;
+    border: 1px solid #edf2f7;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    .title-area {
+        margin-bottom: 2rem;
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 850;
+            color: $color-text;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0 0 0.4rem;
+
+            svg {
+                color: $color-primary;
+            }
+        }
+
+        p {
+            color: #94a3b8;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+    }
+
+    .admin-tabs {
+        display: flex;
+        gap: 2rem;
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem 0.5rem 1.5rem;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+            transition: color 0.2s;
+
+            svg {
+                font-size: 1.1rem;
+            }
+
+            &:hover {
+                color: $color-text;
+            }
+
+            &.active {
+                color: $color-primary;
+
+                .indicator {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: $color-primary;
+                    border-radius: 4px 4px 0 0;
+                    animation: slideIn 0.3s ease;
+                }
+            }
+        }
+    }
+}
+
+.admin-tab-content {
+    min-height: 500px;
+    animation: tabFade 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+@keyframes tabFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Los estilos de modales universales se han movido a _modal.scss */
+
+
+/* Import specific */
+.import-info {
+    margin-bottom: 1.5rem;
+
+    p {
+        font-size: 0.9rem;
+        color: #64748b;
+        line-height: 1.5;
+        margin: 0 0 1rem;
+    }
+
+    .btn-template {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: $color-primary;
+        cursor: pointer;
+
+        &:hover {
+            background: #e2e8f0;
+        }
+    }
+}
+
+.drop-zone {
+    border: 2px dashed #e2e8f0;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    transition: 0.2s;
+
+    &:hover,
+    &.has-file {
+        border-color: $color-primary;
+        background: rgba($color-primary, 0.02);
+    }
+
+    input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .drop-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+
+        .icon {
+            font-size: 2.5rem;
+            color: #cbd5e1;
+        }
+
+        p {
+            font-weight: 700;
+            color: #64748b;
+            margin: 0;
+        }
+
+        span {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+    }
+
+    .file-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+
+        strong {
+            color: $color-primary;
+            font-size: 1rem;
+        }
+
+        span {
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+    }
+}
+
+.format-warning {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #fff7ed;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #ffedd5;
+    color: #c2410c;
+    margin-top: 1rem;
+
+    svg {
+        font-size: 1.4rem;
+    }
+
+    p {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

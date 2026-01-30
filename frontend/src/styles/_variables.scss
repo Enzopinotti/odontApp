@@ -1,12 +1,22 @@
 // Palette
-$color-primary:  #145c63;
-$color-white:    #ffffff;
-$color-light:    #f7f9fc;
-$color-text:     #1c1c1e;
-$color-danger:   #d9534f;
-$color-success:  #28a745;
+$color-primary: #145c63;
+$color-white: #ffffff;
+$color-light: #f7f9fc;
+$color-text: #1c1c1e;
+$color-danger: #d9534f;
+$color-success: #28a745;
+
+// Premium UI additions
+$color-surface: #ffffff;
+$color-bg: #f1f5f9;
+$color-amber-500: #f59e0b;
+
+// Clinical Colors
+$color-clinical-blue: #1d4ed8;
+$color-clinical-red: #dc2626;
+$color-clinical-gray: #4b5563;
 
 // Fuente
 $fuente-base: 'Poppins', sans-serif;
-$radius: 6px;
-$shadow: 0 2px 6px rgba(170, 147, 147, 0.1);
+$radius: 12px; // Un poco más moderno
+$shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);

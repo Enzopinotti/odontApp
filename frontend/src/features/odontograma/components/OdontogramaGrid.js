@@ -14,18 +14,17 @@ export default function OdontogramaGrid({ odo, onOpenMenu }) {
       return d ? { ...d, _fdi: fdiNum } : null;
     }).filter(Boolean);
 
-  const q1 = pickQ(0,  FDI_ORDER[1]);
-  const q2 = pickQ(8,  FDI_ORDER[2]);
-  const q3 = pickQ(16, FDI_ORDER[3]);
-  const q4 = pickQ(24, FDI_ORDER[4]);
-
-  const ordered = [...q1, ...q2, ...q4, ...q3];
+  const upperRow = [...pickQ(0, FDI_ORDER[1]), ...pickQ(8, FDI_ORDER[2])];
+  const lowerRow = [...pickQ(24, FDI_ORDER[4]), ...pickQ(16, FDI_ORDER[3])];
 
   return (
-    <div className="odo-grid" onContextMenu={(e)=>e.preventDefault()}>
-      {ordered.map((d) => (
-        <ToothCell key={d.id} diente={d} onOpenMenu={onOpenMenu} />
-      ))}
+    <div className="odo-grid-viewport" onContextMenu={(e) => e.preventDefault()}>
+      <div className="odo-grid">
+        {upperRow.map(d => <ToothCell key={d.id} diente={d} onOpenMenu={onOpenMenu} />)}
+        {lowerRow.map(d => <ToothCell key={d.id} diente={d} onOpenMenu={onOpenMenu} />)}
+      </div>
     </div>
   );
 }
+
+

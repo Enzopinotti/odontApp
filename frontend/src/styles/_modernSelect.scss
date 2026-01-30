@@ -1,0 +1,189 @@
+// frontend/src/styles/_modernSelect.scss
+@use 'variables' as *;
+
+.modern-select-container {
+    position: relative;
+    width: 100%;
+    user-select: none;
+
+    &.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.modern-select-trigger {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+    min-height: 48px;
+
+    &:hover:not(.disabled) {
+        border-color: $color-primary;
+        background: #f8fafc;
+    }
+
+    .trigger-icon {
+        color: $color-primary;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .trigger-text {
+        flex: 1;
+        font-weight: 700;
+        color: $color-text;
+        font-size: 0.8rem;
+
+        &.placeholder {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+    }
+
+    .chevron {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        transition: 0.3s;
+
+        &.up {
+            transform: rotate(180deg);
+        }
+    }
+}
+
+.modern-select-container.is-open .modern-select-trigger {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 4px rgba($color-primary, 0.1);
+}
+
+.modern-select-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: max-content;
+    min-width: 100%;
+    max-width: 320px;
+    right: 0;
+
+
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #edf2f7;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    z-index: 3000;
+    overflow: hidden;
+    animation: slideDownSelect 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .search-wrap {
+        padding: 0.8rem;
+        border-bottom: 1px solid #f1f5f9;
+        position: relative;
+
+        .si {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.8rem;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            outline: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+
+            &:focus {
+                border-color: $color-primary;
+            }
+        }
+    }
+
+    .options-scroll {
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 100;
+
+        &::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+    }
+
+    .option-item {
+        padding: 0.8rem 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: 0.2s;
+
+        &:hover {
+            background: #f8fafc;
+        }
+
+        &.selected {
+            background: rgba($color-primary, 0.05);
+        }
+
+        .opt-content {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+
+            span {
+                font-weight: 700;
+                color: $color-text;
+                font-size: 0.8rem;
+            }
+
+            .opt-icon {
+                color: $color-primary;
+            }
+        }
+
+        .check {
+            color: $color-primary;
+            font-size: 0.8rem;
+        }
+
+        &.selected span {
+            color: $color-primary;
+        }
+    }
+
+    .no-options {
+        padding: 2rem;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+}
+
+@keyframes slideDownSelect {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

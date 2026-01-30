@@ -12,28 +12,31 @@ export default function useCarasMutations(pacienteId) {
   const key = ['paciente', Number(pacienteId), 'odontograma'];
 
   const addCara = useMutation({
-    mutationFn: ({ dienteId, simbolo, estadoCara, colorHex, tipoTrazo }) =>
+    mutationFn: ({ dienteId, simbolo, estadoCara, colorHex, tipoTrazo, usuarioId }) =>
       registrarCaraTratada(dienteId, {
         simbolo,
         tipoTrazo: tipoTrazo || 'Continuo',
         colorEstado: hexToInt(colorHex),
         estadoCara,
         tratamientoId: null,
+        usuarioId,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
 
   const updateCara = useMutation({
-    mutationFn: ({ caraId, simbolo, estadoCara, colorHex, tipoTrazo }) =>
+    mutationFn: ({ caraId, simbolo, estadoCara, colorHex, tipoTrazo, usuarioId }) =>
       actualizarCaraTratada(caraId, {
         simbolo,
         tipoTrazo: tipoTrazo || 'Continuo',
         colorEstado: hexToInt(colorHex),
         estadoCara,
         tratamientoId: null,
+        usuarioId,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   });
+
 
   const delCara = useMutation({
     mutationFn: ({ caraId }) => eliminarCaraTratada(caraId),

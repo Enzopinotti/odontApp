@@ -99,6 +99,21 @@ export const eliminar = async (id) => {
   return true;
 };
 
+/* ---------- Crear imagen individual ---------- */
+export const crearImagen = async (historiaClinicaId, data) => {
+  const historia = await repo.findById(historiaClinicaId);
+  if (!historia) {
+    throw new ApiError('Historia clínica no encontrada', 404, null, 'HISTORIA_NO_EXISTE');
+  }
+
+  return repo.createImagen({
+    historiaClinicaId,
+    tipo: data.tipo || 'Fotografía',
+    url: data.url,
+    fechaCarga: data.fechaCarga || new Date(),
+  });
+};
+
 /* ---------- Obtener imágenes por paciente ---------- */
 export const obtenerImagenesPorPaciente = async (pacienteId) => {
   return repo.getImagenesByHistoria(pacienteId);

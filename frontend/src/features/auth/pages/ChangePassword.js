@@ -65,7 +65,9 @@ export default function ChangePassword() {
     <form onSubmit={handleSubmit} className="change-password-form">
       <h2>Cambiar contraseña</h2>
 
+      <label htmlFor="pass-actual" className="sr-only">Contraseña actual</label>
       <input
+        id="pass-actual"
         type="password"
         name="actual"
         placeholder="Contraseña actual"
@@ -74,7 +76,9 @@ export default function ChangePassword() {
       />
       {errors.actual && <span className="field-error">{errors.actual}</span>}
 
+      <label htmlFor="pass-nueva" className="sr-only">Nueva contraseña</label>
       <input
+        id="pass-nueva"
         type="password"
         name="nueva"
         placeholder="Nueva contraseña"
@@ -91,7 +95,9 @@ export default function ChangePassword() {
         <p className={passwordValidations.special ? 'valid' : ''}>• Al menos un símbolo (!@#$%)</p>
       </div>
 
+      <label htmlFor="pass-repetir" className="sr-only">Repetir nueva contraseña</label>
       <input
+        id="pass-repetir"
         type="password"
         name="repetir"
         placeholder="Repetir nueva contraseña"
@@ -101,6 +107,7 @@ export default function ChangePassword() {
           borderColor: form.nueva && form.repetir === form.nueva ? '#3cb371' : '#ccc',
         }}
       />
+
       {errors.repetir && <span className="field-error">{errors.repetir}</span>}
 
       {form.repetir && (

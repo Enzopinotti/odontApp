@@ -18,19 +18,23 @@ import caraTratadaModel from './caraTratada.js';
 import tratamientoModel from './tratamiento.js';
 import imagenClinicaModel from './imagenClinica.js';
 import antecedenteMedicoModel from './antecedenteMedico.js';
+import estadoPacienteModel from './estadoPaciente.js';
+
 
 /* ------- Inicialización ------- */
-const Paciente          = pacienteModel(sequelize, DataTypes);
-const Contacto          = contactoModel(sequelize, DataTypes);
-const Direccion         = direccionModel(sequelize, DataTypes);
-const FirmaDigital      = firmaDigitalModel(sequelize, DataTypes);
-const HistoriaClinica   = historiaClinicaModel(sequelize, DataTypes);
-const Odontograma       = odontogramaModel(sequelize, DataTypes);
-const Diente            = dienteModel(sequelize, DataTypes);
-const CaraTratada       = caraTratadaModel(sequelize, DataTypes);
-const Tratamiento       = tratamientoModel(sequelize, DataTypes);
-const ImagenClinica     = imagenClinicaModel(sequelize, DataTypes);
+const Paciente = pacienteModel(sequelize, DataTypes);
+const Contacto = contactoModel(sequelize, DataTypes);
+const Direccion = direccionModel(sequelize, DataTypes);
+const FirmaDigital = firmaDigitalModel(sequelize, DataTypes);
+const HistoriaClinica = historiaClinicaModel(sequelize, DataTypes);
+const Odontograma = odontogramaModel(sequelize, DataTypes);
+const Diente = dienteModel(sequelize, DataTypes);
+const CaraTratada = caraTratadaModel(sequelize, DataTypes);
+const Tratamiento = tratamientoModel(sequelize, DataTypes);
+const ImagenClinica = imagenClinicaModel(sequelize, DataTypes);
 const AntecedenteMedico = antecedenteMedicoModel(sequelize, DataTypes);
+const EstadoPaciente = estadoPacienteModel(sequelize, DataTypes);
+
 
 /* ------- Asociaciones ------- */
 applyAssociations(sequelize.models);
@@ -49,4 +53,6 @@ export {
   Tratamiento,
   ImagenClinica,
   AntecedenteMedico,
+  EstadoPaciente,
 };
+

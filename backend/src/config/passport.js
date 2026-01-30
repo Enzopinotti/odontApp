@@ -5,9 +5,9 @@ import { Usuario } from '../modules/Usuarios/models/index.js';
 passport.use(
   new GoogleStrategy(
     {
-      clientID:     process.env.GOOGLE_CLIENT_ID,
+      clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:  process.env.GOOGLE_CALLBACK_URL,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     async (_access, _refresh, profile, done) => {
       try {
@@ -20,19 +20,27 @@ passport.use(
         // ‼️ 2) Si no existe lo creamos con Rol “Recepcionista” (id 4) o el que quieras
         if (!user) {
           user = await Usuario.create({
-            nombre:    profile.name.givenName  || 'Google',
-            apellido:  profile.name.familyName || 'User',
+            nombre: profile.name.givenName || 'Google',
+            apellido: profile.name.familyName || 'User',
             email,
-            password:  null,
-            activo:    true,
+            password: null,
+            activo: true,
             avatarUrl: avatar,
-            RolId:     4,
+            RolId: 5,
             proveedor: 'google',
-            oauthId:   profile.id,
+            oauthId: profile.id,
           });
+        } else {
+          // Si existe pero no tiene proveedor/oauthId, lo actualizamos
+          if (!user.proveedor || !user.oauthId) {
+            await user.update({
+              proveedor: 'google',
+              oauthId: profile.id,
+              avatarUrl: avatar || user.avatarUrl,
+            });
+          }
         }
 
-        // Podrías guardar `proveedor: 'google'` si querés auditar
         return done(null, user);
       } catch (err) {
         done(err, null);

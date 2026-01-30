@@ -24,12 +24,13 @@ export default function PacientesHeader({
       </div>
 
       {/* SEARCH BAR */}
-      <div className="search-wrapper">
+      <div className="search-wrapper" role="search">
         <div className={`search-input ${loading ? 'is-loading' : ''}`}>
           <FaSearch />
           <input
             type="text"
             name="q"
+            aria-label="Buscar pacientes por nombre, apellido, DNI o teléfono"
             placeholder="Buscar por nombre, apellido, DNI o teléfono…"
             value={valores.q || ''}
             onChange={onBuscar}
@@ -45,20 +46,11 @@ export default function PacientesHeader({
         </div>
       </div>
 
-      {/* RANGO FECHAS */}
-      <form className="filters-panel rango-visitas" onChange={onBuscar}>
-        <div className="field range">
-          <label>Última visita</label>
-          <input type="date" name="desdeUltimaVisita" defaultValue={valores.desdeUltimaVisita || ''} />
-          <span>—</span>
-          <input type="date" name="hastaUltimaVisita" defaultValue={valores.hastaUltimaVisita || ''} />
-        </div>
-      </form>
-
       {/* CONTADOR */}
       <p className="result-count">
         Resultados: <strong>{total}</strong>
       </p>
+
 
       {/* PAGINACIÓN */}
       {totalPaginas > 1 && (

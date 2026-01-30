@@ -4,7 +4,10 @@ import {
   validarCrearUsuario,
   validarEditarUsuario,
 } from '../validators/usuarioValidator.js';
+import * as rolCtrl from '../controllers/rolController.js';
+import * as permCtrl from '../controllers/permisoController.js';
 import { requireAuth } from '../../../middlewares/authMiddleware.js';
+
 import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
 
 const router = Router();
@@ -36,20 +39,17 @@ router.get(
   usuarioController.obtenerUsuarios
 );
 
+/* --- Roles y Permisos (Deben ir antes de :id) --- */
+router.get('/roles', requirePermiso('roles', 'listar'), rolCtrl.obtenerRoles);
+router.get('/permisos', requirePermiso('permisos', 'listar'), permCtrl.obtenerPermisos);
+router.get('/roles/:id', requirePermiso('roles', 'listar'), rolCtrl.obtenerRolPorId);
+router.put('/roles/:id/permisos', requirePermiso('roles', 'editar'), rolCtrl.actualizarPermisos);
+
 /**
  * @swagger
  * /usuarios/{id}:
  *   get:
- *     summary: Obtener usuario por ID
- *     tags: [Usuarios]
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
+...
  *     responses:
  *       200:
  *         description: Datos del usuario
@@ -59,6 +59,7 @@ router.get(
   requirePermiso('usuarios', 'listar'),
   usuarioController.obtenerUsuarioPorId
 );
+
 
 /**
  * @swagger
@@ -158,4 +159,11 @@ router.delete(
   usuarioController.eliminarUsuario
 );
 
+import * as auditCtrl from '../controllers/auditController.js';
+
+router.get('/audit/logs', requirePermiso('configuracion', 'ver'), auditCtrl.obtenerLogs);
+
 export default router;
+
+
+

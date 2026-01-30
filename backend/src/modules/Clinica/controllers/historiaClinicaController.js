@@ -23,7 +23,7 @@ export const registrarEntradaClinica = async (req, res) => {
     throw new ApiError('ID de paciente inválido', 400, null, 'PACIENTE_ID_INVALIDO');
   }
 
-  const entrada = await hcSvc.registrarEntrada(pacienteId, req.body);
+  const entrada = await hcSvc.crear(pacienteId, req.body, req.files || []);
   res.created(entrada, 'Consulta registrada');
 };
 
@@ -41,15 +41,15 @@ export const subirImagenClinica = async (req, res) => {
 
   const { tipoImagen, fechaCarga } = req.body;
 
-  const imagen = await hcSvc.subirImagen({
-    historiaClinicaId,
-    tipoImagen,
+  const imagen = await hcSvc.crearImagen(historiaClinicaId, {
+    tipo: tipoImagen,
     fechaCarga,
     url: req.file.path,
   });
 
   res.created(imagen, 'Imagen subida correctamente');
 };
+
 
 /* ---------- LISTAR TODAS LAS IMÁGENES DE UN PACIENTE ---------- */
 // Permiso requerido: historia → ver

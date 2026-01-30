@@ -4,7 +4,9 @@ import {
   getHistoriaClinica,
   getImagenesPaciente,
   getHistorialTratamientos,
+  getAntecedentesPaciente,
 } from '../../../api/clinica';
+
 
 /** Calcula métricas del odontograma si no vinieron desde el backend */
 function enrichOdo(box) {
@@ -12,8 +14,8 @@ function enrichOdo(box) {
   const odo = box.data;
 
   const dientes = Array.isArray(odo.Dientes) ? odo.Dientes
-                 : Array.isArray(odo.dientes) ? odo.dientes
-                 : [];
+    : Array.isArray(odo.dientes) ? odo.dientes
+      : [];
 
   const caras = dientes.flatMap(d =>
     Array.isArray(d.CaraTratadas) ? d.CaraTratadas : []
@@ -126,12 +128,28 @@ export default function usePacienteExtra(pacienteId, perms = {}) {
       } catch (err) {
         const status = err?.response?.status;
         const code = err?.response?.data?.code;
+        if (status === 404) return { data: [], denied: false };
         if (status === 403 || code === 'PERMISO_DENEGADO') return { data: undefined, denied: true };
         throw err;
       }
     },
     staleTime: 1000 * 60 * 2,
     retry: false,
+  });
+
+  // ───────────────────────── Antecedentes Médicos
+  const { data: antData, isLoading: antLoading } = useQuery({
+    queryKey: ['paciente', pid, 'antecedentes'],
+    enabled: baseEnabled && canVerHistoria, // Reutilizamos canVerHistoria o creamos uno específico
+    queryFn: async () => {
+      try {
+        const res = await getAntecedentesPaciente(pid);
+        return { data: res.data || [], denied: false };
+      } catch (err) {
+        if (err?.response?.status === 403) return { data: undefined, denied: true };
+        throw err;
+      }
+    }
   });
 
   return {
@@ -150,5 +168,10 @@ export default function usePacienteExtra(pacienteId, perms = {}) {
     tratamientos: trData?.data,
     trLoading,
     tratamientosDenied: !!trData?.denied,
+
+    antecedentes: antData?.data,
+    antLoading,
+    antDenied: !!antData?.denied,
   };
 }
+
