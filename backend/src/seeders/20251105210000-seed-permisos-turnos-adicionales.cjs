@@ -77,8 +77,8 @@ module.exports = {
       }
     });
 
-    // RECEPCIONISTA (id: 4) - Todos los nuevos permisos
-    ['reprogramar', 'marcar_asistencia', 'marcar_ausencia'].forEach((accion) => {
+    // RECEPCIONISTA (id: 4) - reprogramar, marcar_asistencia, marcar_ausencia, eliminar
+    ['reprogramar', 'marcar_asistencia', 'marcar_ausencia', 'eliminar'].forEach((accion) => {
       const id = permId(accion);
       if (id) {
         rolPermisos.push({ RolId: 4, PermisoId: id });

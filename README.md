@@ -103,6 +103,24 @@
     - Backend (API): <http://localhost:4000>
     - Adminer: <http://localhost:8080>
 
+    Al levantar por primera vez, el backend ejecuta **migraciones** y **seeders** automáticamente: se crean roles, permisos, usuario admin, usuarios de prueba (odontólogos y recepcionistas) y **10 pacientes de prueba**. Los seeders están en el repositorio, así que al clonar y hacer `docker-compose up` en otra PC obtendrás los mismos datos.
+
+    ### Usuarios de prueba (seeders)
+
+    | Rol            | Email                      | Contraseña        |
+    |----------------|----------------------------|-------------------|
+    | Administrador | admin@odontapp.com         | admin123                    |
+    | Odontólogo     | odontologo1@odontapp.com  | odontologo123     |
+    | Odontólogo     | odontologo2@odontapp.com  | odontologo123     |
+    | Odontólogo     | odontologo3@odontapp.com  | odontologo123     |
+    | Recepcionista  | recepcionista1@odontapp.com | recepcionista123 |
+    | Recepcionista  | recepcionista2@odontapp.com | recepcionista123 |
+    | Recepcionista  | recepcionista3@odontapp.com | recepcionista123 |
+    | Asistente      | asistente1@odontapp.com     | asistente123      |
+    | Asistente      | asistente2@odontapp.com     | asistente123      |
+
+    Se crean además **10 pacientes de prueba** con sus contactos (Juan Gómez, María Rodríguez, Carlos Fernández, Ana Martínez, Luis López, Laura Sánchez, Pedro Díaz, Sofía Torres, Diego Ramírez, Valentina Flores).
+
     ---
 
     ## Migraciones con Sequelize-CLI

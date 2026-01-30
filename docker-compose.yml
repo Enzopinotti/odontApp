@@ -21,18 +21,25 @@ services:
     image: node:20-alpine
     working_dir: /usr/src/app
     volumes:
-      - ./backend:/usr/src/app       
+      - ./backend:/usr/src/app
     command: |
       sh -c "
         npm install &&
         until nc -z mysql 3306; do echo '⏳  Esperando MySQL...'; sleep 2; done &&
+        echo '📦 Ejecutando migraciones...' && npx sequelize-cli db:migrate &&
+        echo '🌱 Ejecutando seeders (usuarios y pacientes de prueba)...' && npx sequelize-cli db:seed:all &&
         npx nodemon --legacy-watch index.js
       "
     ports:
       - "4000:4000"
     environment:
       NODE_ENV: development
+      PORT: 4000
       TZ: America/Argentina/Buenos_Aires
+      DB_HOST: mysql
+      DB_NAME: odontapp_db
+      DB_USER: root
+      DB_PASSWORD: odont123
     depends_on:
       mysql:
         condition: service_healthy

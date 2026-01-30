@@ -26,6 +26,10 @@ module.exports = {
       { recurso: 'usuarios', accion: 'editar' },
       { recurso: 'usuarios', accion: 'eliminar' },
       { recurso: 'usuarios', accion: 'listar' },
+      { recurso: 'roles', accion: 'listar' },
+      { recurso: 'roles', accion: 'editar' },
+      { recurso: 'permisos', accion: 'listar' },
+      { recurso: 'configuracion', accion: 'ver' },
       { recurso: 'pacientes', accion: 'crear' },
       { recurso: 'pacientes', accion: 'ver' },
       { recurso: 'pacientes', accion: 'editar' },
@@ -38,10 +42,12 @@ module.exports = {
       { recurso: 'historia_clinica', accion: 'ver' },
       { recurso: 'historia_clinica', accion: 'crear' },
       { recurso: 'historia_clinica', accion: 'editar' },
+      { recurso: 'historia_clinica', accion: 'eliminar' },
       { recurso: 'imagenes', accion: 'ver' },
       { recurso: 'imagenes', accion: 'subir' },
       { recurso: 'tratamientos', accion: 'listar' },
       { recurso: 'tratamientos', accion: 'aplicar' },
+      { recurso: 'tratamientos', accion: 'crearPersonalizado' },
       { recurso: 'presupuestos', accion: 'crear' },
       { recurso: 'presupuestos', accion: 'ver' },
       { recurso: 'facturacion', accion: 'gestionar' },
@@ -57,6 +63,10 @@ module.exports = {
       { recurso: 'turnos', accion: 'marcar_asistencia' },
       { recurso: 'turnos', accion: 'marcar_ausencia' },
       { recurso: 'turnos', accion: 'eliminar' },
+      { recurso: 'notas', accion: 'ver' },
+      { recurso: 'notas', accion: 'crear' },
+      { recurso: 'notas', accion: 'editar' },
+      { recurso: 'notas', accion: 'eliminar' },
     ];
 
     const permisosParaInsertar = todosLosPermisos.filter(p =>
@@ -81,30 +91,43 @@ module.exports = {
       }
     };
 
-    // ADMIN: Todos
+    // ADMIN (1): Todos los permisos
     rows.forEach(p => safeAdd(1, p.id));
 
-    // ODONTÓLOGO: Clínica y Agenda
+    // ODONTÓLOGO (2): Clínica, agenda, turnos, notas, odontograma, historia, imagenes, tratamientos, reportes
     [
-      ['pacientes', 'listar'], ['pacientes', 'ver'], ['agenda', 'ver'],
+      ['pacientes', 'listar'], ['pacientes', 'ver'],
+      ['agenda', 'ver'], ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'],
+      ['turnos', 'cancelar'], ['turnos', 'reprogramar'],
+      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'],
       ['odontograma', 'ver'], ['odontograma', 'editar'],
-      ['historia_clinica', 'ver'], ['historia_clinica', 'crear'],
+      ['historia_clinica', 'ver'], ['historia_clinica', 'crear'], ['historia_clinica', 'editar'], ['historia_clinica', 'eliminar'],
+      ['imagenes', 'ver'], ['imagenes', 'subir'],
+      ['tratamientos', 'listar'], ['tratamientos', 'aplicar'], ['tratamientos', 'crearPersonalizado'],
+      ['presupuestos', 'ver'], ['notificaciones', 'listar'],
+      ['notas', 'ver'], ['notas', 'crear'], ['notas', 'editar'], ['notas', 'eliminar'],
       ['reportes', 'ver'],
     ].forEach(([r, a]) => safeAdd(2, permId(r, a)));
 
-    // PACIENTE: Solo ver agenda (para sacar turnos)
+    // ASISTENTE (3): Ver agenda/turnos, pacientes (listar/ver), marcar asistencia/ausencia
     [
-      ['agenda', 'ver'],
-    ].forEach(([r, a]) => safeAdd(5, permId(r, a)));
+      ['agenda', 'ver'], ['turnos', 'ver'],
+      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'],
+      ['pacientes', 'listar'], ['pacientes', 'ver'],
+    ].forEach(([r, a]) => safeAdd(3, permId(r, a)));
 
-    // RECEPCIONISTA: Agenda (turnos) y pacientes
+    // RECEPCIONISTA (4): Agenda, turnos (incl. eliminar), pacientes (sin eliminar), notas
     [
       ['pacientes', 'listar'], ['pacientes', 'ver'], ['pacientes', 'crear'], ['pacientes', 'editar'],
-      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'], 
+      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'],
       ['turnos', 'cancelar'], ['turnos', 'reprogramar'],
-      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'],
+      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'], ['turnos', 'eliminar'],
       ['agenda', 'ver'], ['agenda', 'gestionar'],
+      ['notas', 'ver'], ['notas', 'crear'], ['notas', 'editar'], ['notas', 'eliminar'],
     ].forEach(([r, a]) => safeAdd(4, permId(r, a)));
+
+    // PACIENTE (5): Solo ver agenda (para sacar turnos)
+    [['agenda', 'ver']].forEach(([r, a]) => safeAdd(5, permId(r, a)));
 
     if (rolPermisosNuevos.length > 0) {
       await queryInterface.bulkInsert('rol_permisos', rolPermisosNuevos, {});

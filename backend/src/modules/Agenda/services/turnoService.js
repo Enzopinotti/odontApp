@@ -10,10 +10,10 @@ import ApiError from '../../../utils/ApiError.js';
 import { EstadoTurno } from '../models/enums.js';
 import { registrarLog } from '../../Usuarios/services/auditService.js';
 
-// turnoService.js
-import TurnoSujeto from "../notifiers/turnoSujeto.js";
-import PacienteObserver from "../notifiers/pacienteObserver.js";
-import OdontologoObserver from "../notifiers/odontologoObserver.js";
+// turnoService.js - notificadores desde módulo Notificador
+import TurnoSujeto from "../../Notificador/subject/turnoSujeto.js";
+import PacienteObserver from "../../Notificador/observers/pacienteObservador.js";
+import OdontologoObserver from "../../Notificador/observers/odontologoObserver.js";
 
 
 export const buscarConFiltros = async (filtros, page, perPage) => {

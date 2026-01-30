@@ -36,17 +36,18 @@ module.exports = {
 
     // 3. Obtener los IDs de los roles
     const [roles] = await queryInterface.sequelize.query(
-      "SELECT id, nombre FROM roles WHERE nombre IN ('Administrador', 'Odontólogo', 'Recepcionista')"
+      "SELECT id, nombre FROM roles WHERE nombre IN ('Administrador', 'Odontólogo', 'Recepcionista', 'Asistente')"
     );
 
     const rolAdmin = roles.find(r => r.nombre === 'Administrador')?.id;
     const rolOdontologo = roles.find(r => r.nombre === 'Odontólogo')?.id;
     const rolRecepcionista = roles.find(r => r.nombre === 'Recepcionista')?.id;
+    const rolAsistente = roles.find(r => r.nombre === 'Asistente')?.id;
 
     // 4. Asignar permisos a los roles
     const rolPermisos = [];
 
-    // Admin: todos los permisos
+    // Admin: todos los permisos de disponibilidad
     if (rolAdmin) {
       rolPermisos.push(
         { RolId: rolAdmin, PermisoId: permisoVer },
@@ -68,6 +69,11 @@ module.exports = {
         { RolId: rolRecepcionista, PermisoId: permisoVer },
         { RolId: rolRecepcionista, PermisoId: permisoGestionar }
       );
+    }
+
+    // Asistente: solo ver disponibilidades (para consultar horarios)
+    if (rolAsistente) {
+      rolPermisos.push({ RolId: rolAsistente, PermisoId: permisoVer });
     }
 
     await queryInterface.bulkInsert('rol_permisos', rolPermisos, {});

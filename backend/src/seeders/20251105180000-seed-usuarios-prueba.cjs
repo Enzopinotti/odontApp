@@ -7,7 +7,7 @@ module.exports = {
   async up(queryInterface) {
     // Verificar si ya existen usuarios de prueba
     const [usuariosExistentes] = await queryInterface.sequelize.query(
-      "SELECT email FROM usuarios WHERE email LIKE 'odontologo%@odontapp.com' OR email LIKE 'recepcionista%@odontapp.com'"
+      "SELECT email FROM usuarios WHERE email LIKE 'odontologo%@odontapp.com' OR email LIKE 'recepcionista%@odontapp.com' OR email LIKE 'asistente%@odontapp.com'"
     );
     
     if (usuariosExistentes.length > 0) {
@@ -17,11 +17,12 @@ module.exports = {
 
     // Obtener IDs de roles
     const [roles] = await queryInterface.sequelize.query(
-      "SELECT id, nombre FROM roles WHERE nombre IN ('Odontólogo', 'Recepcionista')"
+      "SELECT id, nombre FROM roles WHERE nombre IN ('Odontólogo', 'Recepcionista', 'Asistente')"
     );
     
     const rolOdontologo = roles.find(r => r.nombre === 'Odontólogo')?.id;
     const rolRecepcionista = roles.find(r => r.nombre === 'Recepcionista')?.id;
+    const rolAsistente = roles.find(r => r.nombre === 'Asistente')?.id;
 
     if (!rolOdontologo || !rolRecepcionista) {
       throw new Error('Roles no encontrados. Ejecuta primero el seeder de roles.');
@@ -125,6 +126,33 @@ module.exports = {
     }));
 
     await queryInterface.bulkInsert('recepcionistas', recepcionistasRegistros, {});
+
+    /* 👩‍⚕️ ASISTENTES DE PRUEBA (solo usuario, sin tabla extra) ------------------------ */
+    if (rolAsistente) {
+      const asistentes = [
+        {
+          nombre: 'Lucía',
+          apellido: 'González',
+          email: 'asistente1@odontapp.com',
+          password: await bcrypt.hash('asistente123', 10),
+          RolId: rolAsistente,
+          activo: true,
+          telefono: '1123456795',
+          fechaAlta: new Date(),
+        },
+        {
+          nombre: 'Martín',
+          apellido: 'Ruiz',
+          email: 'asistente2@odontapp.com',
+          password: await bcrypt.hash('asistente123', 10),
+          RolId: rolAsistente,
+          activo: true,
+          telefono: '1123456796',
+          fechaAlta: new Date(),
+        },
+      ];
+      await queryInterface.bulkInsert('usuarios', asistentes, {});
+    }
 
     console.log('✅ Usuarios de prueba creados exitosamente');
   },
