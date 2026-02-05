@@ -155,8 +155,23 @@ export async function validarDisponibilidad(data) {
 }
 
 /** Notas ---------------------------------------- */
+export async function getNotasPorTurno(turnoId) {
+  const res = await api.get(`/agenda/notas/turno/${turnoId}`);
+  return res.data;
+}
+
 export async function crearNota(turnoId, descripcion) {
   const res = await api.post('/agenda/notas', { turnoId, descripcion });
+  return res.data;
+}
+
+export async function actualizarNota(id, descripcion) {
+  const res = await api.put(`/agenda/notas/${id}`, { descripcion });
+  return res.data;
+}
+
+export async function eliminarNota(id) {
+  const res = await api.delete(`/agenda/notas/${id}`);
   return res.data;
 }
 

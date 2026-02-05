@@ -31,8 +31,9 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
       return;
     }
 
-    if (duracion !== 30 && duracion !== 60) {
-      showToast('La duración solo puede ser de 30 o 60 minutos', 'error');
+    // Validar duración (múltiplos de 5 minutos, max 8hs)
+    if (!duracion || duracion % 5 !== 0 || duracion > 480) {
+      showToast('La duración debe ser un múltiplo de 5 minutos (máximo 8 horas)', 'error');
       return;
     }
 
@@ -53,7 +54,7 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
     }
   };
 
-  const duracionesComunes = [30, 60];
+  const duracionesComunes = [30, 60, 90, 120];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -115,9 +116,10 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
                 <select
                   id="duracion"
                   value={duracion}
-                  onChange={(e) => setDuracion(e.target.value)}
+                  onChange={(e) => setDuracion(parseInt(e.target.value))}
                   required
                 >
+                  <option value="">Personalizado...</option>
                   {duracionesComunes.map((min) => (
                     <option key={min} value={min}>
                       {min} minutos
@@ -127,14 +129,15 @@ export default function EditarTurnoModal({ turno, onClose, onSuccess }) {
                 <input
                   type="number"
                   value={duracion}
-                  onChange={(e) => setDuracion(e.target.value)}
+                  onChange={(e) => setDuracion(parseInt(e.target.value) || 0)}
                   min="30"
-                  max="60"
-                  step="30"
+                  max="480"
+                  step="5"
                   className="duracion-input-custom"
+                  placeholder="Minutos"
                 />
               </div>
-              <small className="form-hint">Solo 30 o 60 minutos</small>
+              <small className="form-hint">Mínimo 30 minutos sugerido</small>
             </div>
 
             {/* Observaciones */}

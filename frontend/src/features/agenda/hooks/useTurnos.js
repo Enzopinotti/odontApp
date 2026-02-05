@@ -57,12 +57,12 @@ export function useSlotsDisponibles(fecha, odontologoId, duracion) {
       const res = await agendaApi.getSlotsDisponibles(fecha, odontologoId, duracion);
       // El backend devuelve { success, message, data }
       const slots = res.data?.data || res.data || [];
-      console.log('[useSlotsDisponibles] Slots recibidos del backend:', { 
-        fecha, 
-        odontologoId, 
-        duracion, 
+      console.log('[useSlotsDisponibles] Slots recibidos del backend:', {
+        fecha,
+        odontologoId,
+        duracion,
         slots,
-        cantidad: slots.length 
+        cantidad: slots.length
       });
       return slots;
     },
@@ -88,7 +88,7 @@ export function useTurnosPendientesConcluidos(fecha) {
 
 export function useCrearTurno() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data) => {
       const res = await agendaApi.crearTurno(data);
@@ -106,7 +106,7 @@ export function useCrearTurno() {
 
 export function useActualizarTurno() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, data }) => agendaApi.actualizarTurno(id, data),
     onSuccess: (_, variables) => {
@@ -119,7 +119,7 @@ export function useActualizarTurno() {
 
 export function useEliminarTurno() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: agendaApi.eliminarTurno,
     onSuccess: () => {
@@ -131,7 +131,7 @@ export function useEliminarTurno() {
 
 export function useCancelarTurno() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, motivo }) => agendaApi.cancelarTurno(id, motivo),
     onSuccess: () => {
@@ -145,7 +145,7 @@ export function useCancelarTurno() {
 // CU-AG01.4 Flujo Alternativo 4a: Cancelación múltiple
 export function useCancelarTurnosMultiple() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ turnoIds, motivo }) => {
       const res = await agendaApi.cancelarTurnosMultiple(turnoIds, motivo);
@@ -162,7 +162,7 @@ export function useCancelarTurnosMultiple() {
 
 export function useMarcarAsistencia() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, nota }) => agendaApi.marcarAsistencia(id, nota),
     onSuccess: () => {
@@ -174,7 +174,7 @@ export function useMarcarAsistencia() {
 
 export function useMarcarAusencia() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, motivo }) => agendaApi.marcarAusencia(id, motivo),
     onSuccess: () => {
@@ -186,7 +186,7 @@ export function useMarcarAusencia() {
 
 export function useReprogramarTurno() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, nuevaFechaHora, odontologoId }) => {
       const data = { nuevaFechaHora };
@@ -200,6 +200,38 @@ export function useReprogramarTurno() {
       queryClient.invalidateQueries(['agenda']);
       queryClient.invalidateQueries(['slots-disponibles']); // Invalidar slots para que se actualicen
     },
+  });
+}
+
+/** Notas ---------------------------------------- */
+export function useCrearNota() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ turnoId, descripcion }) => agendaApi.crearNota(turnoId, descripcion),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['turnos']);
+      queryClient.invalidateQueries(['turno', variables.turnoId]);
+    }
+  });
+}
+
+export function useActualizarNota() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, descripcion }) => agendaApi.actualizarNota(id, descripcion),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['turnos']);
+    }
+  });
+}
+
+export function useEliminarNota() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => agendaApi.eliminarNota(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['turnos']);
+    }
   });
 }
 

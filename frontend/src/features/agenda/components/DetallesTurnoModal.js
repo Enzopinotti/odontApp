@@ -1,12 +1,9 @@
 // src/features/agenda/components/DetallesTurnoModal.js
 import { useState, useMemo } from 'react';
-import { FaTimes, FaCheck, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit, FaStickyNote } from 'react-icons/fa';
-import { useMarcarAsistencia, useMarcarAusencia, useCancelarTurno } from '../hooks/useTurnos';
-import useToast from '../../../hooks/useToast';
-import useAuth from '../../../features/auth/hooks/useAuth';
-import { handleApiError } from '../../../utils/handleApiError';
 import ReprogramarTurnoModal from './ReprogramarTurnoModal';
 import EditarTurnoModal from './EditarTurnoModal';
+import { useCrearNota, useActualizarNota, useEliminarNota } from '../hooks/useTurnos';
+import { FaTimes, FaCheck, FaTrash, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit, FaStickyNote, FaUser, FaClock, FaSave } from 'react-icons/fa';
 import Lottie from 'lottie-react';
 import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import * as agendaApi from '../../../api/agenda';
@@ -29,6 +26,12 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
   const marcarAsistencia = useMarcarAsistencia();
   const marcarAusencia = useMarcarAusencia();
   const cancelarTurno = useCancelarTurno();
+  const crearNotaMutation = useCrearNota();
+  const eliminarNotaMutation = useEliminarNota();
+  const actualizarNotaMutation = useActualizarNota();
+
+  const [editandoNotaId, setEditandoNotaId] = useState(null);
+  const [descripcionEditada, setDescripcionEditada] = useState('');
 
   const formatearFechaHora = (fechaHora) => {
     const fecha = new Date(fechaHora);
@@ -242,59 +245,145 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* CU-AG01.5: Historial de turnos del paciente */}
+          {/* CU-AG01.5: Historial de notas del turno */}
           {turno.Paciente?.id && (
             <div className="info-section">
-              <h3>Historial de Turnos</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>Notas del Turno</h3>
+                {!esOdontologo && esPendiente && !mostrandoConfirmacion && (
+                  <button
+                    className="btn-accion btn-nota"
+                    onClick={() => setMostrandoConfirmacion('nota')}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                  >
+                    <FaPlus /> Agregar Nota
+                  </button>
+                )}
+              </div>
+
               <div style={{
-                maxHeight: '200px',
+                maxHeight: '300px',
                 overflowY: 'auto',
                 padding: '0.5rem',
                 background: '#f8f9fa',
-                borderRadius: '6px',
-                fontSize: '0.9rem'
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
               }}>
-                <p style={{ color: '#7f8c8d', fontStyle: 'italic' }}>
-                  El historial completo de turnos del paciente se puede ver en su perfil.
-                </p>
-                {turno.Notas && turno.Notas.length > 0 && (
-                  <div style={{ marginTop: '1rem' }}>
-                    <strong>Notas del turno:</strong>
-                    <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
-                      {turno.Notas.map((nota, idx) => {
-                        const autorNombre = nota.Usuario
-                          ? `${nota.Usuario.nombre} ${nota.Usuario.apellido}`
-                          : 'Usuario desconocido';
-                        const fechaNota = new Date(nota.createdAt);
-                        const fechaFormateada = fechaNota.toLocaleDateString('es-AR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        });
+                {turno.Notas && turno.Notas.length > 0 ? (
+                  turno.Notas.map((nota, idx) => {
+                    const esAutor = user?.id === nota.usuarioId;
+                    const autorNombre = nota.Usuario
+                      ? `${nota.Usuario.nombre} ${nota.Usuario.apellido}`
+                      : 'Usuario';
+                    const fechaNota = new Date(nota.createdAt);
+                    const fechaFormateada = fechaNota.toLocaleDateString('es-AR', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
 
-                        return (
-                          <li key={idx} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: idx < turno.Notas.length - 1 ? '1px solid #e0e0e0' : 'none' }}>
-                            <div style={{ color: '#2c3e50', marginBottom: '0.25rem' }}>
+                    const isEditing = editandoNotaId === nota.id;
+
+                    return (
+                      <div key={nota.id || idx} style={{
+                        background: 'white',
+                        padding: '1rem',
+                        borderRadius: '14px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                        position: 'relative'
+                      }}>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <textarea
+                              value={descripcionEditada}
+                              onChange={(e) => setDescripcionEditada(e.target.value)}
+                              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #145c63' }}
+                              rows="3"
+                            />
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={() => setEditandoNotaId(null)}
+                                className="btn-cancelar"
+                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await actualizarNotaMutation.mutateAsync({ id: nota.id, descripcion: descripcionEditada });
+                                    showToast('Nota actualizada', 'success');
+                                    setEditandoNotaId(null);
+                                    onSuccess();
+                                  } catch (err) { handleApiError(err, showToast); }
+                                }}
+                                className="btn-confirmar"
+                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#145c63' }}
+                              >
+                                <FaSave /> Guardar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ color: '#334155', fontWeight: '500', marginBottom: '0.75rem', fontSize: '1rem', whiteSpace: 'pre-wrap' }}>
                               {nota.descripcion}
                             </div>
                             <div style={{
-                              color: '#7f8c8d',
-                              fontSize: '0.8rem',
                               display: 'flex',
-                              gap: '0.5rem',
-                              alignItems: 'center'
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '0.75rem',
+                              color: '#94a3b8'
                             }}>
-                              <span>👤 {autorNombre}</span>
-                              <span>•</span>
-                              <span>📅 {fechaFormateada}</span>
+                              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                <span><FaUser style={{ marginRight: '3px' }} /> {autorNombre}</span>
+                                <span><FaClock style={{ marginRight: '3px' }} /> {fechaFormateada}</span>
+                              </div>
+
+                              {(esAutor || user?.Rol?.nombre?.toUpperCase() === 'ADMINISTRADOR') && (
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => {
+                                      setEditandoNotaId(nota.id);
+                                      setDescripcionEditada(nota.descripcion);
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#145c63', cursor: 'pointer' }}
+                                    title="Editar"
+                                  >
+                                    <FaEdit size={14} />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (window.confirm('¿Desea eliminar esta nota?')) {
+                                        try {
+                                          await eliminarNotaMutation.mutateAsync(nota.id);
+                                          showToast('Nota eliminada', 'success');
+                                          onSuccess();
+                                        } catch (err) { handleApiError(err, showToast); }
+                                      }
+                                    }}
+                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                    title="Eliminar"
+                                  >
+                                    <FaTrash size={14} />
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '1rem' }}>
+                    No hay notas registradas para este turno.
+                  </p>
                 )}
               </div>
             </div>
@@ -385,16 +474,25 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           {mostrandoConfirmacion === 'cancelar' && (
             <div className="confirmacion-form">
               <h4>Cancelar Turno</h4>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1rem' }}>
+                El paciente recibirá una notificación automática sobre la cancelación de su turno.
+              </p>
               <label>
                 Motivo *:
                 <textarea
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
-                  placeholder="Motivo de la cancelación..."
+                  placeholder="Explique el motivo de la cancelación..."
                   rows="3"
                   required
                 />
               </label>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#145c63' }}>
+                <input type="checkbox" checked readOnly id="notifyPatient" />
+                <label htmlFor="notifyPatient" style={{ fontWeight: '600', margin: 0 }}>Notificar al paciente por email/WhatsApp</label>
+              </div>
+
               <div className="form-actions">
                 <button className="btn-cancelar" onClick={() => setMostrandoConfirmacion(null)}>
                   Volver
@@ -432,7 +530,7 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
                     return;
                   }
                   try {
-                    await agendaApi.crearNota(turno.id, nota);
+                    await crearNotaMutation.mutateAsync({ turnoId: turno.id, descripcion: nota });
                     showToast('Nota agregada correctamente', 'success');
                     setNota('');
                     setMostrandoConfirmacion(null);
@@ -471,7 +569,7 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
         )}
       </div>
 
-      {(marcarAsistencia.isLoading || marcarAusencia.isLoading || cancelarTurno.isLoading) && (
+      {(marcarAsistencia.isLoading || marcarAusencia.isLoading || cancelarTurno.isLoading || crearNotaMutation.isPending || eliminarNotaMutation.isPending || actualizarNotaMutation.isPending) && (
         <div className="pacientes-loader" style={{
           position: 'fixed',
           top: 0,
@@ -479,15 +577,11 @@ export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
           right: 0,
           bottom: 0,
           background: 'rgba(255, 255, 255, 0.7)',
-          zIndex: 10000,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
+          zIndex: 10001,
           backdropFilter: 'blur(3px)'
         }}>
           <Lottie animationData={loadingAnim} loop autoplay style={{ width: 180 }} />
-          <p style={{ marginTop: '1rem', fontWeight: '850', color: '#145c63' }}>Actualizando...</p>
+          <p>Actualizando...</p>
         </div>
       )}
     </div>

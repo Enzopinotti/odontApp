@@ -44,9 +44,16 @@ export default function NuevoTurnoPaso3() {
   });
 
   const handleConfirmar = async () => {
-    // Validar duración (solo 30 o 60 minutos)
-    if (duracion !== 30 && duracion !== 60) {
-      showToast('La duración solo puede ser de 30 o 60 minutos', 'error');
+    // Validar duración (múltiplos de 5 minutos, max 8hs)
+    if (!duracion || duracion % 5 !== 0 || duracion > 480) {
+      showToast('La duración debe ser un múltiplo de 5 minutos (máximo 8 horas)', 'error');
+      return;
+    }
+
+    // Validar duración mínima según el tratamiento (RN-AG03.1)
+    const duracionMinimaTratamiento = tratamiento?.duracionMin || tratamiento?.duracion || 0;
+    if (duracion < duracionMinimaTratamiento) {
+      showToast(`La duración para ${tratamiento?.nombre} no puede ser menor a ${duracionMinimaTratamiento} minutos`, 'error');
       return;
     }
 
@@ -221,17 +228,43 @@ export default function NuevoTurnoPaso3() {
           <label className="form-label">
             Duración (minutos) <span style={{ color: 'red' }}>*</span>
           </label>
-          <select
-            value={duracion}
-            onChange={(e) => setDuracion(parseInt(e.target.value))}
-            className="form-input"
-            style={{ width: '200px' }}
-          >
-            <option value={30}>30 minutos</option>
-            <option value={60}>60 minutos</option>
-          </select>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <input
+              type="number"
+              value={duracion}
+              onChange={(e) => setDuracion(parseInt(e.target.value) || 0)}
+              min={tratamiento?.duracionMin || tratamiento?.duracion || 5}
+              max="480"
+              step="5"
+              className="form-input"
+              style={{ width: '120px' }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {[30, 60, 90, 120]
+                .filter(val => val >= (tratamiento?.duracionMin || tratamiento?.duracion || 0))
+                .map(val => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setDuracion(val)}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      background: duracion === val ? '#145c63' : 'white',
+                      color: duracion === val ? 'white' : '#64748b',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {val}m
+                  </button>
+                ))}
+            </div>
+          </div>
           <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
-            Solo se permiten turnos de 30 o 60 minutos
+            Mínimo {tratamiento?.duracionMin || tratamiento?.duracion || 5} min para este tratamiento
           </div>
         </div>
 
