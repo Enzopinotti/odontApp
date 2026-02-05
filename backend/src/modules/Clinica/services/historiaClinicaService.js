@@ -25,8 +25,8 @@ export const obtenerPorId = async (id) => {
 export const crear = async (pacienteId, data, imagenes = []) => {
   const historia = await repo.create({
     pacienteId,
-    titulo: data.titulo,
-    descripcion: data.descripcion,
+    motivoConsulta: data.motivoConsulta || data.titulo,
+    evolucion: data.evolucion || data.descripcion,
     fecha: data.fecha || new Date(),
   });
 
@@ -60,8 +60,8 @@ export const crear = async (pacienteId, data, imagenes = []) => {
 /* ---------- Actualizar historia ---------- */
 export const actualizar = async (id, data) => {
   const historia = await repo.update(id, {
-    titulo: data.titulo,
-    descripcion: data.descripcion,
+    motivoConsulta: data.motivoConsulta || data.titulo,
+    evolucion: data.evolucion || data.descripcion,
     fecha: data.fecha,
   });
   if (!historia) return null;
