@@ -72,9 +72,9 @@ export const crearTurno = async (data, recepcionistaId, ip = null) => {
     throw new ApiError('La fecha del turno debe ser futura', 400, null, 'FECHA_INVALIDA');
   }
 
-  // RN-AG03: Validar duración solo 30 o 60 minutos
-  if (data.duracion !== 30 && data.duracion !== 60) {
-    throw new ApiError('La duración solo puede ser de 30 o 60 minutos', 400, null, 'DURACION_INVALIDA');
+  // RN-AG03: Validar duración (debe ser un múltiplo de 5 minutos y no exceder los 480 minutos)
+  if (!data.duracion || data.duracion % 5 !== 0 || data.duracion > 480) {
+    throw new ApiError('La duración debe ser un múltiplo de 5 minutos (máximo 8 horas)', 400, null, 'DURACION_INVALIDA');
   }
 
   // RN-AG01: Verificar solapamiento con otros turnos del mismo odontólogo

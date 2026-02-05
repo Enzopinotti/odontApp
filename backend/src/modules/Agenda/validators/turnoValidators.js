@@ -12,20 +12,22 @@ export const validarCrearTurno = [
       }
       return true;
     }),
-  
+
   body('duracion')
-    .isIn([30, 60])
-    .withMessage('La duración solo puede ser de 30 o 60 minutos'),
-  
+    .isInt({ min: 5, max: 480 })
+    .withMessage('La duración debe estar entre 5 y 480 minutos')
+    .custom((value) => value % 5 === 0)
+    .withMessage('La duración debe ser un múltiplo de 5 minutos'),
+
   body('motivo')
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('El motivo debe tener entre 1 y 255 caracteres'),
-  
+
   body('pacienteId')
     .isInt({ min: 1 })
     .withMessage('El ID del paciente debe ser un número entero válido'),
-  
+
   body('odontologoId')
     .isInt({ min: 1 })
     .withMessage('El ID del odontólogo debe ser un número entero válido')
@@ -36,7 +38,7 @@ export const validarActualizarTurno = [
   param('id')
     .isInt({ min: 1 })
     .withMessage('El ID del turno debe ser un número entero válido'),
-  
+
   body('fechaHora')
     .optional()
     .isISO8601()
@@ -50,23 +52,28 @@ export const validarActualizarTurno = [
       }
       return true;
     }),
-  
+
   body('duracion')
     .optional()
-    .isIn([30, 60])
-    .withMessage('La duración solo puede ser de 30 o 60 minutos'),
-  
+    .isInt({ min: 5, max: 480 })
+    .withMessage('La duración debe estar entre 5 y 480 minutos')
+    .custom((value) => {
+      if (value) return value % 5 === 0;
+      return true;
+    })
+    .withMessage('La duración debe ser un múltiplo de 5 minutos'),
+
   body('motivo')
     .optional()
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage('El motivo debe tener entre 1 y 255 caracteres'),
-  
+
   body('pacienteId')
     .optional()
     .isInt({ min: 1 })
     .withMessage('El ID del paciente debe ser un número entero válido'),
-  
+
   body('odontologoId')
     .optional()
     .isInt({ min: 1 })
@@ -78,7 +85,7 @@ export const validarCancelarTurno = [
   param('id')
     .isInt({ min: 1 })
     .withMessage('El ID del turno debe ser un número entero válido'),
-  
+
   body('motivo')
     .optional()
     .trim()
@@ -91,7 +98,7 @@ export const validarMarcarAsistencia = [
   param('id')
     .isInt({ min: 1 })
     .withMessage('El ID del turno debe ser un número entero válido'),
-  
+
   body('nota')
     .optional()
     .trim()
@@ -104,7 +111,7 @@ export const validarMarcarAusencia = [
   param('id')
     .isInt({ min: 1 })
     .withMessage('El ID del turno debe ser un número entero válido'),
-  
+
   body('motivo')
     .optional()
     .trim()
@@ -117,7 +124,7 @@ export const validarReprogramarTurno = [
   param('id')
     .isInt({ min: 1 })
     .withMessage('El ID del turno debe ser un número entero válido'),
-  
+
   body('nuevaFechaHora')
     .isISO8601()
     .withMessage('La nueva fecha y hora debe ser válida')
@@ -136,27 +143,27 @@ export const validarObtenerTurnos = [
     .optional()
     .isInt({ min: 1 })
     .withMessage('La página debe ser un número entero mayor a 0'),
-  
+
   query('perPage')
     .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage('El número de elementos por página debe estar entre 1 y 100'),
-  
+
   query('fecha')
     .optional()
     .isISO8601()
     .withMessage('La fecha debe ser válida'),
-  
+
   query('odontologoId')
     .optional()
     .isInt({ min: 1 })
     .withMessage('El ID del odontólogo debe ser un número entero válido'),
-  
+
   query('estado')
     .optional()
     .isIn(['PENDIENTE', 'ASISTIO', 'AUSENTE', 'CANCELADO'])
     .withMessage('El estado debe ser uno de: PENDIENTE, ASISTIO, AUSENTE, CANCELADO'),
-  
+
   query('pacienteId')
     .optional()
     .isInt({ min: 1 })
@@ -168,7 +175,7 @@ export const validarObtenerAgendaPorFecha = [
   param('fecha')
     .isISO8601()
     .withMessage('La fecha debe ser válida'),
-  
+
   query('odontologoId')
     .optional()
     .isInt({ min: 1 })
@@ -180,15 +187,20 @@ export const validarObtenerSlotsDisponibles = [
   query('fecha')
     .isISO8601()
     .withMessage('La fecha debe ser válida'),
-  
+
   query('odontologoId')
     .isInt({ min: 1 })
     .withMessage('El ID del odontólogo debe ser un número entero válido'),
-  
+
   query('duracion')
     .optional()
-    .isIn([30, 60])
-    .withMessage('La duración solo puede ser de 30 o 60 minutos')
+    .isInt({ min: 5, max: 480 })
+    .withMessage('La duración debe estar entre 5 y 480 minutos')
+    .custom((value) => {
+      if (value) return value % 5 === 0;
+      return true;
+    })
+    .withMessage('La duración debe ser un múltiplo de 5 minutos')
 ];
 
 // Validadores para ID de turno

@@ -23,9 +23,13 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 30,
       validate: {
-        isIn: {
-          args: [[30, 60]],
-          msg: 'La duración solo puede ser de 30 o 60 minutos'
+        isMultipleOfFive(value) {
+          if (value % 5 !== 0) {
+            throw new Error('La duración debe ser un múltiplo de 5 minutos');
+          }
+          if (value < 5 || value > 480) {
+            throw new Error('La duración debe estar entre 5 y 480 minutos');
+          }
         }
       }
     },
@@ -88,7 +92,7 @@ export default (sequelize, DataTypes) => {
   });
 
   // CU-AG01.2: Campo virtual para formato de ID personalizado T-YYYYMMDD-XXX
-  Turno.prototype.getCodigoTurno = function() {
+  Turno.prototype.getCodigoTurno = function () {
     const fecha = new Date(this.fechaHora || this.createdAt);
     const año = fecha.getFullYear();
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -98,28 +102,28 @@ export default (sequelize, DataTypes) => {
   };
 
   // Métodos de instancia
-  Turno.prototype.cancelar = function(motivo = 'Sin motivo especificado') {
+  Turno.prototype.cancelar = function (motivo = 'Sin motivo especificado') {
     this.estado = EstadoTurno.CANCELADO;
     return this.save();
   };
 
-  Turno.prototype.marcarAsistencia = function() {
+  Turno.prototype.marcarAsistencia = function () {
     this.estado = EstadoTurno.ASISTIO;
     return this.save();
   };
 
-  Turno.prototype.marcarAusencia = function() {
+  Turno.prototype.marcarAusencia = function () {
     this.estado = EstadoTurno.AUSENTE;
     return this.save();
   };
 
-  Turno.prototype.reprogramar = function(nuevaFechaHora) {
+  Turno.prototype.reprogramar = function (nuevaFechaHora) {
     this.fechaHora = nuevaFechaHora;
     return this.save();
   };
 
   // Métodos estáticos
-  Turno.obtenerTurnosPorFecha = function(fecha, odontologoId = null) {
+  Turno.obtenerTurnosPorFecha = function (fecha, odontologoId = null) {
     const where = {
       fechaHora: {
         [sequelize.Op.between]: [
@@ -128,21 +132,21 @@ export default (sequelize, DataTypes) => {
         ]
       }
     };
-    
+
     if (odontologoId) {
       where.odontologoId = odontologoId;
     }
-    
+
     return this.findAll({
       where,
       include: ['Paciente', 'Odontologo', 'Recepcionista', 'Notas']
     });
   };
 
-  Turno.verificarSolapamiento = function(fechaHora, duracion, odontologoId, turnoIdExcluir = null) {
+  Turno.verificarSolapamiento = function (fechaHora, duracion, odontologoId, turnoIdExcluir = null) {
     const inicio = new Date(fechaHora);
     const fin = new Date(fechaHora.getTime() + duracion * 60000);
-    
+
     const where = {
       odontologoId,
       estado: {
