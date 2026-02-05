@@ -23,7 +23,10 @@ export default function HistoriaClinicaPreview({
     return (
       <div className="section-card">
         <div className="card-title">
-          <h3><FaNotesMedical className="title-icon" /> Evolución y Notas</h3>
+          <div className="title-left">
+            {dragHandle}
+            <h3><FaNotesMedical className="title-icon" /> Evolución y Notas</h3>
+          </div>
         </div>
         <p className="muted perm-note">Sección oculta por permisos de tu rol.</p>
       </div>

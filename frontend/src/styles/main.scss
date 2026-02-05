@@ -78,3 +78,21 @@ input:-internal-autofill-selected {
   color: unset !important;
   /* Resets color */
 }
+
+/* Loader Global Reutilizable */
+.pacientes-loader {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  padding: 2rem;
+
+  p {
+    margin-top: 1rem;
+    font-weight: 850;
+    color: #145c63;
+  }
+}
