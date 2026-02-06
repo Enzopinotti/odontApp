@@ -26,3 +26,20 @@
 @use 'agendaDiaria';
 @use 'disponibilidades';
 @use 'modernSelect';
+
+// Reset Global (Elimina el "user agent stylesheet")
+// Debe ir después de todos los @use
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: variables.$color-background;
+    color: variables.$color-text;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

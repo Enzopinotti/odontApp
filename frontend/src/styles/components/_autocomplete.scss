@@ -1,7 +1,10 @@
+@use "sass:color";
 @use "../mixins" as *;
+@use "../variables";
 
 .auto {
   position: relative;
+
   &__input {
     @include input-base;
   }
@@ -20,12 +23,13 @@
     list-style: none;
   }
 
-  &__item{
-      padding: .5rem .75rem;
-    border-radius: rad(md);
+  &__item {
+    padding: .5rem .75rem;
+    border-radius: variables.$radius-md;
     cursor: pointer;
 
-    &:hover { background: darken($color: #fff, $amount: 5%); }
-
+    &:hover {
+      background: color.adjust(#fff, $lightness: -5%);
+    }
   }
 }
