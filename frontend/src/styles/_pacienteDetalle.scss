@@ -1,4 +1,5 @@
 // frontend/src/styles/_pacienteDetalle.scss
+@use 'sass:color';
 @use 'variables' as *;
 
 /* ===========================================================
@@ -49,21 +50,27 @@
   align-items: center;
   gap: 2rem;
 
-  @media (max-width: 1024px) {
+  @media (max-width: 768px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     padding: 1.5rem;
+    gap: 1.5rem;
   }
 
   .perfil-main {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.25rem;
     align-items: center;
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      text-align: center;
+    }
 
     .avatar-pro {
       width: 80px;
       height: 80px;
-      background: linear-gradient(135deg, $color-primary, darken($color-primary, 15%));
+      background: linear-gradient(135deg, $color-primary, color.adjust($color-primary, $lightness: -15%));
       color: white;
       border-radius: 22px;
       display: grid;
@@ -71,14 +78,25 @@
       font-size: 1.8rem;
       font-weight: 800;
       box-shadow: 0 8px 20px rgba($color-primary, 0.25);
+      flex-shrink: 0;
+
+      @media (max-width: 480px) {
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+      }
     }
 
     .info-pro {
       h2 {
-        margin: 0 0 0.2rem;
-        font-size: 1.7rem;
-        font-weight: 800;
+        margin: 0 0 0.35rem;
+        font-size: 1.6rem;
+        font-weight: 850;
         color: $color-text;
+
+        @media (max-width: 480px) {
+          font-size: 1.4rem;
+        }
       }
 
       .dni-row {
@@ -86,18 +104,35 @@
         align-items: center;
         gap: 0.5rem;
         color: #64748b;
-        font-weight: 500;
+        font-weight: 700;
+        font-size: 0.9rem;
+
+        @media (max-width: 480px) {
+          justify-content: center;
+        }
 
         .copy-dni {
           border: none;
-          background: transparent;
+          background: #f1f5f9;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
           cursor: pointer;
           color: #94a3b8;
-          transition: color 0.2s;
+          display: grid;
+          place-items: center;
+          transition: all 0.2s;
 
           &:hover {
             color: $color-primary;
+            background: white;
           }
+        }
+      }
+
+      .pills-row {
+        @media (max-width: 480px) {
+          justify-content: center;
         }
       }
     }
@@ -110,53 +145,40 @@
     align-items: flex-end;
     gap: 0.8rem;
 
-    @media (max-width: 1024px) {
-      align-items: flex-start;
-      width: 100%;
+    @media (max-width: 768px) {
+      align-items: stretch;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1.25rem;
     }
 
     .current-badge {
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      padding: 0.6rem 1.2rem;
+      padding: 0.6rem 1rem;
       border-radius: 12px;
       color: white;
-      font-weight: 700;
-      font-size: 0.95rem;
+      font-weight: 850;
+      font-size: 0.85rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      @media (max-width: 768px) {
+        justify-content: center;
+      }
 
       .dot {
-        font-size: 0.5rem;
+        font-size: 0.4rem;
         animation: pulse 2s infinite;
       }
     }
 
-    .status-select-pro {
-      appearance: none;
-      width: 220px;
-      padding: 0.6rem 2.8rem 0.6rem 1.2rem;
-      border-radius: 12px;
-      border: 2px solid #e2e8f0;
-      background: #f8fafc;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.8rem center;
-      background-size: 1.2rem;
-      font-weight: 600;
-      color: $color-text;
-      cursor: pointer;
-      transition: all 0.2s;
+    .status-select-modern {
+      width: 200px;
 
-      &:hover {
-        border-color: $color-primary;
-        background-color: white;
-      }
-
-      &:focus {
-        border-color: $color-primary;
-        box-shadow: 0 0 0 4px rgba($color-primary, 0.1);
-        outline: none;
+      @media (max-width: 768px) {
+        width: 100%;
       }
     }
   }

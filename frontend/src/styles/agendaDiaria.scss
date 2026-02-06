@@ -1,4 +1,5 @@
 // src/styles/agendaDiaria.scss
+@use 'sass:color';
 @use 'variables' as v;
 
 .agenda-diaria-container {
@@ -26,7 +27,7 @@
       transition: all 0.3s ease;
 
       &:hover {
-        background-color: darken(v.$color-light, 5%);
+        background-color: color.adjust(v.$color-light, $lightness: -5%);
       }
     }
 
@@ -617,7 +618,7 @@
           .info-label {
             font-weight: 600;
             font-size: 0.85rem;
-            color: lighten(v.$color-text, 20%);
+            color: color.adjust(v.$color-text, $lightness: 20%);
           }
 
           .info-value {
@@ -683,7 +684,7 @@
             color: v.$color-text;
 
             &:hover {
-              background-color: darken(v.$color-light, 5%);
+              background-color: color.adjust(v.$color-light, $lightness: -5%);
             }
           }
 
@@ -692,14 +693,14 @@
             color: v.$color-white;
 
             &:hover {
-              background-color: darken(v.$color-success, 10%);
+              background-color: color.adjust(v.$color-success, $lightness: -10%);
             }
 
             &.btn-ausencia {
               background-color: #f59e0b;
 
               &:hover {
-                background-color: darken(#f59e0b, 10%);
+                background-color: color.adjust(#f59e0b, $lightness: -10%);
               }
             }
 
@@ -707,7 +708,7 @@
               background-color: v.$color-danger;
 
               &:hover {
-                background-color: darken(v.$color-danger, 10%);
+                background-color: color.adjust(v.$color-danger, $lightness: -10%);
               }
             }
           }
@@ -742,7 +743,7 @@
         color: v.$color-white;
 
         &:hover {
-          background-color: darken(v.$color-success, 10%);
+          background-color: color.adjust(v.$color-success, $lightness: -10%);
         }
       }
 
@@ -751,7 +752,7 @@
         color: v.$color-white;
 
         &:hover {
-          background-color: darken(#f59e0b, 10%);
+          background-color: color.adjust(#f59e0b, $lightness: -10%);
         }
       }
 
@@ -760,7 +761,7 @@
         color: v.$color-white;
 
         &:hover {
-          background-color: darken(v.$color-danger, 10%);
+          background-color: color.adjust(v.$color-danger, $lightness: -10%);
         }
       }
     }
@@ -769,7 +770,7 @@
   .modal-footer-info {
     padding: 1.5rem;
     text-align: center;
-    color: lighten(v.$color-text, 20%);
+    color: color.adjust(v.$color-text, $lightness: 20%);
     border-top: 2px solid v.$color-light;
   }
 }

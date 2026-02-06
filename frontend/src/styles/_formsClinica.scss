@@ -1,4 +1,4 @@
-/* src/styles/formsClinica.scss */
+@use 'sass:color';
 @use 'variables';
 
 /* =========================================
@@ -199,7 +199,7 @@
   color: variables.$color-white;
 
   &:hover {
-    background: darken(variables.$color-primary, 6%);
+    background: color.adjust(variables.$color-primary, $lightness: -6%);
     transform: translateY(-1px);
   }
 

@@ -1,3 +1,4 @@
+  @use 'sass:color';
   @use 'variables';
 
   .auth-card {
@@ -52,15 +53,15 @@
     font-weight: 600;
     font-size: 1rem;
     transition: background 0.2s ease;
-    
+
   }
 
-  .noLoRecibiste{
+  .noLoRecibiste {
     color: white !important;
   }
 
   .auth-card button:hover {
-    background: darken(variables.$color-primary, 6%);
+    background: color.adjust(variables.$color-primary, $lightness: -6%);
   }
 
   .auth-card .actions {
@@ -80,7 +81,7 @@
 
   .auth-card .actions .link:hover {
     text-decoration: underline;
-    color: darken(variables.$color-primary, 10%);
+    color: color.adjust(variables.$color-primary, $lightness: -10%);
   }
 
   .google-btn {
@@ -111,14 +112,13 @@
 
   /* Ícono multicolor Google como letra G */
   .google-icon {
-    background: conic-gradient(
-      from 45deg,
-      #ea4335 0deg 90deg,
-      #fbbc05 90deg 180deg,
-      #34a853 180deg 270deg,
-      #4285f4 270deg 360deg
-    );
+    background: conic-gradient(from 45deg,
+        #ea4335 0deg 90deg,
+        #fbbc05 90deg 180deg,
+        #34a853 180deg 270deg,
+        #4285f4 270deg 360deg);
     -webkit-background-clip: text;
+    background-clip: text;
     color: transparent;
     font-weight: 900;
     font-size: 1.8rem;
@@ -220,7 +220,7 @@
     }
 
     .link:hover {
-      color: darken(variables.$color-primary, 10%);
+      color: color.adjust(variables.$color-primary, $lightness: -10%);
     }
   }
 
@@ -240,8 +240,15 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
 
@@ -269,6 +276,7 @@
       opacity: 0;
       transform: translateY(15px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -280,6 +288,7 @@
       opacity: 0;
       transform: scale(0.97);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -292,7 +301,7 @@
 
     input {
       padding-right: 2.2rem;
-    } 
+    }
 
     .toggle-eye {
       position: absolute;
@@ -308,7 +317,8 @@
       -o-transform: translateY(-50%);
     }
   }
-  .password-wrapper.register{
+
+  .password-wrapper.register {
     .toggle-eye {
       position: absolute;
       top: 40%;
@@ -323,6 +333,7 @@
       -o-transform: translateY(-50%);
     }
   }
+
   .password-rules {
     font-size: 0.85rem;
     margin-bottom: 0.7rem;
@@ -338,9 +349,10 @@
     }
   }
 
-  .botonReenviar{
+  .botonReenviar {
     color: variables.$color-text !important;
   }
+
   .match-status {
     font-size: 0.85rem;
     margin-bottom: 1rem;

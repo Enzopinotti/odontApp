@@ -1,4 +1,5 @@
 // src/styles/disponibilidades.scss
+@use 'sass:color';
 @use 'variables' as v;
 
 .gestion-disponibilidades-container {
@@ -280,7 +281,7 @@
       background-image: none !important;
 
       &:hover {
-        background: darken(v.$color-primary, 5%) !important;
+        background: color.adjust(v.$color-primary, $lightness: -5%) !important;
         box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
       }
     }
@@ -529,7 +530,7 @@
   justify-content: center;
   min-height: 400px;
   font-size: 1.2rem;
-  color: lighten(v.$color-text, 30%);
+  color: color.adjust(v.$color-text, $lightness: 30%);
 }
 
 // Modal de disponibilidad (usa .modal-overlay global de agenda.scss)
@@ -561,7 +562,7 @@
       background: none;
       border: none;
       font-size: 1.5rem;
-      color: lighten(v.$color-text, 40%);
+      color: color.adjust(v.$color-text, $lightness: 40%);
       cursor: pointer;
       padding: 0.5rem;
       line-height: 1;
@@ -641,7 +642,7 @@
       .preview-label {
         font-size: 0.9rem;
         font-weight: 500;
-        color: lighten(v.$color-text, 20%);
+        color: color.adjust(v.$color-text, $lightness: 20%);
         margin-bottom: 0.5rem;
       }
 
@@ -693,7 +694,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: darken(v.$color-danger, 10%);
+          background-color: color.adjust(v.$color-danger, $lightness: -10%);
         }
 
         &:disabled {
@@ -719,7 +720,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: darken(v.$color-light, 5%);
+          background-color: color.adjust(v.$color-light, $lightness: -5%);
         }
 
         &:disabled {
@@ -742,7 +743,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: darken(v.$color-primary, 10%);
+          background-color: color.adjust(v.$color-primary, $lightness: -10%);
         }
 
         &:disabled {

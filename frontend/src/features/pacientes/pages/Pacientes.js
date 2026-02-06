@@ -10,7 +10,7 @@ import Lottie from 'lottie-react';
 
 import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import { useReactTable, getCoreRowModel, flexRender } from '@tanstack/react-table';
-import { FaEye, FaEdit, FaTrash, FaList, FaColumns, FaFilter, FaCalendarAlt, FaIdCard, FaTimes } from 'react-icons/fa';
+import { FaEye, FaEdit, FaTrash, FaList, FaColumns, FaFilter, FaCalendarAlt, FaIdCard, FaTimes, FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
 
 import { useNavigate } from 'react-router-dom';
 import { AuthCtx } from '../../../context/AuthProvider';
@@ -171,7 +171,7 @@ export default function Pacientes() {
             aria-expanded={showFilters}
             aria-label="Abrir filtros avanzados"
           >
-            <FaFilter /> {showFilters ? 'Cerrar Filtros' : 'Filtros Avanzados'}
+            <FaFilter /> {showFilters ? 'Cerrar Filtros' : 'Filtros'}
           </button>
 
           {showFilters && (
@@ -283,8 +283,16 @@ export default function Pacientes() {
             {/* Vista Móvil: Tarjetas */}
             <div className="pacientes-mobile-cards">
               {pacientes.map(p => (
-                <div key={p.id} className="paciente-card-mobile">
+                <div
+                  key={p.id}
+                  className="paciente-card-mobile"
+                  onClick={() => goDetalle(p)}
+                  style={{ '--status-color': p.Estado?.color || '#3b82f6' }}
+                >
                   <div className="card-header-mobile">
+                    <div className="avatar-mini-mobile">
+                      {p.apellido[0]}{p.nombre[0]}
+                    </div>
                     <div className="patient-info-mobile">
                       <h3 className="patient-name">{p.apellido}, {p.nombre}</h3>
                       <div className="patient-dni">DNI {p.dni}</div>
@@ -302,37 +310,27 @@ export default function Pacientes() {
                   </div>
 
                   <div className="card-body-mobile">
-                    {p.Contacto?.email && (
-                      <div className="info-item">
-                        <span className="label">Email</span>
-                        <span className="value">{p.Contacto.email}</span>
-                      </div>
-                    )}
-                    {p.Contacto?.telefonoMovil && (
-                      <div className="info-item">
-                        <span className="label">Teléfono</span>
-                        <span className="value">{p.Contacto.telefonoMovil}</span>
-                      </div>
-                    )}
+                    <div className="info-item">
+                      <div className="label"><FaEnvelope /></div>
+                      <span className="value">{p.Contacto?.email || '—'}</span>
+                    </div>
+                    <div className="info-item">
+                      <div className="label"><FaPhoneAlt /></div>
+                      <span className="value">{p.Contacto?.telefonoMovil || '—'}</span>
+                    </div>
                     {p.obraSocial && (
                       <div className="info-item">
-                        <span className="label">Obra Social</span>
+                        <div className="label"><FaIdCard /></div>
                         <span className="value">{p.obraSocial}</span>
-                      </div>
-                    )}
-                    {p.ultimaVisita && (
-                      <div className="info-item">
-                        <span className="label">Última Visita</span>
-                        <span className="value">{new Date(p.ultimaVisita).toLocaleDateString()}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="card-footer-mobile">
-                    <button className="btn-view" onClick={() => goDetalle(p.id)}>
-                      <FaEye /> Ver
+                    <button className="btn-view" onClick={(e) => { e.stopPropagation(); goDetalle(p); }}>
+                      <FaEye /> Ver Perfil
                     </button>
-                    <button className="btn-edit" onClick={() => navigate(`/pacientes/${p.id}`)}>
+                    <button className="btn-edit" onClick={(e) => { e.stopPropagation(); navigate(`/pacientes/${p.id}/editar`); }}>
                       <FaEdit /> Editar
                     </button>
                   </div>

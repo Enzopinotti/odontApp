@@ -1,4 +1,5 @@
 // src/styles/agenda.scss
+@use 'sass:color';
 @use 'variables' as v;
 
 /* ====================================================
@@ -231,7 +232,7 @@
     box-shadow: 0 4px 14px rgba(39, 174, 96, 0.18);
 
     &:hover {
-      background: darken(#27ae60, 5%);
+      background: color.adjust(#27ae60, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(39, 174, 96, 0.25);
     }
   }
@@ -242,7 +243,7 @@
     box-shadow: 0 4px 14px rgba(243, 156, 18, 0.18);
 
     &:hover {
-      background: darken(#f39c12, 5%);
+      background: color.adjust(#f39c12, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(243, 156, 18, 0.25);
     }
   }
@@ -253,7 +254,7 @@
     box-shadow: 0 4px 14px rgba(231, 76, 60, 0.18);
 
     &:hover {
-      background: darken(#e74c3c, 5%);
+      background: color.adjust(#e74c3c, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(231, 76, 60, 0.25);
     }
   }
@@ -264,7 +265,7 @@
     box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
 
     &:hover {
-      background: darken(v.$color-primary, 5%);
+      background: color.adjust(v.$color-primary, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
     }
   }
@@ -275,7 +276,7 @@
     box-shadow: 0 4px 14px rgba(52, 152, 219, 0.18);
 
     &:hover {
-      background: darken(#3498db, 5%);
+      background: color.adjust(#3498db, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(52, 152, 219, 0.25);
     }
   }
@@ -286,7 +287,7 @@
     box-shadow: 0 4px 14px rgba(155, 89, 182, 0.18);
 
     &:hover {
-      background: darken(#9b59b6, 5%);
+      background: color.adjust(#9b59b6, $lightness: -5%);
       box-shadow: 0 6px 18px rgba(155, 89, 182, 0.25);
     }
   }
@@ -516,7 +517,7 @@
           box-shadow: 0 4px 14px rgba(v.$color-primary, 0.18);
 
           &:hover {
-            background: darken(v.$color-primary, 5%);
+            background: color.adjust(v.$color-primary, $lightness: -5%);
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(v.$color-primary, 0.25);
           }
@@ -526,7 +527,7 @@
             box-shadow: 0 4px 14px rgba(243, 156, 18, 0.18);
 
             &:hover {
-              background: darken(#f39c12, 5%);
+              background: color.adjust(#f39c12, $lightness: -5%);
               box-shadow: 0 6px 18px rgba(243, 156, 18, 0.25);
             }
           }
@@ -536,7 +537,7 @@
             box-shadow: 0 4px 14px rgba(231, 76, 60, 0.18);
 
             &:hover {
-              background: darken(#e74c3c, 5%);
+              background: color.adjust(#e74c3c, $lightness: -5%);
               box-shadow: 0 6px 18px rgba(231, 76, 60, 0.25);
             }
           }
@@ -2030,7 +2031,7 @@
       box-shadow: 0 4px 12px rgba(20, 92, 99, 0.2);
 
       &:hover:not(:disabled) {
-        background: lighten(v.$color-primary, 5%);
+        background: color.adjust(v.$color-primary, $lightness: 5%);
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(20, 92, 99, 0.3);
       }

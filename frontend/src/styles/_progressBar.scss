@@ -1,4 +1,4 @@
-// src/styles/components/_progressbar.scss
+@use 'sass:color';
 @use './variables' as *;
 
 .progress-container {
@@ -59,7 +59,7 @@
     height: 30px;
     margin: 0 auto;
     border-radius: 50%;
-    border: 2px solid lighten($color-primary, 15%);
+    border: 2px solid color.adjust($color-primary, $lightness: 15%);
     background: $color-white;
     display: flex;
     align-items: center;

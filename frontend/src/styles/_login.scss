@@ -1,4 +1,6 @@
+@use 'sass:color';
 @use 'variables';
+
 /* Colores y fuente ya los tenés en variables.scss */
 .login-card {
   background: #fff;
@@ -57,7 +59,7 @@
     transition: background 0.2s ease;
 
     &:hover {
-      background: darken(variables.$color-primary, 8%);
+      background: color.adjust(variables.$color-primary, $lightness: -8%);
     }
   }
 
@@ -69,7 +71,7 @@
     color: variables.$color-primary;
     text-decoration: underline;
 
-  
+
   }
 }
 
