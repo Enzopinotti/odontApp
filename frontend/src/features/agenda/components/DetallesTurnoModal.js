@@ -2,12 +2,14 @@
 import { useState, useMemo } from 'react';
 import ReprogramarTurnoModal from './ReprogramarTurnoModal';
 import EditarTurnoModal from './EditarTurnoModal';
-import { useCrearNota, useActualizarNota, useEliminarNota } from '../hooks/useTurnos';
-import { FaTimes, FaCheck, FaTrash, FaTimes as FaTimesCircle, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit, FaStickyNote, FaUser, FaClock, FaSave } from 'react-icons/fa';
+import { useCrearNota, useActualizarNota, useEliminarNota, useMarcarAsistencia, useMarcarAusencia, useCancelarTurno } from '../hooks/useTurnos';
+import { FaTimes, FaCheck, FaTrash, FaPlus, FaCalendarAlt, FaBan, FaInfoCircle, FaEdit, FaStickyNote, FaUser, FaClock, FaSave, FaTimes as FaTimesCircle } from 'react-icons/fa';
 import Lottie from 'lottie-react';
 import loadingAnim from '../../../assets/video/pacientes-loading.json';
-import * as agendaApi from '../../../api/agenda';
 import { useNavigate } from 'react-router-dom';
+import useToast from '../../../hooks/useToast';
+import useAuth from '../../auth/hooks/useAuth';
+import { handleApiError } from '../../../utils/handleApiError';
 
 export default function DetallesTurnoModal({ turno, onClose, onSuccess }) {
   const navigate = useNavigate();

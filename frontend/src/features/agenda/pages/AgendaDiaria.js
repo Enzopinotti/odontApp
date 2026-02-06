@@ -1,7 +1,7 @@
 // src/features/agenda/pages/AgendaDiaria.js
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaCalendarAlt, FaArrowLeft, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek, FaChevronUp, FaChevronDown, FaSearch } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus, FaCheckSquare, FaBan, FaFilter, FaCalendarWeek } from 'react-icons/fa';
 import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import { useTurnosPorFecha, useTurnos } from '../hooks/useTurnos';
 import { useDisponibilidadesSemanal } from '../hooks/useDisponibilidades';
@@ -361,383 +361,6 @@ function MiniCalendarioSidebar({ fechaSeleccionada, setFechaSeleccionada, dispon
   );
 }
 
-// Componente Mini Calendario Mensual (versión dropdown original)
-function MiniCalendarioMensual({ fechaSeleccionada, setFechaSeleccionada }) {
-  const [mostrarCalendario, setMostrarCalendario] = useState(false);
-  const [mesVista, setMesVista] = useState(new Date(fechaSeleccionada));
-
-  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-  // Calcular inicio y fin del mes que se está visualizando
-  const mesVistaActual = useMemo(() => {
-    const año = mesVista.getFullYear();
-    const mes = mesVista.getMonth();
-    const inicio = new Date(año, mes, 1);
-    const fin = new Date(año, mes + 1, 0);
-    return { inicio, fin, año, mes };
-  }, [mesVista]);
-
-  // Cargar datos para el mes que se está visualizando (no solo el mes de fechaSeleccionada)
-  const fechaInicioMesVista = useMemo(() => {
-    const año = mesVistaActual.año;
-    const mes = String(mesVistaActual.mes + 1).padStart(2, '0');
-    return `${año}-${mes}-01`;
-  }, [mesVistaActual]);
-
-  const fechaFinMesVista = useMemo(() => {
-    const año = mesVistaActual.año;
-    const mes = String(mesVistaActual.mes + 1).padStart(2, '0');
-    const ultimoDia = mesVistaActual.fin.getDate();
-    return `${año}-${mes}-${String(ultimoDia).padStart(2, '0')}`;
-  }, [mesVistaActual]);
-
-  const { data: disponibilidadesMesVista } = useDisponibilidadesSemanal(fechaInicioMesVista, fechaFinMesVista);
-  const { data: turnosMesVistaData } = useTurnos({
-    fechaInicio: fechaInicioMesVista,
-    fechaFin: fechaFinMesVista,
-    perPage: 1000
-  });
-
-  // Obtener días con disponibilidad y turnos para el mes visualizado
-  const diasConActividad = useMemo(() => {
-    const diasDisponibles = new Set();
-    const diasConTurnos = new Set();
-
-    // Procesar disponibilidades
-    if (disponibilidadesMesVista) {
-      disponibilidadesMesVista.forEach(disp => {
-        if (typeof disp.fecha === 'string') {
-          const partes = disp.fecha.split('-');
-          if (partes.length === 3) {
-            const año = parseInt(partes[0], 10);
-            const mes = parseInt(partes[1], 10) - 1;
-            const dia = parseInt(partes[2], 10);
-            // Verificar que pertenezca al mes visualizado
-            if (año === mesVistaActual.año && mes === mesVistaActual.mes) {
-              if (disp.tipo === 'LABORAL') {
-                diasDisponibles.add(dia);
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Procesar turnos
-    if (turnosMesVistaData) {
-      let turnosList = [];
-      if (Array.isArray(turnosMesVistaData)) {
-        turnosList = turnosMesVistaData;
-      } else if (turnosMesVistaData.data) {
-        turnosList = Array.isArray(turnosMesVistaData.data) ? turnosMesVistaData.data : [];
-      } else if (turnosMesVistaData.rows) {
-        turnosList = turnosMesVistaData.rows || [];
-      }
-
-      turnosList.forEach(turno => {
-        const fechaHoraStr = turno.fechaHora;
-        let año, mes, dia;
-
-        if (typeof fechaHoraStr === 'string') {
-          const fechaParte = fechaHoraStr.split('T')[0];
-          const partes = fechaParte.split('-');
-          if (partes.length === 3) {
-            año = parseInt(partes[0], 10);
-            mes = parseInt(partes[1], 10) - 1;
-            dia = parseInt(partes[2], 10);
-          } else {
-            return; // Skip si no podemos parsear
-          }
-        } else if (fechaHoraStr instanceof Date) {
-          año = fechaHoraStr.getFullYear();
-          mes = fechaHoraStr.getMonth();
-          dia = fechaHoraStr.getDate();
-        } else {
-          return; // Skip si no podemos parsear
-        }
-
-        // Verificar que pertenezca al mes visualizado
-        if (año === mesVistaActual.año && mes === mesVistaActual.mes) {
-          diasConTurnos.add(dia);
-        }
-      });
-    }
-
-    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
-  }, [disponibilidadesMesVista, turnosMesVistaData, mesVistaActual]);
-
-  // Sincronizar mesVista cuando cambia fechaSeleccionada
-  useEffect(() => {
-    if (!mostrarCalendario) {
-      setMesVista(new Date(fechaSeleccionada));
-    }
-  }, [fechaSeleccionada, mostrarCalendario]);
-
-  const cambiarMes = (direccion) => {
-    const nuevo = new Date(mesVista);
-    nuevo.setMonth(nuevo.getMonth() + direccion);
-    setMesVista(nuevo);
-  };
-
-  const irMesActual = () => {
-    const hoy = new Date();
-    setMesVista(hoy);
-    setFechaSeleccionada(hoy);
-  };
-
-  const diasDelMes = useMemo(() => {
-    const año = mesVista.getFullYear();
-    const mes = mesVista.getMonth();
-    const primerDia = new Date(año, mes, 1);
-    const ultimoDia = new Date(año, mes + 1, 0);
-    const diasEnMes = ultimoDia.getDate();
-    const diaSemanaInicio = primerDia.getDay();
-
-    const dias = [];
-
-    // Días vacíos al inicio
-    for (let i = 0; i < diaSemanaInicio; i++) {
-      dias.push(null);
-    }
-
-    // Días del mes
-    for (let dia = 1; dia <= diasEnMes; dia++) {
-      const fechaCompleta = new Date(año, mes, dia);
-      const añoStr = año.toString();
-      const mesStr = String(mes + 1).padStart(2, '0');
-      const diaStr = String(dia).padStart(2, '0');
-      const fechaStr = `${añoStr}-${mesStr}-${diaStr}`;
-
-      const hoy = new Date();
-      const esPasado = fechaCompleta < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-      const esHoy = fechaCompleta.getDate() === hoy.getDate() &&
-        fechaCompleta.getMonth() === hoy.getMonth() &&
-        fechaCompleta.getFullYear() === hoy.getFullYear();
-      const esSeleccionado = fechaCompleta.getDate() === fechaSeleccionada.getDate() &&
-        fechaCompleta.getMonth() === fechaSeleccionada.getMonth() &&
-        fechaCompleta.getFullYear() === fechaSeleccionada.getFullYear();
-      // Solo mostrar disponibilidad/turnos si pertenece al mes visualizado
-      const tieneDisponibilidad = diasConActividad.disponibles.has(dia);
-      const tieneTurnos = diasConActividad.conTurnos.has(dia);
-
-      dias.push({
-        numero: dia,
-        fecha: fechaStr,
-        esPasado,
-        esHoy,
-        esSeleccionado,
-        tieneDisponibilidad,
-        tieneTurnos
-      });
-    }
-
-    return dias;
-  }, [mesVista, fechaSeleccionada, diasConActividad]);
-
-  const handleClickDia = (dia) => {
-    if (!dia) return;
-    const nuevaFecha = new Date(dia.fecha + 'T12:00:00');
-    setFechaSeleccionada(nuevaFecha);
-    setMostrarCalendario(false);
-  };
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={() => setMostrarCalendario(!mostrarCalendario)}
-        style={{
-          padding: '0.5rem 1rem',
-          borderRadius: '6px',
-          border: '1px solid #ddd',
-          background: 'white',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: '0.9rem'
-        }}
-      >
-        <FaCalendarAlt />
-        {mostrarCalendario ? <FaChevronUp /> : <FaChevronDown />}
-      </button>
-
-      {mostrarCalendario && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          marginTop: '0.5rem',
-          background: 'white',
-          borderRadius: '12px',
-          padding: '1rem',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          minWidth: '280px'
-        }}>
-          {/* Controles */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '1rem'
-          }}>
-            <button
-              onClick={() => cambiarMes(-1)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '0.5rem',
-                fontSize: '1rem',
-                color: '#145c63'
-              }}
-            >
-              <FaChevronLeft />
-            </button>
-            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-              {nombresMeses[mesVista.getMonth()]} {mesVista.getFullYear()}
-            </h4>
-            <button
-              onClick={() => cambiarMes(1)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '0.5rem',
-                fontSize: '1rem',
-                color: '#145c63'
-              }}
-            >
-              <FaChevronRight />
-            </button>
-          </div>
-
-          <button
-            onClick={irMesActual}
-            style={{
-              width: '100%',
-              padding: '0.4rem',
-              marginBottom: '0.75rem',
-              background: '#f0f0f0',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.8rem'
-            }}
-          >
-            Ir a este mes
-          </button>
-
-          {/* Días de la semana */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '0.25rem',
-            marginBottom: '0.5rem'
-          }}>
-            {nombresDias.map(dia => (
-              <div key={dia} style={{
-                textAlign: 'center',
-                fontSize: '0.75rem',
-                fontWeight: '600',
-                color: '#666',
-                padding: '0.25rem'
-              }}>
-                {dia}
-              </div>
-            ))}
-          </div>
-
-          {/* Días del mes */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '0.25rem'
-          }}>
-            {diasDelMes.map((dia, idx) => {
-              if (!dia) {
-                return <div key={`empty-${idx}`} style={{ aspectRatio: '1' }} />;
-              }
-
-              return (
-                <button
-                  key={dia.numero}
-                  onClick={() => handleClickDia(dia)}
-                  style={{
-                    aspectRatio: '1',
-                    border: dia.esSeleccionado
-                      ? '2px solid #145c63'
-                      : dia.esHoy
-                        ? '2px solid #f59e0b'
-                        : '1px solid #e0e0e0',
-                    borderRadius: '6px',
-                    background: dia.esSeleccionado
-                      ? '#145c63'
-                      : dia.esHoy
-                        ? '#fef3c7'
-                        : dia.tieneTurnos
-                          ? '#dbeafe'
-                          : dia.tieneDisponibilidad
-                            ? '#d1fae5'
-                            : '#f5f5f5',
-                    color: dia.esSeleccionado
-                      ? 'white'
-                      : dia.esPasado
-                        ? '#666'
-                        : '#333',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: dia.esSeleccionado || dia.esHoy ? '600' : '400',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    opacity: dia.esPasado ? 0.7 : 1
-                  }}
-                  title={dia.tieneTurnos ? 'Tiene turnos' : dia.tieneDisponibilidad ? 'Tiene disponibilidad' : dia.esPasado ? 'Día pasado' : ''}
-                >
-                  {dia.numero}
-                  {(dia.tieneTurnos || dia.tieneDisponibilidad) && !dia.esSeleccionado && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '2px',
-                      width: '4px',
-                      height: '4px',
-                      borderRadius: '50%',
-                      background: dia.tieneTurnos ? '#3b82f6' : '#10b981'
-                    }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Leyenda */}
-          <div style={{
-            marginTop: '0.75rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid #e0e0e0',
-            fontSize: '0.7rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.25rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', background: '#d1fae5', border: '1px solid #10b981', borderRadius: '4px' }} />
-              <span>Disponible</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', background: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '4px' }} />
-              <span>Con turnos</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConDisponibilidad }) {
   const navigate = useNavigate();
@@ -765,6 +388,13 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
   // CU-AG01.6: Filtros adicionales
   const [filtroOdontologos, setFiltroOdontologos] = useState([]); // Array de IDs de odontólogos seleccionados
   const [filtroTratamiento, setFiltroTratamiento] = useState(''); // Buscador de tratamiento/motivo
+
+  // Estado para drag selection (crear turno por arrastre)
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [dragEnd, setDragEnd] = useState(null);
+  const [dragOdontologoId, setDragOdontologoId] = useState(null);
+  const [dragDiaIndex, setDragDiaIndex] = useState(null); // Para vista semanal
 
   // CU-AG01.5: Verificar si el usuario es odontólogo
   const esOdontologo = useMemo(() => {
@@ -806,7 +436,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
   }, [vista, fechaSeleccionada]);
 
   // CU-AG01.5: Cargar turnos de la semana completa usando el endpoint de turnos con rango
-  const { data: turnosSemanaData, isLoading: loadingTurnosSemana } = useTurnos({
+  const { data: turnosSemanaData } = useTurnos({
     fechaInicio: semanaActual ? semanaActual.inicioSemana.toISOString() : null,
     fechaFin: semanaActual ? semanaActual.finSemana.toISOString() : null,
     odontologoId: odontologoIdParaConsulta,
@@ -824,7 +454,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
     return formatDate(semanaActual.finSemana);
   }, [semanaActual]);
 
-  const { data: disponibilidadesSemana, isLoading: loadingDisponibilidadesSemana } = useDisponibilidadesSemanal(
+  const { data: disponibilidadesSemana } = useDisponibilidadesSemanal(
     fechaInicioSemanaStr,
     fechaFinSemanaStr
   );
@@ -904,6 +534,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
   const { data: disponibilidadesMes } = useDisponibilidadesSemanal(fechaInicioMes, fechaFinMes);
 
   // Cargar turnos del mes visualizado en el mini calendario
+  // Cargar turnos del mes visualizado en el mini calendario
   const { data: turnosMesData } = useTurnos({
     fechaInicio: fechaInicioMes,
     fechaFin: fechaFinMes,
@@ -911,81 +542,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
     perPage: 1000
   });
 
-  // Obtener días con disponibilidad y turnos en el mes
-  const diasConActividad = useMemo(() => {
-    const diasDisponibles = new Set();
-    const diasConTurnos = new Set();
-
-    // Procesar disponibilidades - parsear fecha manualmente para evitar problemas de zona horaria
-    if (disponibilidadesMes) {
-      disponibilidadesMes.forEach(disp => {
-        if (typeof disp.fecha === 'string') {
-          const partes = disp.fecha.split('-');
-          if (partes.length === 3) {
-            const año = parseInt(partes[0], 10);
-            const mes = parseInt(partes[1], 10) - 1;
-            const dia = parseInt(partes[2], 10);
-            // Verificar que pertenezca al mes visualizado en el mini calendario
-            if (año === mesVistaCalendarioCalculado.inicio.getFullYear() && mes === mesVistaCalendarioCalculado.inicio.getMonth()) {
-              if (disp.tipo === 'LABORAL') {
-                diasDisponibles.add(dia);
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Procesar turnos del mes - parsear fecha manualmente para evitar problemas de zona horaria
-    if (turnosMesData) {
-      let turnosList = [];
-      if (Array.isArray(turnosMesData)) {
-        turnosList = turnosMesData;
-      } else if (turnosMesData.data) {
-        turnosList = Array.isArray(turnosMesData.data) ? turnosMesData.data : [];
-      } else if (turnosMesData.rows) {
-        turnosList = turnosMesData.rows || [];
-      }
-
-      turnosList.forEach(turno => {
-        // Parsear fechaHora manualmente para evitar problemas de zona horaria
-        const fechaHoraStr = turno.fechaHora;
-        let año, mes, dia;
-
-        if (typeof fechaHoraStr === 'string') {
-          // Formato ISO: "2025-11-24T10:00:00.000Z" o "2025-11-24T10:00:00"
-          const fechaParte = fechaHoraStr.split('T')[0];
-          const partes = fechaParte.split('-');
-          if (partes.length === 3) {
-            año = parseInt(partes[0], 10);
-            mes = parseInt(partes[1], 10) - 1;
-            dia = parseInt(partes[2], 10);
-          } else {
-            // Fallback: usar Date pero con mediodía para evitar problemas
-            const fechaTurno = new Date(fechaHoraStr + 'T12:00:00');
-            año = fechaTurno.getFullYear();
-            mes = fechaTurno.getMonth();
-            dia = fechaTurno.getDate();
-          }
-        } else if (fechaHoraStr instanceof Date) {
-          año = fechaHoraStr.getFullYear();
-          mes = fechaHoraStr.getMonth();
-          dia = fechaHoraStr.getDate();
-        } else {
-          return; // Skip si no podemos parsear
-        }
-
-        // Verificar que pertenezca al mes visualizado en el mini calendario
-        if (año === mesVistaCalendarioCalculado.inicio.getFullYear() && mes === mesVistaCalendarioCalculado.inicio.getMonth()) {
-          diasConTurnos.add(dia);
-        }
-      });
-    }
-
-    return { disponibles: diasDisponibles, conTurnos: diasConTurnos };
-  }, [disponibilidadesMes, turnosMesData, mesVistaCalendarioCalculado]);
-
-  // Verificar si la fecha seleccionada es HOY
+  // Verificar si la fecha seleccionada es hoy
   const esHoy = useMemo(() => {
     const hoy = new Date();
     return (
@@ -1209,10 +766,6 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
   };
 
   // Manejar cambio de fecha en el input
-  const handleCambioFecha = (e) => {
-    const nuevaFecha = new Date(e.target.value + 'T00:00:00');
-    setFechaSeleccionada(nuevaFecha);
-  };
 
   // Verificar si un horario está dentro de la disponibilidad laboral (intervalos dinámicos)
   const estaDisponible = (odontologoId, hora) => {
@@ -1386,6 +939,152 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
     setModalCancelacionMultiple(true);
   };
 
+  // Handlers para drag selection
+  const handleMouseDown = (odontologoId, hora, diaIdx = null) => {
+    if (esOdontologo || modoSeleccionMultiple) return;
+
+    // Solo si el slot está disponible y no hay turno ni bloqueo
+    const turno = obtenerTurno(odontologoId, hora);
+    const bloqueo = obtenerBloqueo(odontologoId, hora);
+    const disponible = estaDisponible(odontologoId, hora);
+
+    if (disponible && !turno && !bloqueo) {
+      setIsDragging(true);
+      const slotMin = horaStringToMinutes(hora);
+      setDragStart({ hora, slotMin });
+      setDragEnd({ hora, slotMin });
+      setDragOdontologoId(odontologoId);
+      setDragDiaIndex(diaIdx);
+    }
+  };
+
+  const handleMouseEnter = (odontologoId, hora, diaIdx = null) => {
+    if (isDragging && odontologoId === dragOdontologoId && diaIdx === dragDiaIndex) {
+      setDragEnd({ hora, slotMin: horaStringToMinutes(hora) });
+    }
+  };
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging && dragStart && dragEnd && dragOdontologoId) {
+      const minSlot = Math.min(dragStart.slotMin, dragEnd.slotMin);
+      const maxSlot = Math.max(dragStart.slotMin, dragEnd.slotMin);
+
+      const horaInicio = minutesToHoraString(minSlot);
+      const duracion = (maxSlot - minSlot) + SLOT_MINUTOS;
+
+      // Obtener la fecha correcta (considerando vista semanal)
+      let fechaBase = fechaSeleccionada;
+      if (vista === 'semanal' && dragDiaIndex !== null && semanaActual) {
+        fechaBase = semanaActual.dias[dragDiaIndex];
+      }
+
+      const fechaHora = new Date(fechaBase);
+      const [horas, minutos] = horaInicio.split(':');
+      fechaHora.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+
+      navigate('/agenda/turnos/nuevo', {
+        state: {
+          fechaHoraPreseleccionada: fechaHora.toISOString(),
+          odontologoIdPreseleccionado: dragOdontologoId,
+          duracionPreseleccionada: duracion
+        }
+      });
+    }
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+    setDragOdontologoId(null);
+    setDragDiaIndex(null);
+  }, [isDragging, dragStart, dragEnd, dragOdontologoId, dragDiaIndex, fechaSeleccionada, vista, semanaActual, navigate]);
+
+
+  // Limpiar drag al soltar el mouse en cualquier parte
+  useEffect(() => {
+    const onGlobalMouseUp = () => {
+      if (isDragging) handleMouseUp();
+    };
+    window.addEventListener('mouseup', onGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', onGlobalMouseUp);
+  }, [isDragging, dragStart, dragEnd, dragOdontologoId, dragDiaIndex, handleMouseUp]);
+
+  // --- Lógica de Grab to Scroll (arrastrar para mover calendario) ---
+  const tablaContainerRef = useRef(null);
+  const [panning, setPanning] = useState(false);
+  const [startPanPos, setStartPanPos] = useState({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const handleMouseDownPanning = useCallback((e) => {
+    // Solo activar si se hace clic con el botón izquierdo y NO es modo selección múltiple
+    if (e.button !== 0 || modoSeleccionMultiple) return;
+
+    // Si el clic es en algo interactivo (turno, botón, check), no scrolleamos
+    const target = e.target;
+    if (
+      target.closest('.celda-turno') ||
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('select') ||
+      target.closest('.turno-checkbox')
+    ) {
+      return;
+    }
+
+    setPanning(true);
+    setStartPanPos({
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: tablaContainerRef.current?.scrollLeft || 0,
+      scrollTop: tablaContainerRef.current?.scrollTop || 0
+    });
+
+    if (tablaContainerRef.current) {
+      tablaContainerRef.current.style.cursor = 'grabbing';
+      tablaContainerRef.current.style.userSelect = 'none';
+      tablaContainerRef.current.style.scrollBehavior = 'auto';
+    }
+  }, [modoSeleccionMultiple]);
+
+  useEffect(() => {
+    const handleMouseMovePanning = (e) => {
+      if (!panning || !tablaContainerRef.current) return;
+
+      const dx = e.clientX - startPanPos.x;
+      const dy = e.clientY - startPanPos.y;
+
+      tablaContainerRef.current.scrollLeft = startPanPos.scrollLeft - dx;
+      tablaContainerRef.current.scrollTop = startPanPos.scrollTop - dy;
+    };
+
+    const handleMouseUpPanning = () => {
+      if (panning) {
+        setPanning(false);
+        if (tablaContainerRef.current) {
+          tablaContainerRef.current.style.cursor = 'grab';
+          tablaContainerRef.current.style.userSelect = 'auto';
+          tablaContainerRef.current.style.scrollBehavior = 'smooth';
+        }
+      }
+    };
+
+    if (panning) {
+      window.addEventListener('mousemove', handleMouseMovePanning);
+      window.addEventListener('mouseup', handleMouseUpPanning);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMovePanning);
+      window.removeEventListener('mouseup', handleMouseUpPanning);
+    };
+  }, [panning, startPanPos]);
+
+
+  const estaEnSeleccionDrag = (odontologoId, hora, diaIdx = null) => {
+    if (!isDragging || odontologoId !== dragOdontologoId || diaIdx !== dragDiaIndex || !dragStart || !dragEnd) return false;
+    const slotMin = horaStringToMinutes(hora);
+    const min = Math.min(dragStart.slotMin, dragEnd.slotMin);
+    const max = Math.max(dragStart.slotMin, dragEnd.slotMin);
+    return slotMin >= min && slotMin <= max;
+  };
+
   const estaCargandoTodo = loadingOdontologos || loadingTurnos || loadingDisponibilidades;
 
   return (
@@ -1515,7 +1214,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
           )}
 
           {/* CU-AG01.5: Controles de vista y filtros */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginLeft: '1rem' }}>
+          <div className="header-sub-actions">
             <button
               className={`btn-vista ${vista === 'semanal' ? 'active' : ''}`}
               onClick={() => setVista(vista === 'diaria' ? 'semanal' : 'diaria')}
@@ -1534,7 +1233,7 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
           {/* CU-AG01.4: Controles de cancelación múltiple - Solo recepcionista */}
           {!esOdontologo && (
-            <div className="controles-seleccion-multiple" style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className="controles-seleccion-multiple">
               <button
                 className={`btn-seleccion-multiple ${modoSeleccionMultiple ? 'active' : ''}`}
                 onClick={toggleModoSeleccionMultiple}
@@ -1544,24 +1243,12 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
               {modoSeleccionMultiple && turnosSeleccionados.length > 0 && (
                 <>
-                  <span style={{ color: '#7f8c8d' }}>
+                  <span className="seleccion-count">
                     {turnosSeleccionados.length} seleccionado(s)
                   </span>
                   <button
                     className="btn-cancelar-multiple"
                     onClick={handleAbrirCancelacionMultiple}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      border: 'none',
-                      background: '#e74c3c',
-                      color: 'white',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontWeight: '600'
-                    }}
                   >
                     <FaBan /> Cancelar {turnosSeleccionados.length} turno(s)
                   </button>
@@ -1678,14 +1365,8 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
                   setFiltroTratamiento('');
                   setFiltroOdontologos([]);
                 }}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: '1px solid #ddd',
-                  background: 'white',
-                  cursor: 'pointer',
-                  marginTop: '1.5rem'
-                }}
+                className="btn-secondary"
+                style={{ marginTop: '1.5rem' }}
               >
                 Limpiar filtros
               </button>
@@ -1746,11 +1427,17 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
               return odontologosSemana;
             })().length > 0 ? (
-              <div className="agenda-tabla-container" style={{
-                flex: 1,
-                overflow: 'auto',
-                maxHeight: 'calc(100vh - 280px)'
-              }}>
+              <div
+                className="agenda-tabla-container"
+                ref={tablaContainerRef}
+                onMouseDown={handleMouseDownPanning}
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  maxHeight: 'calc(100vh - 280px)',
+                  cursor: panning ? 'grabbing' : 'grab'
+                }}
+              >
                 <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
                     <tr>
@@ -1998,17 +1685,27 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
                                       return slotMin >= inicioMin && slotMin < finMin;
                                     });
 
+                                    const isSelectedDrag = estaEnSeleccionDrag(odontologo.userId, hora, diaIndex);
+
                                     return (
                                       <div
                                         key={odontologo.userId}
+                                        onMouseDown={() => handleMouseDown(odontologo.userId, hora, diaIndex)}
+                                        onMouseEnter={() => handleMouseEnter(odontologo.userId, hora, diaIndex)}
                                         style={{
-                                          background: '#d1fae5',
-                                          border: '1px dashed #10b981',
+                                          background: isSelectedDrag ? '#145c63' : '#d1fae5',
+                                          border: isSelectedDrag ? '1px solid #145c63' : '1px dashed #10b981',
                                           borderRadius: '4px',
                                           padding: '0.3rem',
                                           fontSize: '0.65rem',
-                                          color: '#065f46',
-                                          marginBottom: '0.2rem'
+                                          color: isSelectedDrag ? 'white' : '#065f46',
+                                          marginBottom: '0.2rem',
+                                          cursor: 'pointer',
+                                          userSelect: 'none',
+                                          boxShadow: isSelectedDrag ? '0 0 10px rgba(20, 92, 99, 0.4)' : 'none',
+                                          transition: 'all 0.1s ease',
+                                          transform: isSelectedDrag ? 'scale(1.02)' : 'scale(1)',
+                                          zIndex: isSelectedDrag ? 5 : 1
                                         }}
                                         title={disponibilidadDelDia ? `Disponible: ${disponibilidadDelDia.horaInicio} - ${disponibilidadDelDia.horaFin}` : 'Disponible'}
                                       >
@@ -2102,11 +1799,17 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
           <div>
             {/* Tabla de agenda compacta */}
             {odontologos && odontologos.length > 0 ? (
-              <div className="agenda-tabla-container" style={{
-                flex: 1,
-                overflow: 'auto',
-                maxHeight: 'calc(100vh - 280px)'
-              }}>
+              <div
+                className="agenda-tabla-container"
+                ref={tablaContainerRef}
+                onMouseDown={handleMouseDownPanning}
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  maxHeight: 'calc(100vh - 280px)',
+                  cursor: panning ? 'grabbing' : 'grab'
+                }}
+              >
                 <table className="agenda-tabla" style={{ fontSize: '0.85rem' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
                     <tr>
@@ -2355,14 +2058,29 @@ export default function AgendaDiaria({ soloConDisponibilidad = true, setSoloConD
 
                           // Si está disponible
                           if (disponible) {
+                            const isSelectedDrag = estaEnSeleccionDrag(odontologo.userId, hora);
+
                             return (
                               <td
                                 key={odontologo.userId}
                                 className="celda-disponible"
+                                onMouseDown={() => handleMouseDown(odontologo.userId, hora)}
+                                onMouseEnter={() => handleMouseEnter(odontologo.userId, hora)}
                                 onClick={() => handleClickCelda(odontologo.userId, hora)}
-                                style={{ padding: '0.25rem', textAlign: 'center' }}
+                                style={{
+                                  padding: '0.25rem',
+                                  textAlign: 'center',
+                                  background: isSelectedDrag ? '#145c63' : 'transparent',
+                                  cursor: 'pointer',
+                                  userSelect: 'none',
+                                  transition: 'all 0.1s ease',
+                                  boxShadow: isSelectedDrag ? '0 0 8px rgba(20, 92, 99, 0.4)' : 'none',
+                                }}
                               >
-                                <div className="disponible-content" style={{ fontSize: '0.7rem', color: '#10b981' }}>
+                                <div className="disponible-content" style={{
+                                  fontSize: '0.7rem',
+                                  color: isSelectedDrag ? 'white' : '#10b981'
+                                }}>
                                   <FaPlus style={{ fontSize: '0.7rem' }} />
                                 </div>
                               </td>

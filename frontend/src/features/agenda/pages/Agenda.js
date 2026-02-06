@@ -13,7 +13,7 @@ import '../../../styles/agenda.scss';
 
 export default function Agenda() {
   const navigate = useNavigate();
-  const { user, hasPermiso } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // CU-AG01.5: Verificar si el usuario es odontólogo
@@ -52,14 +52,14 @@ export default function Agenda() {
       <header className="agenda-header">
         <div className="top-bar">
           <h2>Agenda</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="header-actions">
             {/* CU-AG01.5: Solo recepcionista puede crear turnos */}
             {!esOdontologo && (
               <button
                 className="btn-primary"
                 onClick={() => navigate('/agenda/turnos/nuevo')}
               >
-                <FaCalendarPlus style={{ marginRight: '0.5rem' }} />
+                <FaCalendarPlus />
                 Nuevo turno
               </button>
             )}
@@ -69,7 +69,7 @@ export default function Agenda() {
                 className="btn-secondary"
                 onClick={() => navigate('/agenda/disponibilidades')}
               >
-                <FaCalendarAlt style={{ marginRight: '0.5rem' }} />
+                <FaCalendarAlt />
                 Gestionar disponibilidades
               </button>
             )}
@@ -77,7 +77,7 @@ export default function Agenda() {
               className="btn-secondary"
               onClick={() => setModalBusquedaAbierto(true)}
             >
-              <FaSearch style={{ marginRight: '0.5rem' }} />
+              <FaSearch />
               Buscar turno
             </button>
             <button
@@ -86,7 +86,6 @@ export default function Agenda() {
               disabled={isRecargando}
             >
               <FaSyncAlt
-                style={{ marginRight: '0.5rem' }}
                 className={isRecargando ? 'rotating' : ''}
               />
               {isRecargando ? 'Recargando...' : 'Recargar'}
