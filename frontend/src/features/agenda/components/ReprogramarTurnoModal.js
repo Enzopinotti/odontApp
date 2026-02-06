@@ -49,10 +49,6 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
     turno?.duracion || 30
   );
   const { data: disponibilidadesMes } = useDisponibilidadesSemanal(fechaInicioMes, fechaFinMes);
-  const { data: disponibilidadesDia } = useDisponibilidadesSemanal(
-    fecha || fechaInicioMes,
-    fecha || fechaInicioMes
-  );
   const { data: turnosDiaData } = useTurnosPorFecha(
     fecha && odontologoId ? fecha : null,
     fecha && odontologoId ? odontologoId : null
@@ -117,7 +113,7 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
     if (turnosDiaData.data) return Array.isArray(turnosDiaData.data) ? turnosDiaData.data : [];
     if (turnosDiaData.rows) return turnosDiaData.rows;
     return [];
-  }, [turnosDiaData]);
+  }, [turnosDiaData, fecha]);
 
   const horariosOcupados = useMemo(() => {
     return turnosDelDia
@@ -151,7 +147,7 @@ export default function ReprogramarTurnoModal({ turno, onClose, onSuccess }) {
         inicio: slot.horaInicio || slot.inicio,
         fin: slot.horaFin || slot.fin || null
       }));
-  }, [slots, horariosOcupados]);
+  }, [slots, horariosOcupados, fecha]);
 
   useEffect(() => {
     // Pre-cargar fecha y odontólogo del turno original

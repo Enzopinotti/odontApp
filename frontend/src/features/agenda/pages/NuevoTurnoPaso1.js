@@ -10,14 +10,10 @@ import BackBar from '../../../components/BackBar';
 import Lottie from 'lottie-react';
 import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import {
-  FaUserMd, FaTooth, FaCalendarAlt, FaClock, FaCheck, FaTimes, FaSearch,
-  FaChevronLeft, FaChevronRight, FaInfoCircle, FaCalendarCheck
+  FaUserMd, FaCheck, FaTimes,
+  FaChevronLeft, FaChevronRight, FaCalendarCheck
 } from 'react-icons/fa';
 import '../../../styles/agenda.scss';
-
-// Configurar zona horaria de Argentina para todas las operaciones de fecha
-// Esto asegura que las fechas se interpreten correctamente
-const ARGENTINA_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 export default function NuevoTurnoPaso1() {
   const navigate = useNavigate();
@@ -178,7 +174,7 @@ export default function NuevoTurnoPaso1() {
   );
 
   // Obtener disponibilidades del día seleccionado (si hay fecha)
-  const { data: disponibilidadesDia, isLoading: loadingDisponibilidadesDia } = useDisponibilidadesSemanal(
+  const { data: disponibilidadesDia } = useDisponibilidadesSemanal(
     fecha || fechaInicioMes,
     fecha || fechaInicioMes,
     odontologoId
@@ -1426,9 +1422,6 @@ export default function NuevoTurnoPaso1() {
                       if (!tieneFranjas) {
                         const disponibilidadesDelOdontologo = disponibilidadesDia.filter(d =>
                           d.odontologoId === odontologoId
-                        );
-                        const disponibilidadesLaborales = disponibilidadesDelOdontologo.filter(d =>
-                          d.tipo === 'LABORAL'
                         );
 
                         return `No hay franjas LABORAL para este odontólogo en la fecha ${fecha || 'seleccionada'}. 

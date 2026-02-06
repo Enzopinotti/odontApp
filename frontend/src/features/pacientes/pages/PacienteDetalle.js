@@ -26,7 +26,7 @@ import '../../../styles/_pacienteDetalle.scss';
 import { handleApiError } from '../../../utils/handleApiError';
 import {
   FaEdit, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt,
-  FaCopy, FaExternalLinkAlt, FaCircle, FaNotesMedical, FaStethoscope,
+  FaCopy, FaExternalLinkAlt, FaCircle, FaStethoscope,
   FaShieldAlt, FaPlus, FaCalendarAlt, FaGripVertical, FaChevronUp, FaChevronDown,
   FaExpandArrowsAlt, FaCompressAlt
 } from 'react-icons/fa';

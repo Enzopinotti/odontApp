@@ -6,13 +6,11 @@ import { useOdontologosPorEspecialidad } from '../hooks/useTratamientos';
 import useAuth from '../../../features/auth/hooks/useAuth';
 import * as agendaApi from '../../../api/agenda';
 import { useQuery } from '@tanstack/react-query';
-import useToast from '../../../hooks/useToast';
 import Lottie from 'lottie-react';
 import loadingAnim from '../../../assets/video/pacientes-loading.json';
 import '../../../styles/agenda.scss';
 
 export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
-  const { showToast } = useToast();
   const { user } = useAuth();
 
   // CU-AG01.5: Verificar si el usuario es odontólogo
@@ -78,7 +76,7 @@ export default function BuscarTurnosModal({ isOpen, onClose, onTurnoClick }) {
   const { data: turnosData, isLoading: loadingTurnos } = useTurnos(queryParams, { enabled: tieneFiltros });
 
   // Procesar turnos
-  const turnos = turnosData?.data || turnosData || [];
+  const turnos = useMemo(() => turnosData?.data || turnosData || [], [turnosData]);
 
   // Filtrar por tratamiento/motivo y texto de paciente en el frontend
   const turnosFiltrados = useMemo(() => {
