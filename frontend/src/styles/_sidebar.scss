@@ -12,6 +12,10 @@
   transition: transform 0.35s ease;
   z-index: 10;
 
+  .sidebar-header {
+    display: none;
+  }
+
   nav {
     display: flex;
     flex-direction: column;
@@ -84,20 +88,46 @@
 .burger {
   display: none;
   position: fixed;
-  top: 1rem;
-  left: 1rem;
   z-index: 1000;
-  font-size: 1.8rem;
-  background: variables.$color-primary;
-  color: #fff;
-  border: none;
-  padding: 0.5rem 0.8rem;
-  border-radius: 6px;
-  box-shadow: variables.$shadow;
-  transition: background 0.2s ease;
+  font-size: 1.5rem;
+  background: variables.$color-white;
+  color: variables.$color-primary;
+  border: 1px solid variables.$color-primary;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 
   &:hover {
-    background: darken(variables.$color-primary, 5%);
+    background: variables.$color-primary;
+    color: white;
+    transform: translateY(-2px);
+  }
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
@@ -108,28 +138,62 @@
     left: 0;
     height: 100%;
     transform: translateX(-100%);
-    width: 200px;
-    padding-top: 5rem;
+    width: 280px;
+    z-index: 1000;
+    padding-top: 1rem;
 
-    nav a span {
-      opacity: 0;
-      position: absolute;
-      left: 100%;
-      top: 50%;
-      transform: translateY(-50%);
-      white-space: nowrap;
-      background: variables.$color-text;
-      color: #fff;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding: 0 0.5rem;
+
+      .logo-placeholder {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: variables.$color-primary;
+        font-weight: 700;
+        font-size: 1.25rem;
+
+        svg {
+          font-size: 1.5rem;
+        }
+      }
+
+      .close-sidebar {
+        background: none;
+        border: none;
+        font-size: 2.5rem;
+        color: variables.$color-text;
+        line-height: 1;
+        padding: 0.5rem;
+        cursor: pointer;
+      }
     }
 
-    nav a:hover span {
-      opacity: 1;
+    nav {
+      gap: 1rem;
+
+      a {
+        padding: 0.8rem 1rem;
+
+        span {
+          opacity: 1;
+          position: static;
+          transform: none;
+          background: none;
+          color: inherit;
+          padding: 0;
+          font-size: 1.1rem;
+          pointer-events: auto;
+        }
+
+        &:hover span {
+          background: none;
+        }
+      }
     }
   }
 
@@ -139,5 +203,7 @@
 
   .burger {
     display: block;
+    top: 5rem;
+    right: 1rem;
   }
 }
