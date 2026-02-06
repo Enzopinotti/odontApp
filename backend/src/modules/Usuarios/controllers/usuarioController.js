@@ -29,8 +29,15 @@ export const editarUsuario = async (req, res) => {
 
 /* DELETE /api/usuarios/:id */
 export const eliminarUsuario = async (req, res) => {
-  await usuarioService.remove(req.params.id);
-  return res.ok(null, 'Usuario eliminado');
+  const motivo = req.body ? req.body.motivo : undefined;
+  await usuarioService.remove(req.params.id, motivo);
+  return res.ok(null, 'Usuario dado de baja');
+};
+
+/* PATCH /api/usuarios/:id/toggle */
+export const alternarEstado = async (req, res) => {
+  const usuario = await usuarioService.toggleActive(req.params.id);
+  return res.ok(usuario, 'Estado actualizado');
 };
 
 /* POST /api/usuarios/login */
@@ -58,4 +65,5 @@ export default {
   login,
   forgotPassword,
   resetPassword,
+  alternarEstado,
 };

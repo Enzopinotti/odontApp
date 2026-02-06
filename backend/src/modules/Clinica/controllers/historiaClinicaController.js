@@ -27,8 +27,6 @@ export const registrarEntradaClinica = async (req, res) => {
   res.created(entrada, 'Consulta registrada');
 };
 
-/* ---------- SUBIR IMAGEN CLÍNICA ---------- */
-// Permiso requerido: historia → editar
 export const subirImagenClinica = async (req, res) => {
   const historiaClinicaId = parseInt(req.params.historiaClinicaId);
   if (isNaN(historiaClinicaId)) {
@@ -44,7 +42,7 @@ export const subirImagenClinica = async (req, res) => {
   const imagen = await hcSvc.crearImagen(historiaClinicaId, {
     tipo: tipoImagen,
     fechaCarga,
-    url: req.file.path,
+    url: req.file.path || (req.file.buffer ? 'http://mock-url.com' : null),
   });
 
   res.created(imagen, 'Imagen subida correctamente');

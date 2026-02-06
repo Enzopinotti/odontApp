@@ -158,6 +158,11 @@ router.delete(
   requirePermiso('usuarios', 'eliminar'),
   usuarioController.eliminarUsuario
 );
+router.patch(
+  '/:id/toggle',
+  requirePermiso('usuarios', 'editar'),
+  usuarioController.alternarEstado
+);
 
 import * as auditCtrl from '../controllers/auditController.js';
 

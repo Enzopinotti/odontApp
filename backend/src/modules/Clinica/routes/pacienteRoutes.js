@@ -154,6 +154,12 @@ router.delete(
   pacienteCtrl.eliminarPaciente
 );
 
+router.post(
+  '/:id/firma',
+  requirePermiso('pacientes', 'editar'),
+  pacienteCtrl.firmarFicha
+);
+
 /* --- ANTECEDENTES MEDICOS --- */
 router.get('/:pacienteId/antecedentes', requirePermiso('historia_clinica', 'ver'), antCtrl.listarPorPaciente);
 router.post('/:pacienteId/antecedentes', requirePermiso('historia_clinica', 'crear'), antCtrl.crear);

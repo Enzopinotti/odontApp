@@ -62,7 +62,11 @@ app.use('/api', router);
 app.use(errorHandler);
 
 /* 🚀 Inicio del servidor y conexión a la base de datos */
-app.listen(PORT, async () => {
-  await connectDB();
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, async () => {
+    await connectDB();
+    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  });
+}
+
+export default app;

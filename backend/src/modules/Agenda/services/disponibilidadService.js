@@ -27,9 +27,14 @@ export const crearDisponibilidad = async (data, usuarioId) => {
   const inicio = new Date(`2000-01-01T${data.horaInicio}`);
   const fin = new Date(`2000-01-01T${data.horaFin}`);
   const duracionMinutos = (fin - inicio) / (1000 * 60);
-  
+
   if (duracionMinutos < 60) {
     throw new ApiError('Los bloques de disponibilidad deben ser de al menos 1 hora', 400, null, 'DURACION_INSUFICIENTE');
+  }
+
+  // Si es un bloque no laboral, requerir motivo
+  if (data.tipo === TipoDisponibilidad.NOLABORAL && !data.motivo) {
+    throw new ApiError('Los días no laborables requieren un motivo', 400, null, 'MOTIVO_REQUERIDO');
   }
 
   // Verificar solapamiento con otras disponibilidades
@@ -44,13 +49,8 @@ export const crearDisponibilidad = async (data, usuarioId) => {
     throw new ApiError('El horario se solapa con otra disponibilidad existente', 409, null, 'SOLAPAMIENTO_DISPONIBILIDAD');
   }
 
-  // Si es un bloque no laboral, requerir motivo
-  if (data.tipo === TipoDisponibilidad.NOLABORAL && !data.motivo) {
-    throw new ApiError('Los días no laborables requieren un motivo', 400, null, 'MOTIVO_REQUERIDO');
-  }
-
   const nuevaDisponibilidad = await repo.create(data);
-  
+
   // CU-AG02: Registrar auditoría
   try {
     await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
@@ -58,7 +58,7 @@ export const crearDisponibilidad = async (data, usuarioId) => {
     console.error('Error al registrar auditoría de creación de disponibilidad:', error);
     // No fallar si la auditoría falla, solo loguear
   }
-  
+
   return nuevaDisponibilidad;
 };
 
@@ -87,7 +87,7 @@ export const actualizarDisponibilidad = async (id, data, usuarioId) => {
   }
 
   const disponibilidadActualizada = await repo.update(disponibilidad, data);
-  
+
   // CU-AG02: Registrar auditoría
   try {
     await registrarLog(usuarioId, 'disponibilidad', 'modificar', null);
@@ -95,7 +95,7 @@ export const actualizarDisponibilidad = async (id, data, usuarioId) => {
     console.error('Error al registrar auditoría de modificación de disponibilidad:', error);
     // No fallar si la auditoría falla, solo loguear
   }
-  
+
   return disponibilidadActualizada;
 };
 
@@ -113,13 +113,13 @@ export const eliminarDisponibilidad = async (id, usuarioId) => {
     // Verificar que el turno esté dentro del rango horario del bloque
     // Normalizar fechas para comparación
     const fechaTurno = new Date(turno.fechaHora).toISOString().split('T')[0];
-    const fechaDisponibilidad = disponibilidad.fecha instanceof Date 
-      ? disponibilidad.fecha.toISOString().split('T')[0] 
+    const fechaDisponibilidad = disponibilidad.fecha instanceof Date
+      ? disponibilidad.fecha.toISOString().split('T')[0]
       : disponibilidad.fecha.split('T')[0];
-    
+
     // Primero verificar que las fechas coincidan
     if (fechaTurno !== fechaDisponibilidad) return false;
-    
+
     // Luego verificar el rango horario
     const turnoHora = turno.fechaHora.toTimeString().slice(0, 5);
     return turnoHora >= disponibilidad.horaInicio && turnoHora < disponibilidad.horaFin;
@@ -130,7 +130,7 @@ export const eliminarDisponibilidad = async (id, usuarioId) => {
   }
 
   await repo.remove(disponibilidad);
-  
+
   // CU-AG02: Registrar auditoría
   try {
     await registrarLog(usuarioId, 'disponibilidad', 'eliminar', null);
@@ -156,10 +156,10 @@ export const obtenerDisponibilidadPorRango = async (fechaInicio, fechaFin, odont
     }
     return fecha;
   };
-  
+
   const fechaInicioNorm = normalizarFecha(fechaInicio);
   const fechaFinNorm = normalizarFecha(fechaFin);
-  
+
   console.log('[disponibilidadService.obtenerDisponibilidadPorRango] Parámetros:', {
     fechaInicio,
     fechaInicioNormalizada: fechaInicioNorm,
@@ -167,7 +167,7 @@ export const obtenerDisponibilidadPorRango = async (fechaInicio, fechaFin, odont
     fechaFinNormalizada: fechaFinNorm,
     odontologoId
   });
-  
+
   return await repo.obtenerDisponibilidadPorRango(fechaInicioNorm, fechaFinNorm, odontologoId);
 };
 
@@ -179,7 +179,7 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
   // Validar fechas
   const fechaInicioObj = new Date(fechaInicio);
   const fechaFinObj = new Date(fechaFin);
-  
+
   if (fechaInicioObj >= fechaFinObj) {
     throw new ApiError('La fecha de inicio debe ser anterior a la fecha de fin', 400, null, 'FECHAS_INVALIDAS');
   }
@@ -194,20 +194,20 @@ export const generarDisponibilidadesAutomaticas = async (odontologoId, fechaInic
   }
 
   const disponibilidades = await repo.generarDisponibilidadesAutomaticas(odontologoId, fechaInicio, fechaFin, horarioLaboral);
-  
+
   // Registrar auditoría
   try {
     await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
   } catch (error) {
     console.error('Error al registrar auditoría de disponibilidades automáticas:', error);
   }
-  
+
   return disponibilidades;
 };
 
 export const generarDisponibilidadesRecurrentes = async (data, usuarioId) => {
   const { odontologoId, tipoRecurrencia, diasSemana, diaSemana, posicionMes, horaInicio, horaFin, fechaInicio, fechaFin } = data;
-  
+
   // Parsear fechas en zona horaria local (Argentina) para evitar problemas con UTC
   // Si la fecha viene como string "YYYY-MM-DD", crear la fecha en hora local
   const parsearFechaLocal = (fechaStr) => {
@@ -218,11 +218,11 @@ export const generarDisponibilidadesRecurrentes = async (data, usuarioId) => {
     }
     return new Date(fechaStr);
   };
-  
+
   // Validar fechas
   const fechaInicioObj = parsearFechaLocal(fechaInicio);
   const fechaFinObj = parsearFechaLocal(fechaFin);
-  
+
   if (fechaInicioObj >= fechaFinObj) {
     throw new ApiError('La fecha de inicio debe ser anterior a la fecha de fin', 400, null, 'FECHAS_INVALIDAS');
   }
@@ -273,14 +273,14 @@ export const generarDisponibilidadesRecurrentes = async (data, usuarioId) => {
     fechaFin,
     horarioLaboral
   );
-  
+
   // Registrar auditoría
   try {
     await registrarLog(usuarioId, 'disponibilidad', 'crear', null);
   } catch (error) {
     console.error('Error al registrar auditoría de disponibilidades recurrentes:', error);
   }
-  
+
   return { creadas: disponibilidades.length, disponibilidades };
 };
 

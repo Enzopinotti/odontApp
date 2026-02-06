@@ -6,11 +6,11 @@ import { Usuario, Rol } from '../models/index.js';
 import { registrarLog } from '../services/auditService.js';
 
 const cookieOpts = {
-  httpOnly : true,
-  secure   : process.env.NODE_ENV === 'production',
-  sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  domain   : process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-  path     : '/',
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+  path: '/',
 };
 
 
@@ -48,18 +48,27 @@ export const verify2FA = async (req, res) => {
 
 /* ---------- LOGIN CON 2FA ---------- */
 export const login2FA = async (req, res) => {
-  const { email, token } = req.body;
+  const { tempToken, token } = req.body;
 
-  const user = await Usuario.findOne({ where: { email } });
+  let decoded;
+  try {
+    decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+    if (decoded.tokenType !== 'temp2fa') throw new Error();
+  } catch (e) {
+    throw new ApiError('Sesión de 2FA expirada o inválida', 401, null, '2FA_SESSION_EXPIRED');
+  }
+
+  const user = await Usuario.findByPk(decoded.id);
   if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
     throw new ApiError('2FA no configurado para este usuario', 400, null, '2FA_NO_CONFIGURADO');
   }
+
   console.log('Intentando login 2FA con:', token, 'para', user.email);
   const delta = speakeasy.totp.verifyDelta({
-    secret  : user.twoFactorSecret,
+    secret: user.twoFactorSecret,
     encoding: 'base32',
     token,
-    window  : 2, // tolerancia de ±60s
+    window: 2, // tolerancia de ±60s
   });
 
   if (delta === null) {
@@ -87,7 +96,7 @@ export const login2FA = async (req, res) => {
   await registrarLog(user.id, 'auth', '2fa_success');
 
   return res
-    .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
+    .cookie('accessToken', accessToken, { ...cookieOpts, maxAge: 1000 * 60 * 15 })
     .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
     .ok({ user: fullUser, accessToken, refreshToken }, 'Login con 2FA exitoso');
 };

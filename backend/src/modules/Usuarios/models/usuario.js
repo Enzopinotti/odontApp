@@ -1,14 +1,14 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken'; 
+import jwt from 'jsonwebtoken';
 
 export default (sequelize, DataTypes) => {
   const Usuario = sequelize.define('Usuario', {
-    nombre:   { type: DataTypes.STRING, allowNull: false },
+    nombre: { type: DataTypes.STRING, allowNull: false },
     apellido: { type: DataTypes.STRING, allowNull: false },
-    email:    { type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } },
-    password: { type: DataTypes.STRING, allowNull: true }, 
+    email: { type: DataTypes.STRING, allowNull: false, unique: true, validate: { isEmail: true } },
+    password: { type: DataTypes.STRING, allowNull: true },
     telefono: DataTypes.STRING,
-    activo:   { type: DataTypes.BOOLEAN, defaultValue: false },
+    activo: { type: DataTypes.BOOLEAN, defaultValue: false },
     fechaAlta: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     intentosFallidos: { type: DataTypes.INTEGER, defaultValue: 0 },
     bloqueadoHasta: DataTypes.DATE,
@@ -17,8 +17,9 @@ export default (sequelize, DataTypes) => {
     twoFactorEnabled: { type: DataTypes.BOOLEAN, defaultValue: false },
     avatarUrl: { type: DataTypes.STRING, allowNull: true },
     twoFactorSecret: { type: DataTypes.STRING, allowNull: true },
-    proveedor: { type: DataTypes.STRING, allowNull: true },     
-    oauthId:   { type: DataTypes.STRING, allowNull: true },     
+    proveedor: { type: DataTypes.STRING, allowNull: true },
+    oauthId: { type: DataTypes.STRING, allowNull: true },
+    motivoBaja: { type: DataTypes.STRING, allowNull: true },
   }, {
     tableName: 'usuarios',
     defaultScope: { attributes: { exclude: ['password'] } },

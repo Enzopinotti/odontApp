@@ -26,9 +26,14 @@ export const update = async (id, data) => {
   return repo.update(usuario, data);
 };
 
-export const remove = async (id) => {
+export const remove = async (id, motivo) => {
   const usuario = await getById(id); // ya lanza ApiError si no existe
-  await repo.remove(usuario);
+  await repo.remove(usuario, motivo);
+};
+
+export const toggleActive = async (id) => {
+  const usuario = await getById(id);
+  return repo.toggleActive(usuario);
 };
 
 export const buscarConFiltros = async (filtros, page, perPage) => {

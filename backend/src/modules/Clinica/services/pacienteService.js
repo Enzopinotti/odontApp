@@ -89,3 +89,15 @@ export const eliminar = async (id) => {
   await repo.remove(paciente);
   return true;
 };
+
+/* ---------- FIRMAR FICHA DIGITAL ---------- */
+export const firmarFicha = async (id, data) => {
+  const paciente = await repo.findById(id);
+  if (!paciente) throw new ApiError('Paciente no encontrado', 404, null, 'PACIENTE_NO_EXISTE');
+
+  return repo.crearFirma(id, {
+    fechaHora: new Date(),
+    imagen: data.trazo || 'data:image/png;base64,...',
+    tipoDocumento: 1, // Ficha clínica
+  });
+};

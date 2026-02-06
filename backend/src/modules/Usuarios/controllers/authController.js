@@ -5,11 +5,11 @@ import { sanitizeUser } from '../../../utils/sanitizeUser.js';
 const isProd = process.env.NODE_ENV === 'production';
 
 const cookieOpts = {
-  httpOnly : true,
-  secure   : isProd,                     // 🔒 true en prod, false en local
-  sameSite : isProd ? 'none' : 'lax',    // ✅ 'none' en prod para cross-domain, 'lax' en local
-  domain   : isProd ? 'odontapp.com' : undefined, // solo setea dominio en prod
-  path     : '/',
+  httpOnly: true,
+  secure: isProd,                     // 🔒 true en prod, false en local
+  sameSite: isProd ? 'none' : 'lax',    // ✅ 'none' en prod para cross-domain, 'lax' en local
+  domain: isProd ? 'odontapp.com' : undefined, // solo setea dominio en prod
+  path: '/',
 };
 
 /* ---------- REGISTER ---------- */
@@ -29,13 +29,13 @@ export const login = async (req, res) => {
   const result = await authSvc.login(req.body.email, req.body.password);
 
   if (result.require2FA) {
-    return res.ok({ require2FA: true }, '2FA requerido');
+    return res.ok({ require2FA: true, tempToken: result.tempToken }, '2FA requerido');
   }
 
   const { user, accessToken, refreshToken } = result;
 
   return res
-    .cookie('accessToken',  accessToken,  { ...cookieOpts, maxAge: 1000 * 60 * 15 })
+    .cookie('accessToken', accessToken, { ...cookieOpts, maxAge: 1000 * 60 * 15 })
     .cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 1000 * 60 * 60 * 24 * 7 })
     .ok({ user, accessToken, refreshToken }, 'Login exitoso');
 };

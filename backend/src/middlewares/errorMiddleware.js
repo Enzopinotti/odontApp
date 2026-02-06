@@ -24,7 +24,7 @@ const errorMiddleware = (err, req, res, _next) => {
   }
 
   // 🔻 Otro error inesperado
-  console.error('🛑 Error no controlado:', err);
+  console.error('🛑 Error no controlado:', err.message, err.stack);
   return res.status(status).json(response);
 };
 

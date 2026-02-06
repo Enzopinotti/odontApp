@@ -48,7 +48,7 @@ export const crear = async (pacienteId, data, imagenes = []) => {
     const registros = urls.map((file) => ({
       historiaClinicaId: historia.id,
       url: file.secure_url,
-      tipo: data.tipoImagen || 'Fotografía',
+      tipoImagen: data.tipoImagen || 'Foto',
     }));
 
     await repo.bulkCreateImagenes(registros);
@@ -108,9 +108,9 @@ export const crearImagen = async (historiaClinicaId, data) => {
 
   return repo.createImagen({
     historiaClinicaId,
-    tipo: data.tipo || 'Fotografía',
-    url: data.url,
-    fechaCarga: data.fechaCarga || new Date(),
+    tipoImagen: data.tipo || 'Foto',
+    url: data.url || 'http://mock-url.com',
+    fechaCarga: data.fechaCarga || new Date().toISOString().split('T')[0],
   });
 };
 

@@ -55,3 +55,12 @@ export const eliminarPaciente = async (req, res) => {
 
   res.ok(null, 'Paciente eliminado');
 };
+
+/* ---------- FIRMAR FICHA ---------- */
+export const firmarFicha = async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) throw new ApiError('ID inválido', 400);
+
+  const firma = await pacienteSvc.firmarFicha(id, req.body);
+  res.ok(firma, 'Firma registrada');
+};

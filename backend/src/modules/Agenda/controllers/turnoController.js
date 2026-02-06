@@ -43,12 +43,8 @@ export const crearTurno = async (req, res) => {
     const turno = await turnoService.crearTurno(req.body, req.user.id, ip);
     return res.created(turno, 'Turno creado exitosamente');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      // CU-AG01.2 Flujo Alternativo 6a: Incluir información del conflicto en la respuesta
-      return res.error(error.message, 409, error.metadata || null);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -73,14 +69,8 @@ export const actualizarTurno = async (req, res) => {
     const turno = await turnoService.actualizarTurno(req.params.id, req.body, req.user.id);
     return res.ok(turno, 'Turno actualizado');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
-    }
-    if (error.name === 'NotFoundError') {
-      return res.error(error.message, 404);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -121,18 +111,18 @@ export const cancelarTurno = async (req, res) => {
 export const cancelarTurnosMultiple = async (req, res) => {
   try {
     const { turnoIds, motivo } = req.body;
-    
+
     if (!Array.isArray(turnoIds) || turnoIds.length === 0) {
       return res.error('Debe proporcionar al menos un ID de turno', 400);
     }
-    
+
     if (!motivo || !motivo.trim()) {
       return res.error('El motivo es requerido para cancelación múltiple', 400);
     }
-    
+
     const ip = req.ip || req.connection.remoteAddress;
     const resultado = await turnoService.cancelarTurnosMultiple(turnoIds, motivo, req.user.id, ip);
-    
+
     return res.ok(resultado, `Se cancelaron ${resultado.cancelados} turno(s) exitosamente`);
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -166,7 +156,7 @@ export const marcarAusencia = async (req, res) => {
     const { motivo } = req.body;
     const ip = req.ip || req.connection.remoteAddress;
     const resultado = await turnoService.marcarAusencia(req.params.id, motivo, req.user.id, ip);
-    
+
     // CU-AG01.1 Flujo Alternativo 5b: Incluir sugerencia de reprogramar en la respuesta
     if (resultado.sugerirReprogramar) {
       return res.ok({
@@ -175,7 +165,7 @@ export const marcarAusencia = async (req, res) => {
         mensaje: resultado.mensaje
       }, resultado.mensaje);
     }
-    
+
     return res.ok(resultado.turno, resultado.mensaje);
   } catch (error) {
     if (error.name === 'NotFoundError') {
@@ -196,15 +186,8 @@ export const reprogramarTurno = async (req, res) => {
     const turno = await turnoService.reprogramarTurno(req.params.id, nuevaFechaHora, req.user.id, ip, odontologoId);
     return res.ok(turno, 'Turno reprogramado exitosamente');
   } catch (error) {
-    if (error.name === 'NotFoundError') {
-      return res.error(error.message, 404);
-    }
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      // CU-AG01.3 Flujo Alternativo 4a: Incluir opciones de alternativas en la respuesta
-      return res.error(error.message, 409, error.metadata || null);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -215,7 +198,7 @@ export const obtenerAgendaPorFecha = async (req, res) => {
   try {
     const { fecha } = req.params;
     let { odontologoId } = req.query;
-    
+
     // CU-AG01.5: Si el usuario es odontólogo, solo puede ver su propia agenda
     if (req.user.roleId === 2) { // ID 2 = Odontólogo
       const { Odontologo } = await import('../../Usuarios/models/index.js');
@@ -226,7 +209,7 @@ export const obtenerAgendaPorFecha = async (req, res) => {
         return res.ok([], 'Agenda obtenida');
       }
     }
-    
+
     const agenda = await turnoService.obtenerAgendaPorFecha(fecha, odontologoId);
     return res.ok(agenda, 'Agenda obtenida');
   } catch (error) {
@@ -238,11 +221,11 @@ export const obtenerAgendaPorFecha = async (req, res) => {
 export const obtenerSlotsDisponibles = async (req, res) => {
   try {
     const { fecha, odontologoId, duracion = 30 } = req.query;
-    
+
     if (!fecha || !odontologoId) {
       return res.error('Fecha y odontologoId son requeridos', 400);
     }
-    
+
     const slots = await turnoService.obtenerSlotsDisponibles(fecha, odontologoId, parseInt(duracion));
     return res.ok(slots, 'Slots disponibles obtenidos');
   } catch (error) {
@@ -277,9 +260,9 @@ export const obtenerTurnosPendientesConcluidos = async (req, res) => {
 export const procesarAusenciasAutomaticas = async (req, res) => {
   try {
     const turnosProcesados = await turnoService.procesarAusenciasAutomaticas();
-    return res.ok({ 
+    return res.ok({
       procesados: turnosProcesados.length,
-      turnos: turnosProcesados 
+      turnos: turnosProcesados
     }, 'Ausencias automáticas procesadas');
   } catch (error) {
     return res.error(error.message, 500);
@@ -293,7 +276,7 @@ export const buscarPacientes = async (req, res) => {
     if (!termino || termino.length < 2) {
       return res.error('El término de búsqueda debe tener al menos 2 caracteres', 400);
     }
-    
+
     const pacientes = await turnoService.buscarPacientes(termino);
     return res.ok(pacientes, 'Pacientes encontrados');
   } catch (error) {
@@ -307,11 +290,8 @@ export const crearPacienteRapido = async (req, res) => {
     const paciente = await turnoService.crearPacienteRapido(req.body);
     return res.ok(paciente, 'Paciente creado exitosamente');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }

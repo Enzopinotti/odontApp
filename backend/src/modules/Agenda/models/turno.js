@@ -166,7 +166,9 @@ export default (sequelize, DataTypes) => {
               }
             },
             {
-              [sequelize.literal]: `DATE_ADD(fechaHora, INTERVAL duracion MINUTE) > '${inicio.toISOString()}'`
+              [sequelize.literal]: sequelize.getDialect() === 'sqlite'
+                ? `datetime(fechaHora, '+' || duracion || ' minutes') > '${inicio.toISOString()}'`
+                : `DATE_ADD(fechaHora, INTERVAL duracion MINUTE) > '${inicio.toISOString()}'`
             }
           ]
         }

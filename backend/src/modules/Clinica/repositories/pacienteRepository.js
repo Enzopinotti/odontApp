@@ -149,7 +149,16 @@ export const updateWithContacto = async (pacienteOrId, data) => {
 
 /* ---------- Eliminar paciente (baja lógica) ---------- */
 export const remove = async (paciente) => {
-  await paciente.destroy();
+  await paciente.update({ estadoId: 2 });
+  await paciente.destroy(); // Para que también marque deletedAt (paranoid)
+};
+
+/* ---------- Crear firma digital ---------- */
+export const crearFirma = async (pacienteId, data) => {
+  return FirmaDigital.create({
+    ...data,
+    pacienteId,
+  });
 };
 
 /* ---------- Filtro avanzado de pacientes ---------- */

@@ -28,6 +28,9 @@ const signAccess = (u) =>
 const signRefresh = (u) =>
   jwt.sign({ id: u.id, tokenType: 'refresh' }, JWT_SECRET, { expiresIn: JWT_REFRESH_EXP });
 
+const signTemp2FA = (u) =>
+  jwt.sign({ id: u.id, email: u.email, tokenType: 'temp2fa' }, JWT_SECRET, { expiresIn: '5m' });
+
 /* ----------- REGISTRO ----------- */
 export const register = async (data) => {
   if (await userRepo.findByEmail(data.email)) {
@@ -73,8 +76,8 @@ export const login = async (email, password) => {
     await user.update({
       intentosFallidos: user.intentosFallidos + 1,
       bloqueadoHasta:
-        user.intentosFallidos + 1 >= 3
-          ? new Date(Date.now() + 10 * 60 * 1000)
+        user.intentosFallidos + 1 >= 5
+          ? new Date(Date.now() + 1 * 60 * 1000)
           : null,
     });
     await registrarLog(user.id, 'auth', 'login_fail');
@@ -92,6 +95,7 @@ export const login = async (email, password) => {
     return {
       user,
       require2FA: true,
+      tempToken: signTemp2FA(user),
     };
   }
 

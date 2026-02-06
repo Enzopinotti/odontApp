@@ -50,11 +50,8 @@ export const crearDisponibilidad = async (req, res) => {
     const disponibilidad = await disponibilidadService.crearDisponibilidad(req.body, req.user.id);
     return res.created(disponibilidad, 'Disponibilidad creada exitosamente');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -79,14 +76,8 @@ export const actualizarDisponibilidad = async (req, res) => {
     const disponibilidad = await disponibilidadService.actualizarDisponibilidad(req.params.id, req.body, req.user.id);
     return res.ok(disponibilidad, 'Disponibilidad actualizada');
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.error(error.message, 400);
-    }
-    if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
-    }
-    if (error.name === 'NotFoundError') {
-      return res.error(error.message, 404);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -98,11 +89,8 @@ export const eliminarDisponibilidad = async (req, res) => {
     await disponibilidadService.eliminarDisponibilidad(req.params.id, req.user.id);
     return res.ok(null, 'Disponibilidad eliminada');
   } catch (error) {
-    if (error.name === 'NotFoundError') {
-      return res.error(error.message, 404);
-    }
-    if (error.name === 'ConflictError') {
-      return res.error(error.message, 409);
+    if (error.status) {
+      return res.error(error.message, error.status, error.details || null);
     }
     return res.error(error.message, 500);
   }
@@ -113,16 +101,16 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
   try {
     const { odontologoId } = req.params;
     const { fecha, fechaInicio, fechaFin } = req.query;
-    
+
     console.log('[obtenerDisponibilidadesPorOdontologo] Parámetros:', {
       odontologoId,
       fecha,
       fechaInicio,
       fechaFin
     });
-    
+
     let disponibilidades;
-    
+
     if (fecha) {
       disponibilidades = await disponibilidadService.obtenerDisponibilidadPorFecha(fecha, odontologoId);
     } else if (fechaInicio && fechaFin) {
@@ -130,7 +118,7 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
     } else {
       disponibilidades = await disponibilidadService.obtenerDisponibilidadesPorOdontologo(odontologoId);
     }
-    
+
     console.log('[obtenerDisponibilidadesPorOdontologo] Resultado:', {
       cantidad: disponibilidades?.length || 0,
       disponibilidades: disponibilidades?.map(d => ({
@@ -143,7 +131,7 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
         horaFin: d.horaFin
       }))
     });
-    
+
     return res.ok(disponibilidades, 'Disponibilidades obtenidas');
   } catch (error) {
     return res.error(error.message, 500);
@@ -154,15 +142,15 @@ export const obtenerDisponibilidadesPorOdontologo = async (req, res) => {
 export const generarDisponibilidadesAutomaticas = async (req, res) => {
   try {
     const { odontologoId, fechaInicio, fechaFin, horarioLaboral } = req.body;
-    
+
     const disponibilidades = await disponibilidadService.generarDisponibilidadesAutomaticas(
-      odontologoId, 
-      fechaInicio, 
-      fechaFin, 
+      odontologoId,
+      fechaInicio,
+      fechaFin,
       horarioLaboral,
       req.user.id
     );
-    
+
     return res.created(disponibilidades, 'Disponibilidades generadas automáticamente');
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -179,7 +167,7 @@ export const generarDisponibilidadesRecurrentes = async (req, res) => {
       req.body,
       req.user.id
     );
-    
+
     return res.created(resultado, `Se crearon ${resultado.creadas} disponibilidades recurrentes`);
   } catch (error) {
     if (error.name === 'ValidationError' || error.name === 'ApiError') {
@@ -193,15 +181,15 @@ export const generarDisponibilidadesRecurrentes = async (req, res) => {
 export const validarDisponibilidad = async (req, res) => {
   try {
     const { fecha, horaInicio, horaFin, odontologoId, disponibilidadIdExcluir } = req.body;
-    
+
     const esValida = await disponibilidadService.validarDisponibilidad(
-      fecha, 
-      horaInicio, 
-      horaFin, 
-      odontologoId, 
+      fecha,
+      horaInicio,
+      horaFin,
+      odontologoId,
       disponibilidadIdExcluir
     );
-    
+
     return res.ok({ esValida }, 'Validación completada');
   } catch (error) {
     return res.error(error.message, 500);
