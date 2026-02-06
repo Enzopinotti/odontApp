@@ -1,4 +1,5 @@
-import request from 'supertest';
+const { default: request } = await import('supertest');
+const { default: app } = await import('../index.js');
 import { sequelize } from '../src/config/db.js';
 import { EstadoTurno, TipoDisponibilidad } from '../src/modules/Agenda/models/enums.js';
 
@@ -9,6 +10,23 @@ describe('Validación Completa de Casos de Uso - Módulo Agenda', () => {
   let pacienteId;
 
   beforeAll(async () => {
+    await sequelize.sync({ force: true });
+    const { Rol } = await import('../src/modules/Usuarios/models/index.js');
+    const { EstadoPaciente } = await import('../src/modules/Clinica/models/index.js');
+
+    await Rol.bulkCreate([
+      { id: 1, nombre: 'Admin' },
+      { id: 2, nombre: 'Odontologo' },
+      { id: 3, nombre: 'Secretaria' },
+      { id: 4, nombre: 'Recepcionista' },
+      { id: 5, nombre: 'Paciente' }
+    ]);
+
+    await EstadoPaciente.bulkCreate([
+      { id: 1, nombre: 'ACTIVO' },
+      { id: 2, nombre: 'BAJA' }
+    ]);
+
     await setupTestData();
   });
 
@@ -45,7 +63,7 @@ describe('Validación Completa de Casos de Uso - Módulo Agenda', () => {
       // Validar resultado
       expect(response.body.data.estado).toBe(EstadoTurno.ASISTIO);
       expect(response.body.message).toBe('Asistencia registrada');
-      
+
       // Verificar que se creó la nota
       expect(response.body.data.Notas).toBeDefined();
       expect(response.body.data.Notas.length).toBeGreaterThan(0);
@@ -702,60 +720,62 @@ describe('Validación Completa de Casos de Uso - Módulo Agenda', () => {
 
   // Función helper para configurar datos de prueba
   async function setupTestData() {
+    const { Usuario, Odontologo } = await import('../src/modules/Usuarios/models/index.js');
+
     // Crear usuario recepcionista
     const recepcionistaData = {
       nombre: 'Juan',
       apellido: 'Pérez',
       email: 'recepcionista@test.com',
-      password: 'password123',
+      password: 'password123!',
       telefono: '123456789'
     };
 
     const recepcionistaResponse = await request(app)
-      .post('/api/usuarios/register')
+      .post('/api/auth/register')
       .send(recepcionistaData);
 
     recepcionistaId = recepcionistaResponse.body.data.id;
+    await Usuario.update({ RolId: 1, activo: true }, { where: { id: recepcionistaId } });
 
     // Crear usuario odontólogo
-    const odontologoData = {
+    const odontologoUser = await Usuario.create({
       nombre: 'Dr. María',
       apellido: 'González',
       email: 'odontologo@test.com',
-      password: 'password123',
-      telefono: '987654321',
-      matricula: 'MAT123456'
-    };
+      password: 'password123!',
+      activo: true,
+      RolId: 2
+    });
+    odontologoId = odontologoUser.id;
+    await Odontologo.create({ userId: odontologoId, matricula: 'MAT123456' });
 
-    const odontologoResponse = await request(app)
-      .post('/api/usuarios/register-odontologo')
-      .send(odontologoData);
+    // Autenticar como recepcionista (ahora Admin) para crear paciente
+    const loginResponse = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'recepcionista@test.com',
+        password: 'password123!'
+      });
 
-    odontologoId = odontologoResponse.body.data.id;
+    authToken = loginResponse.body.data.accessToken;
 
     // Crear paciente
     const pacienteData = {
       nombre: 'Ana',
       apellido: 'López',
       dni: '12345678',
-      obraSocial: 'OSDE',
-      nroAfiliado: '123456'
+      contacto: {
+        email: 'ana@test.com',
+        direccion: { calle: 'Av Siempre Viva 123', ciudad: 'Springfield' }
+      }
     };
 
     const pacienteResponse = await request(app)
       .post('/api/clinica/pacientes')
+      .set('Authorization', `Bearer ${authToken}`)
       .send(pacienteData);
 
     pacienteId = pacienteResponse.body.data.id;
-
-    // Autenticar como recepcionista
-    const loginResponse = await request(app)
-      .post('/api/usuarios/login')
-      .send({
-        email: 'recepcionista@test.com',
-        password: 'password123'
-      });
-
-    authToken = loginResponse.body.data.token;
   }
 });

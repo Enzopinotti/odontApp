@@ -834,14 +834,14 @@ export default function GestionDisponibilidades() {
       {/* Header */}
       <header className="disponibilidades-header">
         <div className="top-bar">
-          <h2 style={{ fontWeight: '850' }}>Gestión de Disponibilidades</h2>
+          <h2>Gestión de Disponibilidades</h2>
           <div className="header-actions">
             <button
-              className="btn-secondary"
+              className="btn-primary"
               onClick={() => refetch()}
               disabled={isFetching}
             >
-              <FaSyncAlt className={isFetching ? 'rotating' : ''} style={{ marginRight: '0.5rem' }} />
+              <FaSyncAlt className={isFetching ? 'rotating' : ''} />
               {isFetching ? 'Recargando...' : 'Recargar'}
             </button>
             <button className="btn-secondary" onClick={() => navigate('/agenda')}>

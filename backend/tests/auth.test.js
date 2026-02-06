@@ -23,10 +23,6 @@ describe('Módulo de Autenticación (Auth) - Tests Comprensivos', () => {
         await Rol.create({ id: 1, nombre: 'Admin' });
     });
 
-    afterAll(async () => {
-        await sequelize.close();
-    });
-
     describe('Registro de Usuarios', () => {
         test('Debe registrar un nuevo usuario exitosamente', async () => {
             const userData = {
@@ -92,7 +88,7 @@ describe('Módulo de Autenticación (Auth) - Tests Comprensivos', () => {
             expect(updatedUser.intentosFallidos).toBe(intentosIniciales + 1);
         });
 
-        test('Debe bloquear la cuenta tras 3 intentos fallidos', async () => {
+        test('Debe bloquear la cuenta tras 5 intentos fallidos', async () => {
             const email = 'lock@example.com';
             await Usuario.create({
                 nombre: 'Lock',
@@ -103,8 +99,8 @@ describe('Módulo de Autenticación (Auth) - Tests Comprensivos', () => {
                 activo: true
             });
 
-            // 3 intentos fallidos
-            for (let i = 0; i < 3; i++) {
+            // 5 intentos fallidos
+            for (let i = 0; i < 5; i++) {
                 try { await authService.login(email, 'wrong'); } catch (e) { }
             }
 

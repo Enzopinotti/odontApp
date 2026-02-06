@@ -1,0 +1,133 @@
+  console.log
+    [dotenv@16.6.0] injecting env (22) from .env
+
+      at _log (node_modules/dotenv/lib/main.js:102:11)
+
+  console.info
+    Not all input has been taken into account at your final specification.
+
+      at build (node_modules/swagger-jsdoc/src/specification.js:309:15)
+
+  console.error
+    Here's the report: 
+    
+    
+     Error in ./src/modules/Usuarios/routes/usuarioRoutes.js :
+    YAMLSemanticError: Source contains multiple documents; please use YAML.parseAllDocuments()
+
+      27 |   apis: ['./src/modules/**/routes/*.js', './src/modules/**/controllers/*.js'], // ajustar según estructura
+      28 | };
+    > 29 | const swaggerSpec = swaggerJSDoc(options);
+         |                     ^
+      30 | export default swaggerSpec;
+      31 |
+
+      at build (node_modules/swagger-jsdoc/src/specification.js:313:15)
+      at Object.<anonymous>.module.exports (node_modules/swagger-jsdoc/src/lib.js:32:10)
+      at src/docs/swaggerConfig.js:29:21
+
+(node:35375) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35375) [DEP0170] DeprecationWarning: The URL sqlite::memory: is invalid. Future versions of Node.js will throw an error.
+  console.error
+    Error registrando recepcionista: { success: false, message: 'No autorizado' }
+
+      160 |
+      161 |     if (!recepcionistaResponse.body.data) {
+    > 162 |         console.error('Error registrando recepcionista:', recepcionistaResponse.body);
+          |                 ^
+      163 |     }
+      164 |     recepcionistaId = recepcionistaResponse.body.data.id;
+      165 |     // Activar usuario
+
+      at setupTestData (tests/agenda.test.js:162:17)
+      at Object.<anonymous> (tests/agenda.test.js:29:5)
+
+FAIL tests/agenda.test.js (8.282 s)
+  ● Módulo Agenda - Casos de Uso › CU-AG01.1: Registrar Asistencia › Debe marcar asistencia correctamente
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      162 |         console.error('Error registrando recepcionista:', recepcionistaResponse.body);
+      163 |     }
+    > 164 |     recepcionistaId = recepcionistaResponse.body.data.id;
+          |                                                       ^
+      165 |     // Activar usuario
+      166 |     await Usuario.update({ activo: true }, { where: { id: recepcionistaId } });
+      167 |
+
+      at setupTestData (tests/agenda.test.js:164:55)
+      at Object.<anonymous> (tests/agenda.test.js:29:5)
+
+  ● Módulo Agenda - Casos de Uso › CU-AG01.1: Registrar Asistencia › Debe marcar ausencia correctamente
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      162 |         console.error('Error registrando recepcionista:', recepcionistaResponse.body);
+      163 |     }
+    > 164 |     recepcionistaId = recepcionistaResponse.body.data.id;
+          |                                                       ^
+      165 |     // Activar usuario
+      166 |     await Usuario.update({ activo: true }, { where: { id: recepcionistaId } });
+      167 |
+
+      at setupTestData (tests/agenda.test.js:164:55)
+      at Object.<anonymous> (tests/agenda.test.js:29:5)
+
+  ● Módulo Agenda - Casos de Uso › CU-AG01.2: Crear Turno › Debe crear turno correctamente
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      162 |         console.error('Error registrando recepcionista:', recepcionistaResponse.body);
+      163 |     }
+    > 164 |     recepcionistaId = recepcionistaResponse.body.data.id;
+          |                                                       ^
+      165 |     // Activar usuario
+      166 |     await Usuario.update({ activo: true }, { where: { id: recepcionistaId } });
+      167 |
+
+      at setupTestData (tests/agenda.test.js:164:55)
+      at Object.<anonymous> (tests/agenda.test.js:29:5)
+
+  ● Módulo Agenda - Casos de Uso › CU-AG01.2: Crear Turno › No debe crear turno con duración inválida (no múltiplo de 5)
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      162 |         console.error('Error registrando recepcionista:', recepcionistaResponse.body);
+      163 |     }
+    > 164 |     recepcionistaId = recepcionistaResponse.body.data.id;
+          |                                                       ^
+      165 |     // Activar usuario
+      166 |     await Usuario.update({ activo: true }, { where: { id: recepcionistaId } });
+      167 |
+
+      at setupTestData (tests/agenda.test.js:164:55)
+      at Object.<anonymous> (tests/agenda.test.js:29:5)
+
+
+  ● Test suite failed to run
+
+    SQLITE_MISUSE: Database is closed
+
+      15 | afterAll(async () => {
+      16 |   // Cerrar conexión a la base de datos
+    > 17 |   await sequelize.close();
+         |                   ^
+      18 | });
+      19 |
+      20 | // Configurar timeout global para tests - se hace en jest.config.js
+
+      at node_modules/sequelize/src/dialects/sqlite/connection-manager.js:31:79
+      at node_modules/sequelize/src/dialects/sqlite/connection-manager.js:31:85
+          at Array.map (<anonymous>)
+      at ConnectionManager._onProcessExit (node_modules/sequelize/src/dialects/sqlite/connection-manager.js:31:10)
+      at ConnectionManager.close (node_modules/sequelize/src/dialects/abstract/connection-manager.js:116:23)
+      at Sequelize.close (node_modules/sequelize/src/sequelize.js:1294:35)
+      at Object.<anonymous> (tests/setup.js:17:19)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 4 total
+Snapshots:   0 total
+Time:        8.801 s, estimated 12 s
+Ran all test suites matching /tests\/agenda.test.js/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
