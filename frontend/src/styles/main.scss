@@ -1,99 +1,28 @@
 @use 'variables';
-@use 'mixins';
 @use 'modal';
-@use 'header';
-@use 'sidebar';
+@use 'layout/header';
+@use 'layout/sidebar';
+@use 'layout/appLayout';
+@use 'layout/publicLayout';
 @use 'dashboard';
-@use 'appLayout';
-@use 'publicLayout';
 @use 'authForm';
 @use 'login';
 @use 'notFound';
+@use 'progressBar';
+@use 'profile';
 @use 'profilePro';
 @use 'toast';
+@use "mixins";
+@use "utilities";
+@use "components/buttons";
+@use "components/autocomplete";
+@use "components/recetas";
 @use 'pacientes';
 @use 'kanban';
 @use 'formsClinica';
-@use 'adminPage';
-@use 'adminTreatments';
-@use 'adminAudit';
-@use 'adminUsers';
-@use 'adminRoles';
-@use 'modernSelect';
-
-
-
-
-
-@use 'progressBar';
 @use 'pacienteDetalle';
 @use 'odontograma';
 @use 'agenda';
-@use 'disponibilidades';
 @use 'agendaDiaria';
-
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  margin: 0;
-  font-family: variables.$fuente-base;
-  color: variables.$color-text;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-a {
-  color: variables.$color-primary;
-}
-
-
-/* botoncito link reutilizado */
-.link-btn {
-  background: none;
-  border: none;
-  color: variables.$color-primary;
-  cursor: pointer;
-  padding: 0;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration: underline
-  }
-}
-
-input:-internal-autofill-selected {
-  appearance: unset !important;
-  /* Resets appearance to its default */
-  background-image: unset !important;
-  /* Resets background-image */
-  background-color: white !important;
-  /* Resets background-color */
-  color: unset !important;
-  /* Resets color */
-}
-
-/* Loader Global Reutilizable */
-.pacientes-loader {
-  display: flex !important;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  padding: 2rem;
-
-  p {
-    margin-top: 1rem;
-    font-weight: 850;
-    color: #145c63;
-  }
-}
+@use 'disponibilidades';
+@use 'modernSelect';

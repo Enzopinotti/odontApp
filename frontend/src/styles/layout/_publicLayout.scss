@@ -1,4 +1,4 @@
-@use 'variables';
+@use '../variables';
 
 .public-wrapper {
   display: flex;
@@ -6,7 +6,7 @@
   min-height: 100vh;
   justify-content: center;
   align-items: center;
-  background-image: url('../assets/img/fondoAuth.webp');
+  background-image: url('../../assets/img/fondoAuth.webp');
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;

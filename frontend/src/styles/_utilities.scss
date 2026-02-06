@@ -1,0 +1,10 @@
+@use "mixins" as *;
+@use 'variables';
+
+.u-w-100{ width: 100%;}
+//gaps
+.u-gap-sm{gap: variables.$space-sm;}
+.u-gap-md{gap: variables.$space-md;}
+//margins
+.u-mt-sm {margin-top: variables.$space-sm;}
+.u-bt-sm {margin-bottom: variables.$space-sm;}

@@ -1,40 +1,54 @@
-import { body, param } from 'express-validator';
-import validate from '../../../utils/validateRequest.js';
+import { body, param } from "express-validator";
+import validate from "../../../utils/validateRequest.js";
 
 /* eslint-disable security/detect-object-injection */
 
 export const vCrearPaciente = [
   // ───────────────────────────────────────── Paciente
-  body('nombre').notEmpty().withMessage('El nombre es obligatorio'),
-  body('apellido').notEmpty().withMessage('El apellido es obligatorio'),
-  body('dni').notEmpty().withMessage('El DNI es obligatorio'),
+  body("nombre").notEmpty().withMessage("El nombre es obligatorio"),
+  body("apellido").notEmpty().withMessage("El apellido es obligatorio"),
+  body("dni").notEmpty().withMessage("El DNI es obligatorio"),
+  body("fechaNacimiento")
+    .notEmpty()
+    .withMessage("La fecha de nacimiento es obligatoria")
+    .isISO8601()
+    .withMessage("La fecha debe estar en formato válido (YYYY-MM-DD)"),
+
+  body("sexo")
+    .optional()
+    .isIn(["Masculino", "Femenino", "Otro"])
+    .withMessage("El sexo debe ser Masculino, Femenino u Otro"),
 
   // ───────────────────────────────────────── Contacto
-  body('contacto')
-    .custom((v) => typeof v === 'object' && v !== null)
-    .withMessage('El contacto es obligatorio'),
+  body("contacto")
+    .custom((v) => typeof v === "object" && v !== null)
+    .withMessage("El contacto es obligatorio"),
 
-  body('contacto.email')
+  body("contacto.email")
     .optional({ nullable: true })
     .isEmail()
-    .withMessage('Correo de contacto inválido'),
+    .withMessage("Correo de contacto inválido"),
 
   // ───────────────────────────────────────── Dirección
-  body('contacto.direccion')
-    .custom((v) => typeof v === 'object' && v !== null)
-    .withMessage('La dirección es obligatoria'),
+  body("contacto.direccion")
+    .custom((v) => typeof v === "object" && v !== null)
+    .withMessage("La dirección es obligatoria"),
 
-  body('contacto.direccion.calle')
-    .notEmpty().withMessage('La calle es obligatoria'),
+  body("contacto.direccion.calle")
+    .notEmpty()
+    .withMessage("La calle es obligatoria"),
 
-  body('contacto.direccion.ciudad')
-    .notEmpty().withMessage('La ciudad es obligatoria'),
+  body("contacto.direccion.ciudad")
+    .notEmpty()
+    .withMessage("La ciudad es obligatoria"),
 
   validate,
 ];
 
 export const vActualizarPaciente = [
-  param('id').isInt().withMessage('ID inválido'),
-  body().custom((b) => Object.keys(b).length > 0).withMessage('Debe enviar al menos un campo'),
+  param("id").isInt().withMessage("ID inválido"),
+  body()
+    .custom((b) => Object.keys(b).length > 0)
+    .withMessage("Debe enviar al menos un campo"),
   validate,
 ];

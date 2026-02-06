@@ -2,6 +2,7 @@
 
 import * as pacienteSvc from '../services/pacienteService.js';
 import ApiError from '../../../utils/ApiError.js';
+import Paciente from '../models/Paciente.js';
 
 /* ---------- LISTAR PACIENTES ---------- */
 export const listarPacientes = async (req, res) => {
@@ -26,6 +27,7 @@ export const obtenerPacientePorId = async (req, res) => {
 
   res.ok(paciente);
 };
+
 
 /* ---------- CREAR PACIENTE ---------- */
 export const crearPaciente = async (req, res) => {

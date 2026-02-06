@@ -1,0 +1,33 @@
+@use "../variables";
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: variables.$color-background;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  padding: 3rem;
+  overflow-y: auto;
+}
+.content-wrapper {
+  background-color: variables.$color-white;
+  border-radius: 1rem;
+  padding: .5rem 1rem;
+  width: 100%;
+  max-width: 1200px;
+  overflow-x: hidden; /* evita desbordes horizontales */
+  overflow-y: auto; /* permite scroll si el contenido vertical crece */
+  box-sizing: border-box;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  height: 100%;
+}

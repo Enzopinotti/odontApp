@@ -27,8 +27,9 @@ const AuditLog = auditLogModel(sequelize, DataTypes);
 const RolPermiso = rolPermisoModel(sequelize, DataTypes);
 const OdontologoEspecialidad = odontologoEspecialidadModel(sequelize, DataTypes);
 const Recepcionista = recepcionistaModel(sequelize, DataTypes);
-applyAssociations(sequelize.models);
 
+
+applyAssociations(sequelize.models);
 
 
 export {
@@ -44,4 +45,5 @@ export {
   RolPermiso,
   OdontologoEspecialidad,
   Recepcionista,
+  
 };

@@ -30,11 +30,7 @@ export const findByEmail = (email, { includeRole = false } = {}) => {
 
 export const create = (data) => Usuario.create(data);
 export const update = (instancia, data) => instancia.update(data);
-export const remove = (instancia, motivo = 'Baja lógica') => 
-  instancia.update({ activo: false, motivoBaja: motivo });
-
-export const toggleActive = (instancia) => 
-  instancia.update({ activo: !instancia.activo });
+export const remove = (instancia) => instancia.destroy();
 
 export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
   const offset = (page - 1) * perPage;
@@ -63,6 +59,7 @@ export const findFiltered = (filtros = {}, page = 1, perPage = 20) => {
     order: [['createdAt', 'DESC']],
   });
 };
+
 
 export default {
   findPaginated,

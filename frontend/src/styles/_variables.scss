@@ -3,8 +3,10 @@ $color-primary: #145c63;
 $color-white: #ffffff;
 $color-light: #f7f9fc;
 $color-text: #1c1c1e;
+$color-gray: #6b7280;
 $color-danger: #d9534f;
 $color-success: #28a745;
+$color-background: #DCEFF9;
 
 // Premium UI additions
 $color-surface: #ffffff;
@@ -18,5 +20,21 @@ $color-clinical-gray: #4b5563;
 
 // Fuente
 $fuente-base: 'Poppins', sans-serif;
-$radius: 12px; // Un poco más moderno
+$radius: 12px; // Mantenemos el radio más moderno de 12px de main
 $shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+//radios (Agregados desde recipes-module)
+$radius-sm: .25rem;
+$radius-md: .5rem;
+$radius-lg: 1rem;
+
+//Gaps (Agregados desde recipes-module)
+$space-xs: .25rem;
+$space-sm: .5rem;
+$space-md: 1rem;
+$space-lg: 1.5rem;
+$space-xl: 2rem;
+
+//shadows (Agregados desde recipes-module)
+$shadow-1: 0 1px 2px rgba(0, 0, 0, .06);
+$shadow-2: 0 2px 8px rgba(0, 0, 0, .08);

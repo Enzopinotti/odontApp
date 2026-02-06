@@ -1,0 +1,31 @@
+@use "../mixins" as *;
+
+.auto {
+  position: relative;
+  &__input {
+    @include input-base;
+  }
+
+  &__list {
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: 0;
+    max-height: 16rem;
+    overflow: auto;
+    padding: 0.25rem;
+    border: 1px solid #ccc;
+    background: #fff;
+    list-style: none;
+  }
+
+  &__item{
+      padding: .5rem .75rem;
+    border-radius: rad(md);
+    cursor: pointer;
+
+    &:hover { background: darken($color: #fff, $amount: 5%); }
+
+  }
+}

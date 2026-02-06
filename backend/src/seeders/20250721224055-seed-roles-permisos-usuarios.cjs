@@ -1,9 +1,11 @@
-'use strict';
+"use strict";
 
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 module.exports = {
   async up(queryInterface) {
+    const now = new Date();
+
     /* 1️⃣  ROLES ------------------------------------------------ */
     const [rolesExistentes] = await queryInterface.sequelize.query('SELECT id, nombre FROM roles');
     const rolesParaInsertar = [
@@ -15,7 +17,7 @@ module.exports = {
     ].filter(r => !rolesExistentes.some(re => re.id === r.id));
 
     if (rolesParaInsertar.length > 0) {
-      await queryInterface.bulkInsert('roles', rolesParaInsertar, {});
+      await queryInterface.bulkInsert('roles', rolesParaInsertar.map(r => ({ ...r, createdAt: now, updatedAt: now })), {});
     }
 
     /* 2️⃣ PERMISOS --------------------------------------------- */
@@ -45,8 +47,8 @@ module.exports = {
       { recurso: 'presupuestos', accion: 'crear' },
       { recurso: 'presupuestos', accion: 'ver' },
       { recurso: 'facturacion', accion: 'gestionar' },
-      { recurso: 'inventario', accion: 'ver' },
       { recurso: 'notificaciones', accion: 'listar' },
+      { recurso: 'notificaciones', accion: 'enviar' },
       { recurso: 'reportes', accion: 'ver' },
       { recurso: 'reportes', accion: 'generar' },
       { recurso: 'turnos', accion: 'ver' },
@@ -54,9 +56,13 @@ module.exports = {
       { recurso: 'turnos', accion: 'editar' },
       { recurso: 'turnos', accion: 'cancelar' },
       { recurso: 'turnos', accion: 'reprogramar' },
-      { recurso: 'turnos', accion: 'marcar_asistencia' },
-      { recurso: 'turnos', accion: 'marcar_ausencia' },
-      { recurso: 'turnos', accion: 'eliminar' },
+      // Nuevos permisos de Recetas y Odontólogos
+      { recurso: 'recetas', accion: 'crear' },
+      { recurso: 'recetas', accion: 'ver' },
+      { recurso: 'recetas', accion: 'listar' },
+      { recurso: 'odontologos', accion: 'crear' },
+      { recurso: 'odontologos', accion: 'ver' },
+      { recurso: 'odontologos', accion: 'listar' },
     ];
 
     const permisosParaInsertar = todosLosPermisos.filter(p =>
@@ -67,7 +73,6 @@ module.exports = {
       await queryInterface.bulkInsert('permisos', permisosParaInsertar, {});
     }
 
-    /* Helper: obtener IDs actualizados */
     const [rows] = await queryInterface.sequelize.query('SELECT id, recurso, accion FROM permisos');
     const permId = (recurso, accion) => rows.find(r => r.recurso === recurso && r.accion === accion)?.id;
 
@@ -84,26 +89,21 @@ module.exports = {
     // ADMIN: Todos
     rows.forEach(p => safeAdd(1, p.id));
 
-    // ODONTÓLOGO: Clínica y Agenda
-    [
-      ['pacientes', 'listar'], ['pacientes', 'ver'], ['agenda', 'ver'],
-      ['odontograma', 'ver'], ['odontograma', 'editar'],
-      ['historia_clinica', 'ver'], ['historia_clinica', 'crear'],
-      ['reportes', 'ver'],
-    ].forEach(([r, a]) => safeAdd(2, permId(r, a)));
-
-    // PACIENTE: Solo ver agenda (para sacar turnos)
-    [
-      ['agenda', 'ver'],
-    ].forEach(([r, a]) => safeAdd(5, permId(r, a)));
-
-    // RECEPCIONISTA: Agenda (turnos) y pacientes
+    // ODONTÓLOGO
     [
       ['pacientes', 'listar'], ['pacientes', 'ver'], ['pacientes', 'crear'], ['pacientes', 'editar'],
-      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'], 
-      ['turnos', 'cancelar'], ['turnos', 'reprogramar'],
-      ['turnos', 'marcar_asistencia'], ['turnos', 'marcar_ausencia'],
-      ['agenda', 'ver'], ['agenda', 'gestionar'],
+      ['agenda', 'ver'], ['odontograma', 'ver'], ['odontograma', 'editar'],
+      ['historia_clinica', 'ver'], ['historia_clinica', 'crear'],
+      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'editar'], ['turnos', 'cancelar'],
+      ['recetas', 'crear'], ['recetas', 'ver'], ['recetas', 'listar'],
+      ['odontologos', 'ver'], ['odontologos', 'listar'],
+    ].forEach(([r, a]) => safeAdd(2, permId(r, a)));
+
+    // RECEPCIONISTA
+    [
+      ['pacientes', 'listar'], ['pacientes', 'ver'], ['pacientes', 'crear'],
+      ['turnos', 'ver'], ['turnos', 'crear'], ['turnos', 'cancelar'],
+      ['agenda', 'ver'], ['recetas', 'ver'],
     ].forEach(([r, a]) => safeAdd(4, permId(r, a)));
 
     if (rolPermisosNuevos.length > 0) {
@@ -112,12 +112,7 @@ module.exports = {
 
     /* 4️⃣  USUARIO ADMIN -------------------------------------- */
     const [adminExistente] = await queryInterface.sequelize.query("SELECT id FROM usuarios WHERE email = 'admin@odontapp.com'");
-
-    if (adminExistente.length > 0) {
-      // Si existe, aseguramos que tenga el ROL de admin y esté activo
-      await queryInterface.sequelize.query(`UPDATE usuarios SET RolId = 1, activo = 1 WHERE email = 'admin@odontapp.com'`);
-    } else {
-      // Si no existe, lo creamos de cero
+    if (adminExistente.length === 0) {
       await queryInterface.bulkInsert('usuarios', [{
         nombre: 'Admin',
         apellido: 'Sistema',
@@ -126,9 +121,9 @@ module.exports = {
         RolId: 1,
         activo: true,
         telefono: '1123456789',
-        fechaAlta: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
+        fechaAlta: now,
+        createdAt: now,
+        updatedAt: now
       }]);
     }
   },
