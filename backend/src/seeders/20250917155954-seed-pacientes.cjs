@@ -97,13 +97,19 @@ module.exports = {
     ];
 
     const now = new Date();
-    const withTimestamps = pacientes.map(p => ({
-      ...p,
-      createdAt: now,
-      updatedAt: now
-    }));
+    const [existing] = await queryInterface.sequelize.query('SELECT dni FROM pacientes');
 
-    await queryInterface.bulkInsert('pacientes', withTimestamps, {});
+    const withTimestamps = pacientes
+      .filter(p => !existing.some(ex => ex.dni === p.dni))
+      .map(p => ({
+        ...p,
+        createdAt: now,
+        updatedAt: now
+      }));
+
+    if (withTimestamps.length > 0) {
+      await queryInterface.bulkInsert('pacientes', withTimestamps, {});
+    }
   },
 
   async down(queryInterface, Sequelize) {

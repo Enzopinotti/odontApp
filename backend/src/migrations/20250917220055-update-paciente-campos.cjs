@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, DataTypes) {
     await queryInterface.addColumn("pacientes", "fechaNacimiento", {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
     });
 
     await queryInterface.addColumn("pacientes", "sexo", {

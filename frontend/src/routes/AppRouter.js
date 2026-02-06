@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../features/auth/hooks/useAuth';
+import useAuth from '../features/auth/hooks/useAuth';
 import AppLayout from '../components/layout/AppLayout';
 import PublicLayout from '../components/layout/PublicLayout';
 

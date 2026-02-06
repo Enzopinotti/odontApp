@@ -7,42 +7,59 @@ module.exports = {
     const now = new Date();
 
     // 1️⃣ Crear usuario con rol Odontólogo
-    await queryInterface.bulkInsert('usuarios', [
-      {
-        nombre: 'Branko',
-        apellido: 'Iriart',
-        email: 'odontologo@odontapp.com',
-        password: await bcrypt.hash('odontologo123', 10),
-        telefono: '2215558899',
-        activo: true,
-        fechaAlta: now,
-        RolId: 2, // Odontólogo
-        createdAt: now,
-        updatedAt: now,
-      },
-    ]);
-
-    // Buscar el ID real del usuario recién creado
-    const [users] = await queryInterface.sequelize.query(
+    const [existingUser] = await queryInterface.sequelize.query(
       "SELECT id FROM usuarios WHERE email = 'odontologo@odontapp.com';"
     );
-    const userId = users[0].id;
+
+    let userId;
+    if (existingUser.length === 0) {
+      await queryInterface.bulkInsert('usuarios', [
+        {
+          nombre: 'Branko',
+          apellido: 'Iriart',
+          email: 'odontologo@odontapp.com',
+          password: await bcrypt.hash('odontologo123', 10),
+          telefono: '2215558899',
+          activo: true,
+          fechaAlta: now,
+          RolId: 2, // Odontólogo
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]);
+      const [newUsers] = await queryInterface.sequelize.query(
+        "SELECT id FROM usuarios WHERE email = 'odontologo@odontapp.com';"
+      );
+      userId = newUsers[0].id;
+    } else {
+      userId = existingUser[0].id;
+    }
 
     // 2️⃣ Crear odontólogo vinculado al usuario
-    await queryInterface.bulkInsert('odontologos', [
-      {
-        userId: userId,
-        matricula: 'MAT-12345',
-      },
-    ]);
+    const [existingOdonto] = await queryInterface.sequelize.query(
+      `SELECT userId FROM odontologos WHERE userId = ${userId};`
+    );
+    if (existingOdonto.length === 0) {
+      await queryInterface.bulkInsert('odontologos', [
+        {
+          userId: userId,
+          matricula: 'MAT-12345',
+        },
+      ]);
+    }
 
     // 3️⃣ Relacionar odontólogo con especialidad (ejemplo: Ortodoncia con id=2)
-    await queryInterface.bulkInsert('odontologo_especialidad', [
-      {
-        odontologoUserId: userId,
-        especialidadId: 2,
-      },
-    ]);
+    const [existingRel] = await queryInterface.sequelize.query(
+      `SELECT odontologoUserId FROM odontologo_especialidad WHERE odontologoUserId = ${userId} AND especialidadId = 2;`
+    );
+    if (existingRel.length === 0) {
+      await queryInterface.bulkInsert('odontologo_especialidad', [
+        {
+          odontologoUserId: userId,
+          especialidadId: 2,
+        },
+      ]);
+    }
   },
 
   async down(queryInterface) {

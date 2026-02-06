@@ -39,7 +39,7 @@ router.get(
   usuarioController.obtenerUsuarios
 );
 
-/* --- Roles y Permisos (Deben ir antes de :id) --- */
+/* Roles y Permisos (Deben ir antes de :id) */
 router.get('/roles', requirePermiso('roles', 'listar'), rolCtrl.obtenerRoles);
 router.get('/permisos', requirePermiso('permisos', 'listar'), permCtrl.obtenerPermisos);
 router.get('/roles/:id', requirePermiso('roles', 'listar'), rolCtrl.obtenerRolPorId);
@@ -49,7 +49,16 @@ router.put('/roles/:id/permisos', requirePermiso('roles', 'editar'), rolCtrl.act
  * @swagger
  * /usuarios/{id}:
  *   get:
-...
+ *     summary: Obtener un usuario por ID
+ *     tags: [Usuarios]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Datos del usuario
