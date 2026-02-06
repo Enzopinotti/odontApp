@@ -12,6 +12,7 @@ import VerifySent from '../features/auth/pages/VerifySent';
 import VerifyEmail from '../features/auth/pages/VerifyEmail';
 import Profile from '../features/auth/pages/Profile';
 import ChangePassword from '../features/auth/pages/ChangePassword';
+import Dashboard from '../features/home/pages/Dashboard';
 import NotFound from '../pages/Usuarios/NotFound';
 
 import Pacientes from '../features/pacientes/pages/Pacientes';
@@ -58,6 +59,7 @@ function AppRouter() {
           </ProtectedRoute>
         }
       >
+        <Route index element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="cambiar-password" element={<ChangePassword />} />

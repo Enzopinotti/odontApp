@@ -26,32 +26,60 @@ export default function SideBar() {
     return rolName === 'PACIENTE';
   }, [user]);
 
+  const isOdontologo = useMemo(() => {
+    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
+    return rolName === 'ODONTÓLOGO' || rolName === 'DENTISTA' || rolName === 'DOCTOR';
+  }, [user]);
+
   return (
     <>
-      <button className="burger" onClick={() => setOpen(!open)}>☰</button>
+      <button className="burger" onClick={() => setOpen(true)} aria-label="Abrir menú">☰</button>
+
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
-        <nav>
+        <div className="sidebar-header">
+          <div className="logo-placeholder">
+            <FaUserShield /> <span>OdontApp</span>
+          </div>
+          <button className="close-sidebar" onClick={() => setOpen(false)} aria-label="Cerrar menú">×</button>
+        </div>
+
+        <nav onClick={() => setOpen(false)}>
           <div className="nav-section">
-            {!isPaciente && (
+            <NavLink to="/" title="Inicio">
+              <FaChartBar /> <span>Inicio</span>
+            </NavLink>
+
+            {(hasPermiso('pacientes', 'listar') || isAdmin) && (
               <NavLink to="/pacientes" title="Pacientes">
                 <FaUsers /> <span>Pacientes</span>
               </NavLink>
             )}
-            <NavLink to="/agenda" title="Agenda">
-              <FaCalendarAlt /> <span>Agenda</span>
-            </NavLink>
+
+            {(hasPermiso('agenda', 'ver') || isAdmin || isOdontologo) && (
+              <NavLink to="/agenda" title="Agenda">
+                <FaCalendarAlt /> <span>Agenda</span>
+              </NavLink>
+            )}
+
             {!isPaciente && (
               <>
-                <NavLink to="/facturacion" title="Facturación">
-                  <FaFileInvoiceDollar /> <span>Facturación</span>
-                </NavLink>
-                <NavLink to="/recetas" title="Recetas">
-                  <FaReceipt /> <span>Recetas</span>
-                </NavLink>
-                <NavLink to="/reportes" title="Reportes">
-                  <FaChartBar /> <span>Reportes</span>
-                </NavLink>
+                {(hasPermiso('facturacion', 'ver') || isAdmin) && (
+                  <NavLink to="/facturacion" title="Facturación">
+                    <FaFileInvoiceDollar /> <span>Facturación</span>
+                  </NavLink>
+                )}
+                {(hasPermiso('recetas', 'ver') || isAdmin) && (
+                  <NavLink to="/recetas" title="Recetas">
+                    <FaReceipt /> <span>Recetas</span>
+                  </NavLink>
+                )}
+                {(hasPermiso('reportes', 'ver') || isAdmin) && (
+                  <NavLink to="/reportes" title="Reportes">
+                    <FaChartBar /> <span>Reportes</span>
+                  </NavLink>
+                )}
               </>
             )}
           </div>
@@ -66,9 +94,12 @@ export default function SideBar() {
             <NavLink to="/profile" title="Perfil y configuración">
               <FaUser /> <span>Perfil</span>
             </NavLink>
-            <NavLink to="/configuracion" title="Configuración">
-              <FaCog /> <span>Configuración</span>
-            </NavLink>
+
+            {(hasPermiso('configuracion', 'ver') || isAdmin) && (
+              <NavLink to="/configuracion" title="Configuración">
+                <FaCog /> <span>Configuración</span>
+              </NavLink>
+            )}
           </div>
         </nav>
       </aside>
