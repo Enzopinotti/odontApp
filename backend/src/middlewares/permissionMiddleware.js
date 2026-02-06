@@ -10,21 +10,10 @@ export const requirePermiso = (recurso, accion) => async (req, _res, next) => {
   try {
     // Obtenemos roleId del token (soporta ambos formatos)
     const roleId = req.user?.roleId || req.user?.RolId;
-
-    // Debug opcional
-    console.log('Debug middleware:', {
-      user: req.user,
-      roleId,
-      recurso,
-      accion
-    });
-
     if (!roleId) throw new ApiError('Rol no definido en token', 403);
 
     // BYPASS para Administrador (ID 1)
     if (Number(roleId) === 1) return next();
-
-    // Buscamos si existe un permiso asignado a ese rol
 
     const permiso = await Permiso.findOne({
       where: { recurso, accion },
@@ -35,13 +24,10 @@ export const requirePermiso = (recurso, accion) => async (req, _res, next) => {
       },
     });
 
-    console.log('Permiso encontrado:', permiso ? 'SÍ' : 'NO');
-
     if (!permiso) throw new ApiError('No tienes permiso para esta acción', 403);
 
     return next();
   } catch (err) {
-    console.log('Error en middleware:', err.message);
     return next(err);
   }
 };

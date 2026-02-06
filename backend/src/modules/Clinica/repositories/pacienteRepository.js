@@ -1,5 +1,4 @@
 import { Paciente } from "../models/index.js";
-"../../../config/db.js";
 import { Op } from "sequelize";
 
 class PacienteRepository {
@@ -8,7 +7,7 @@ class PacienteRepository {
   }
 
   async findById(id) {
-    return Paciente.findByPk(id);
+    return Paciente.findByPk(id, { include: ['Estado'] });
   }
 
   async create(data) {
@@ -20,7 +19,7 @@ class PacienteRepository {
     if (paciente) {
       return paciente.update(data);
     }
-    throw new Error('Paciente not found');
+    return null;
   }
 
   async delete(id) {
@@ -28,9 +27,35 @@ class PacienteRepository {
     if (paciente) {
       return paciente.destroy();
     }
-    throw new Error('Paciente not found');
+    return null;
   }
-   async findByNombreApellidoODni(texto) {
+
+  async findFiltered(filtros = {}, page = 1, perPage = 20) {
+    const offset = (page - 1) * perPage;
+    const where = {};
+
+    if (filtros.q) {
+      where[Op.or] = [
+        { nombre: { [Op.like]: `%${filtros.q}%` } },
+        { apellido: { [Op.like]: `%${filtros.q}%` } },
+        { dni: { [Op.like]: `%${filtros.q}%` } },
+      ];
+    }
+
+    if (filtros.estadoId) {
+      where.estadoId = filtros.estadoId;
+    }
+
+    return Paciente.findAndCountAll({
+      where,
+      limit: perPage,
+      offset,
+      order: [['apellido', 'ASC']],
+      include: ['Estado'],
+    });
+  }
+
+  async findByNombreApellidoODni(texto) {
     return Paciente.findAll({
       where: {
         [Op.or]: [
@@ -43,5 +68,6 @@ class PacienteRepository {
       order: [["apellido", "ASC"]],
     });
   }
-}   
+}
+
 export default new PacienteRepository();
