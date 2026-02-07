@@ -6,17 +6,20 @@ import defineBudgetItem from './BudgetItem.js';
 import defineInvoice from './Invoice.js';
 import defineInvoiceItem from './InvoiceItem.js';
 
-// Importar modelos externos (Solo para referencia de FKs)
-import { Tratamiento, Paciente } from '../../Clinica/models/index.js';
-import { Usuario } from '../../Usuarios/models/index.js';
+// 1. 👇 IMPORTAMOS LA DEFINICIÓN DE ASOCIACIONES
+import defineAssociations from './Associations.js';
 
-// 1. Inicializar SOLO los modelos de Finanzas
+// Importar modelos externos
+import { Tratamiento, Paciente } from '../../Clinica/models/index.js';
+// 2. 👇 AGREGAMOS ODONTOLOGO AQUÍ
+import { Usuario, Odontologo } from '../../Usuarios/models/index.js';
+
+// Inicializar modelos de Finanzas
 const Budget = defineBudget(sequelize, Sequelize.DataTypes);
 const BudgetItem = defineBudgetItem(sequelize, Sequelize.DataTypes);
 const Invoice = defineInvoice(sequelize, Sequelize.DataTypes);
 const InvoiceItem = defineInvoiceItem(sequelize, Sequelize.DataTypes);
 
-// 2. Agrupar modelos locales (Los que vamos a configurar ahora)
 const localModels = {
   Budget,
   BudgetItem,
@@ -24,19 +27,26 @@ const localModels = {
   InvoiceItem
 };
 
-// 3. Crear un objeto con TODOS los modelos para pasar como referencia
-// (Así Invoice puede encontrar a Usuario, pero no ejecutamos Usuario.associate)
+// 3. 👇 PREPARAMOS EL OBJETO CON TODOS LOS MODELOS
+// Mapeamos 'Factura' a 'Invoice' para que tu archivo Associations.js funcione
 const allModels = {
   ...localModels,
+  Factura: Invoice,       // Alias para compatibilidad con Associations.js
+  Presupuesto: Budget,    // Alias para compatibilidad
   Tratamiento,
   Paciente,
-  Usuario
+  Usuario,
+  Odontologo // 👈 ¡IMPORTANTE!
 };
 
-// 4. Ejecutar asociaciones SOLO en los modelos locales
+// 4. 👇 EJECUTAMOS LAS ASOCIACIONES EXTERNAS (Tu archivo Associations.js)
+if (defineAssociations) {
+    defineAssociations(allModels);
+}
+
+// Ejecutar asociaciones internas (si quedaron algunas dentro de las clases)
 Object.keys(localModels).forEach((modelName) => {
   if (localModels[modelName].associate) {
-    // Le pasamos 'allModels' para que Invoice pueda hacer belongsTo(allModels.Usuario)
     localModels[modelName].associate(allModels);
   }
 });

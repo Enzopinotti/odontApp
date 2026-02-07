@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react'; // Agregamos useEffect para debug
 import useAuth from '../../features/auth/hooks/useAuth';
 import {
   FaUser,
   FaCalendarAlt,
   FaUsers,
-  FaFileInvoiceDollar, // ✅ Icono para Facturación
   FaCashRegister,      
   FaReceipt,
   FaChartBar,
@@ -15,35 +14,34 @@ import {
 
 export default function SideBar() {
   const [open, setOpen] = useState(false);
-  const { hasPermiso, user } = useAuth();
+  const { user } = useAuth();
 
-  // --- Roles Helpers ---
-  const isAdmin = useMemo(() => {
-    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
-    return rolName === 'ADMIN' || rolName === 'ADMINISTRADOR';
+  // --- DEBUGGING ---
+  // Mira la consola del navegador (F12) para ver qué está llegando
+  useEffect(() => {
+    if (user) {
+      console.log("🔍 USUARIO LOGUEADO:", user);
+      console.log("🔍 ROL DETECTADO:", user?.Rol?.nombre);
+    }
   }, [user]);
 
-  const isPaciente = useMemo(() => {
-    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
-    return rolName === 'PACIENTE';
-  }, [user]);
+  // --- NORMALIZACIÓN DE ROLES ---
+  // 1. Obtenemos el nombre
+  const rolRaw = user?.Rol?.nombre || '';
+  
+  // 2. Normalizamos: Mayúsculas y SIN TILDES (Á -> A, Ó -> O)
+  // Esto arregla el problema de "ODONTÓLOGO" vs "ODONTOLOGO"
+  const rol = rolRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const isRecepcionista = useMemo(() => {
-    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
-    return rolName === 'RECEPCIONISTA' || rolName === 'RECEPCION';
-  }, [user]);
+  // --- DEFINICIÓN DE ROLES ---
+  const isPaciente = rol === 'PACIENTE';
+  const isAdmin = rol === 'ADMIN' || rol === 'ADMINISTRADOR';
+  const isRecepcion = rol === 'RECEPCIONISTA' || rol === 'SECRETARIA'; // Por si acaso
+  const isOdontologo = rol === 'ODONTOLOGO' || rol === 'DENTISTA' || rol === 'PROFESIONAL';
 
-  const isOdontologo = useMemo(() => {
-    const rolName = user?.Rol?.nombre?.toUpperCase() || '';
-    return rolName === 'ODONTOLOGO' || rolName === 'PROFESIONAL';
-  }, [user]);
-
-  // Helper para saber si tiene acceso a Caja (específico para cobros)
-  const canAccessCaja = isAdmin || isRecepcionista || hasPermiso('facturacion', 'cobrar');
-
-  // Helper para acceso general al módulo de finanzas (Dashboard)
-  // Admin, Recepción y Odontólogos pueden ver el dashboard (aunque el odontólogo tenga acciones limitadas)
-  const canAccessFinanzas = isAdmin || isRecepcionista || isOdontologo;
+  // --- GRUPOS DE PERMISOS ---
+  // Staff = Cualquier rol que NO sea paciente
+  const isStaff = isAdmin || isRecepcion || isOdontologo;
 
   return (
     <>
@@ -53,35 +51,28 @@ export default function SideBar() {
         <nav>
           <div className="nav-section">
             
-            {/* Pacientes: Visible para todos menos pacientes */}
-            {!isPaciente && (
+            {/* 1. PACIENTES */}
+            {isStaff && (
               <NavLink to="/pacientes" title="Pacientes">
                 <FaUsers /> <span>Pacientes</span>
               </NavLink>
             )}
 
-            {/* Agenda: Visible para todos */}
+            {/* 2. AGENDA (Visible para todos) */}
             <NavLink to="/agenda" title="Agenda">
               <FaCalendarAlt /> <span>Agenda</span>
             </NavLink>
 
-            {/* --- MÓDULO FINANZAS (NUEVO) --- */}
-            {canAccessFinanzas && (
-              <NavLink to="/finanzas" title="Facturación y Presupuestos">
-                <FaFileInvoiceDollar /> <span>Facturación y Presupuestos</span>
+            {/* 3. FINANZAS */}
+            {isStaff && (
+              <NavLink to="/finanzas" title="Gestión Financiera">
+                <FaCashRegister />
+                <span>Caja y Facturación</span>
               </NavLink>
             )}
 
-            {/* --- CAJA (Opcional: Si quieres mantener el acceso directo a la caja diaria) --- */}
-            {/* Si prefieres que todo entre por "Facturación", puedes quitar esto */}
-            {canAccessCaja && (
-              <NavLink to="/finanzas/caja" title="Caja Diaria">
-                <FaCashRegister /> <span>Caja Diaria</span>
-              </NavLink>
-            )}
-
-            {/* --- OTROS MÓDULOS --- */}
-            {!isPaciente && (
+            {/* 4. EXTRAS */}
+            {isStaff && (
               <>
                 <NavLink to="/recetas" title="Recetas">
                   <FaReceipt /> <span>Recetas</span>

@@ -1,39 +1,39 @@
 import { Router } from 'express';
-import * as ctrl from '../controllers/financeController.js';
-import * as valid from '../validators/financeValidator.js';
 
-// 👇 1. IMPORTA EL AUTH MIDDLEWARE
+// ✅ IMPORTANTE: Usamos '../' para salir a buscar controllers
+import * as ctrl from '../controllers/financeController.js';
+
+// ✅ IMPORTANTE: Subimos 3 niveles para llegar a middlewares
 import { requireAuth } from '../../../middlewares/authMiddleware.js'; 
-import { requirePermiso } from '../../../middlewares/permissionMiddleware.js';
+import { requirePermiso } from '../../../middlewares/permissionMiddleware.js'; 
 
 const router = Router();
 
-// 👇 2. ACTIVA LA PROTECCIÓN PARA TODAS LAS RUTAS DE ESTE ARCHIVO
-// Esto asegura que req.user exista antes de preguntar por permisos
 router.use(requireAuth); 
 
-/* --- Facturación --- */
+// --- RUTAS ---
+
+// Crear (POST)
 router.post('/facturas', 
-  requirePermiso('facturacion', 'crear'), 
-  valid.validarFactura, 
-  ctrl.crearOrdenCobro // Asegurate que el nombre del controlador coincida
+  requirePermiso('facturas', 'crear'), 
+  ctrl.crearOrdenCobro
 );
 
+// Listar (GET)
 router.get('/facturas', 
-  requirePermiso('facturacion', 'listar'), 
+  requirePermiso('facturas', 'listar'), 
   ctrl.listarFacturas
 );
 
+// Cobrar (PUT)
 router.put('/facturas/:id/pagar', 
-  requirePermiso('facturacion', 'cobrar'), 
-  // valid.validarPago, 
+  requirePermiso('facturas', 'editar'), 
   ctrl.gestionarPago
 );
 
-/* --- Presupuestos --- */
+// Presupuestos (POST)
 router.post('/presupuestos', 
   requirePermiso('presupuestos', 'crear'), 
-  // valid.validarPresupuesto, 
   ctrl.crearPresupuesto
 );
 

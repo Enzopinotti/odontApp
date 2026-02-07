@@ -29,8 +29,7 @@ import NuevoTurnoPaso3 from '../features/agenda/pages/NuevoTurnoPaso3';
 import GestionDisponibilidades from '../features/agenda/pages/GestionDisponibilidades';
 
 // 👇 IMPORTACIONES DE FINANZAS
-import CajaPage from '../features/finanzas/pages/CajaPage';
-import FinancePage from '../features/finanzas/pages/FinancePage'; // ✅ La nueva página
+import FinancePage from '../features/finanzas/pages/FinancePage';
 
 function AppRouter() {
   return (
@@ -80,10 +79,8 @@ function AppRouter() {
           <Route path="turnos/nuevo/paso3" element={<NuevoTurnoPaso3 />} />
         </Route>
 
-        <Route path="finanzas">
-           <Route index element={<FinancePage />} /> 
-           <Route path="caja" element={<CajaPage />} /> 
-        </Route>
+        {/* ✅ RUTA ÚNICA PARA FINANZAS */}
+        <Route path="finanzas" element={<FinancePage />} />
 
       </Route>
       
